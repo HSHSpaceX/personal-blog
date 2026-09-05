@@ -38,17 +38,5 @@ js/site.js    页面交互</code></pre>
 
       <h2>一点建议</h2>
       <p>工具只是起点。真正让博客有价值的是持续记录：写下遇到的问题、读过的书、走过的路。哪怕一周只有一篇，一年后回头看也会很惊人。</p>`
-  },
-  {
-    slug: "post-20260905-1423",
-    title: "示例",
-    category: "技术",
-    tags: ["示例"],
-    date: "2026-09-05",
-    readingTime: 1,
-    cover: "assets/covers/cover-20260905-1455.jpeg",
-    featured: true,
-    excerpt: "",
-    content: `<blockquote><span style="color: var(--ink); font-family: var(--font-sans);"><b>测试</b></span></blockquote><blockquote><img src="assets/posts/img-20260905-1736-0fcs.jpg" alt="插图"></blockquote>`
   }
 ];
