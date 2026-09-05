@@ -40,42 +40,15 @@ js/site.js    页面交互</code></pre>
       <p>工具只是起点。真正让博客有价值的是持续记录：写下遇到的问题、读过的书、走过的路。哪怕一周只有一篇，一年后回头看也会很惊人。</p>`
   },
   {
-    slug: "clean-code-notes",
-    title: "写给初学者的代码整洁笔记",
+    slug: "post-20260905-1423",
+    title: "示例",
     category: "技术",
-    tags: ["编程","效率"],
-    date: "2026-08-22",
-    readingTime: 6,
-    cover: "assets/covers/cover-notes.jpg",
-    excerpt: "命名、小函数、少写注释但写好注释……这些习惯看起来很小，长期却决定了代码能不能被维护。",
-    content: `
-      <p>写了几年代码之后，我慢慢发现：代码的读者里，最多的人其实是未来的自己。整洁代码不是给公司看的，而是给三个月后、半年后还要回来修改的你。</p>
-
-      <h2>命名是最大的杠杆</h2>
-      <p>好的名字让代码自己解释自己。如果需要一个很长的注释来说明变量含义，通常说明名字没取好。</p>
-      <pre><code>// 不推荐
-let d = new Date();
-let list = items.filter(i =&gt; i.active);
-
-// 推荐
-let today = new Date();
-let activeItems = items.filter(item =&gt; item.active);</code></pre>
-      <p>命名要具体、诚实，尽量避免缩写。短代码不等于好代码，可读性才是目标。</p>
-
-      <h2>把函数拆小</h2>
-      <p>一个函数如果超过二三十行，通常可以继续拆分。拆分的标准不是行数，而是“是否只做一件事”。</p>
-      <ul>
-        <li>函数名描述意图，而不是描述实现步骤。</li>
-        <li>同一抽象层级的内容放在一起。</li>
-        <li>如果函数里有明显的段落，说明这段逻辑值得独立出来。</li>
-      </ul>
-
-      <h2>注释写“为什么”，不写“是什么”</h2>
-      <p>代码本身已经说明了它做什么，注释应该解释那些看不到的东西：为什么这样做、为什么不选另一种方案、有什么陷阱。</p>
-      <blockquote><p>好的注释回答“为什么”，差的注释重复“是什么”。</p></blockquote>
-
-      <h2>从小的承诺开始</h2>
-      <p>不必追求一步到位。从今天开始，给变量好好命名，写完函数回头读一遍，把重复的段落抽出来。坚持一个月，你会发现自己的代码已经有了明显变化。</p>
-    `
+    tags: ["示例"],
+    date: "2026-09-05",
+    readingTime: 1,
+    cover: "assets/covers/cover-20260905-1455.jpeg",
+    featured: true,
+    excerpt: "",
+    content: `<blockquote><span style="color: var(--ink); font-family: var(--font-sans);"><b>测试</b></span></blockquote><blockquote><img src="assets/posts/img-20260905-1736-0fcs.jpg" alt="插图"></blockquote>`
   }
 ];
