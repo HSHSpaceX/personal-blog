@@ -2,35 +2,35 @@
 <rss version="2.0">
   <channel>
     <title>拾光手记</title>
-    <link>https://your-blog.example/</link>
+    <link>https://hshspacex.github.io/personal-blog/</link>
     <description>记录思考，也记录生活。技术笔记、读书感想和日常观察。</description>
     <language>zh-CN</language>
     <lastBuildDate>Wed, 02 Sep 2026 00:00:00 +0800</lastBuildDate>
     <item>
       <title>从零搭建一个免费个人博客</title>
-      <link>https://your-blog.example/post.html?slug=static-blog-guide</link>
-      <guid>https://your-blog.example/post.html?slug=static-blog-guide</guid>
+      <link>https://hshspacex.github.io/personal-blog/post.html?slug=static-blog-guide</link>
+      <guid>https://hshspacex.github.io/personal-blog/post.html?slug=static-blog-guide</guid>
       <pubDate>Wed, 02 Sep 2026 00:00:00 +0800</pubDate>
       <description><![CDATA[不需要服务器，也不需要付费订阅。用 HTML、CSS 和一点 JavaScript，就能拥有一个完全属于自己的博客。]]></description>
     </item>
     <item>
       <title>写给初学者的代码整洁笔记</title>
-      <link>https://your-blog.example/post.html?slug=clean-code-notes</link>
-      <guid>https://your-blog.example/post.html?slug=clean-code-notes</guid>
+      <link>https://hshspacex.github.io/personal-blog/post.html?slug=clean-code-notes</link>
+      <guid>https://hshspacex.github.io/personal-blog/post.html?slug=clean-code-notes</guid>
       <pubDate>Sat, 22 Aug 2026 00:00:00 +0800</pubDate>
       <description><![CDATA[命名、小函数、少写注释但写好注释……这些习惯看起来很小，长期却决定了代码能不能被维护。]]></description>
     </item>
     <item>
       <title>周末去山里走了一趟</title>
-      <link>https://your-blog.example/post.html?slug=mountain-lake-weekend</link>
-      <guid>https://your-blog.example/post.html?slug=mountain-lake-weekend</guid>
+      <link>https://hshspacex.github.io/personal-blog/post.html?slug=mountain-lake-weekend</link>
+      <guid>https://hshspacex.github.io/personal-blog/post.html?slug=mountain-lake-weekend</guid>
       <pubDate>Sat, 15 Aug 2026 00:00:00 +0800</pubDate>
       <description><![CDATA[湖水很静，风把云吹成不同的形状。把手机留在包里，路就变长了。]]></description>
     </item>
     <item>
       <title>2026 上半年读书清单</title>
-      <link>https://your-blog.example/post.html?slug=reading-list-2026</link>
-      <guid>https://your-blog.example/post.html?slug=reading-list-2026</guid>
+      <link>https://hshspacex.github.io/personal-blog/post.html?slug=reading-list-2026</link>
+      <guid>https://hshspacex.github.io/personal-blog/post.html?slug=reading-list-2026</guid>
       <pubDate>Sun, 02 Aug 2026 00:00:00 +0800</pubDate>
       <description><![CDATA[上半年读了九本书，挑出五本想反复推荐的，记录一下它们打动我的地方。]]></description>
     </item>

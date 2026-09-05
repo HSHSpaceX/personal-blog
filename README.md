@@ -34,7 +34,7 @@ python -m http.server 8080
 2. Netlify：使用 Netlify Drop 直接把项目文件夹拖入网页，或运行 `npx netlify deploy --prod`。
 3. GitHub Pages：把项目推送到 GitHub 仓库，在 Settings → Pages 中选择部署分支。
 
-发布到正式域名后，把 `feed.xml` 里的 `https://your-blog.example/` 替换成你的真实域名。
+发布到正式域名后，把 `feed.xml` 里的 `https://hshspacex.github.io/personal-blog/` 替换成你的真实域名。
 
 ## 示例封面来源
 
