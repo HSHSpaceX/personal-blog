@@ -10,6 +10,10 @@
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --blur: saturate(180%) blur(22px);
 }
 
 [data-theme="dark"] {
@@ -23,6 +27,9 @@
   --link: #2997ff;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --glass: rgba(28, 28, 30, 0.55);
+  --glass-strong: rgba(28, 28, 30, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.14);
 }
 
 * {
@@ -41,6 +48,24 @@ body {
   font-size: 16px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(60% 50% at 12% 8%, rgba(0, 113, 227, 0.09), transparent 60%),
+    radial-gradient(50% 40% at 88% 12%, rgba(255, 45, 85, 0.07), transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgba(88, 86, 214, 0.08), transparent 65%);
+}
+
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(60% 50% at 12% 8%, rgba(41, 151, 255, 0.1), transparent 60%),
+    radial-gradient(50% 40% at 88% 12%, rgba(191, 90, 242, 0.08), transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgba(100, 210, 255, 0.05), transparent 65%);
 }
 
 img {
@@ -98,14 +123,14 @@ h1, h2, h3 {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--line);
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 [data-theme="dark"] .site-header {
-  background: rgba(22, 22, 23, 0.78);
+  background: var(--glass-strong);
 }
 
 .header-inner {
@@ -176,6 +201,7 @@ h1, h2, h3 {
   color: #fff;
   font-size: 13px;
   font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--shadow);
 }
 
 .btn-login:hover {
@@ -188,15 +214,17 @@ h1, h2, h3 {
   width: 34px;
   height: 34px;
   padding: 0;
-  border: none;
   border-radius: 50%;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   color: var(--ink);
   cursor: pointer;
 }
 
 .icon-btn:hover {
-  background: var(--surface-2);
+  background: var(--glass-strong);
 }
 
 .icon-btn svg {
@@ -258,7 +286,10 @@ h1, h2, h3 {
 .stat {
   padding: 8px 16px;
   border-radius: 980px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   color: var(--muted);
   font-size: 13px;
 }
@@ -277,9 +308,12 @@ h1, h2, h3 {
   display: grid;
   grid-template-columns: 1.15fr 1fr;
   overflow: hidden;
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  border-radius: 28px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .featured-media {
@@ -415,13 +449,17 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 18px;
-  background: var(--surface);
+  border-radius: 22px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .post-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
 }
 
@@ -485,13 +523,16 @@ h1, h2, h3 {
   gap: 8px;
   padding: 11px 20px;
   border-radius: 980px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   font-size: 14px;
   font-weight: 500;
 }
 
 .category-chip:hover {
-  background: var(--surface-2);
+  background: var(--glass-strong);
 }
 
 .category-chip .count {
@@ -513,10 +554,16 @@ h1, h2, h3 {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 24px;
-  font-weight: 600;
+  border: 2px solid var(--glass-border);
+  background: var(--glass);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .about-copy p {
@@ -579,8 +626,11 @@ h1, h2, h3 {
   flex: 1 1 260px;
   max-width: 420px;
   padding: 0 16px;
-  border-radius: 12px;
-  background: var(--surface);
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
 }
 
 .search-box:focus-within {
@@ -615,9 +665,11 @@ h1, h2, h3 {
 
 .filter-chip {
   padding: 8px 16px;
-  border: none;
   border-radius: 980px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   color: var(--muted);
   font-size: 13px;
   font-weight: 500;
@@ -626,7 +678,7 @@ h1, h2, h3 {
 
 .filter-chip:hover {
   color: var(--ink);
-  background: var(--surface-2);
+  background: var(--glass-strong);
 }
 
 .filter-chip.active {
@@ -662,7 +714,10 @@ h1, h2, h3 {
   gap: 20px;
   padding: 14px;
   border-radius: 16px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   transition: transform 0.2s ease;
 }
 
@@ -750,7 +805,10 @@ h1, h2, h3 {
   margin-bottom: 8px;
   padding: 14px 18px;
   border-radius: 14px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
 }
 
 .timeline-item:hover {
@@ -840,7 +898,10 @@ h1, h2, h3 {
   display: inline-block;
   padding: 5px 14px;
   border-radius: 980px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   color: var(--muted);
   font-size: 12px;
   font-weight: 500;
@@ -909,7 +970,10 @@ a.tag-chip:hover {
   margin: 22px 0;
   padding: 14px 22px;
   border-radius: 14px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   color: var(--muted);
 }
 
@@ -930,7 +994,10 @@ a.tag-chip:hover {
   margin: 22px 0;
   padding: 18px 20px;
   border-radius: 14px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   line-height: 1.6;
 }
 
@@ -961,11 +1028,14 @@ a.tag-chip:hover {
   gap: 5px;
   padding: 16px 20px;
   border-radius: 16px;
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
 }
 
 .post-nav-card:hover {
-  background: var(--surface-2);
+  background: var(--glass-strong);
 }
 
 .post-nav-card.next {
