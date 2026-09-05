@@ -18,7 +18,7 @@ window.BLOG_POSTS = [
       <ul>
         <li>免费托管：GitHub Pages、Vercel、Netlify 都有免费额度。</li>
         <li>安全省心：没有数据库和后台，几乎不存在被入侵的入口。</li>
-        <li>加载快：文件体积小，全球 CDN 都能轻松承担。</li>
+        <li>加载快：文件体积小，全球 CDN 都能轻松承担。</li></ul><h2>个性化</h2><div>这里我采用了液态玻璃设计（深色明显）</div><div><img src="assets/posts/img-20260905-1844-123p.jpeg" alt="插图"></div><br><ul>
       </ul>
 
       <h2>本站的文件结构</h2>
@@ -33,7 +33,7 @@ js/site.js    页面交互</code></pre>
       <p>新增文章时，只需要在 <code>posts.js</code> 中复制一篇文章的数据结构，改掉标题、正文和封面图即可。首页、归档和 RSS 会自动同步。</p>
 
       <h2>关于免费托管</h2>
-      <p>静态网站可以发布到 Vercel 或 Netlify 的免费套餐，也可以推到 GitHub 仓库后启用 GitHub Pages。它们都支持绑定自己的域名，唯一可能产生的费用是域名本身。</p>
+      <p>静态网站可以发布到 Vercel 或 Netlify 的免费套餐，也可以推到 GitHub 仓库后启用 GitHub Pages(我这篇就是)。它们都支持绑定自己的域名，唯一可能产生的费用是域名本身。</p>
       <blockquote><p>先让内容跑起来，再慢慢优化。博客最重要的始终是写作这件事本身。</p></blockquote>
 
       <h2>一点建议</h2>
