@@ -16,6 +16,13 @@
 
 封面图片放在 `assets/covers/` 目录，替换同名文件或修改文章数据中的 `cover` 路径即可。博客名称、简介和关于页文字在 `index.html`、`about.html` 中修改。
 
+## 手机后台编辑（可选）
+
+1. 在 GitHub 创建只授权本仓库的 Fine-grained Token（Settings → Developer settings → Fine-grained tokens）：Repository access 选择 `personal-blog`，Permissions 中将 Contents 设为 Read and write。
+2. 手机或电脑打开 `https://hshspacex.github.io/personal-blog/admin.html`，粘贴 Token 并连接。
+3. 在后台可以新增、修改、删除文章，也能直接上传封面图。保存后会自动提交到 `main`，GitHub Pages 一两分钟内自动发布。
+4. Token 只保存在当前设备的浏览器 localStorage 中，不会进入仓库；在后台点“退出”即可清除。
+
 ## 本地预览
 
 直接双击 `index.html` 即可打开；也可以用任意静态服务器获得更完整的体验：

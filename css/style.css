@@ -556,6 +556,15 @@ h1, h2, h3 {
   margin: 0;
 }
 
+.footer-inner a {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.footer-inner a:hover {
+  color: var(--accent);
+}
+
 /* Page head */
 .page-head {
   padding: 56px 0 32px;

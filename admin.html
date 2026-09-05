@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>博客管理 - 拾光手记</title>
+  <meta name="description" content="拾光手记的内容管理后台。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="返回博客首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <g stroke="#f6efe4" stroke-width="3.5" stroke-linecap="round"><path d="M32 13v5"/><path d="M17 28h-5"/><path d="M47 28h5"/><path d="M21.2 17.2l-3.5-3.5"/><path d="M42.8 17.2l3.5-3.5"/></g>
+            <circle cx="32" cy="28" r="9" fill="#f6efe4"/>
+            <path d="M16 42h32" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+            <path d="M24 49h16" stroke="#bfe3dc" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="brand-name">拾光手记 · 管理</span>
+      </a>
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="admin-main container">
+    <section id="authPanel" class="admin-card" hidden>
+      <h1>连接 GitHub</h1>
+      <p class="hint">输入一个有本仓库写权限的 GitHub Token，即可在网页里编辑文章并发布。Token 只会保存在当前设备浏览器中。</p>
+      <div class="field">
+        <label for="tokenInput">GitHub Token</label>
+        <input id="tokenInput" type="password" placeholder="github_pat_… 或 ghp_…" autocomplete="off">
+      </div>
+      <div class="admin-row">
+        <button class="btn primary" id="connectBtn" type="button">连接</button>
+      </div>
+      <details class="auth-details">
+        <summary>如何创建 Token？</summary>
+        <ol>
+          <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained Token 创建页</a>。</li>
+          <li>Token name 随意，例如 blog-admin；Expiration 建议选 90 天。</li>
+          <li>Repository access 选择 Only select repositories，并勾选 <code>personal-blog</code>。</li>
+          <li>Permissions 里把 Contents 设为 Read and write，其余保持默认。</li>
+          <li>生成后复制 Token，粘贴到上方输入框。</li>
+        </ol>
+      </details>
+      <p id="authStatus" class="status-line"></p>
+    </section>
+
+    <section id="appPanel" hidden>
+      <div class="admin-toolbar">
+        <span id="repoInfo" class="hint"></span>
+        <div class="admin-row">
+          <button class="btn primary" id="newPostBtn" type="button">新文章</button>
+          <button class="btn" id="logoutBtn" type="button">退出</button>
+        </div>
+      </div>
+      <ul id="postList" class="admin-list"></ul>
+      <p id="listStatus" class="status-line"></p>
+    </section>
+
+    <section id="editorPanel" hidden>
+      <div class="admin-card wide">
+        <div class="field">
+          <label for="postTitle">标题</label>
+          <input id="postTitle" type="text" placeholder="文章标题">
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="postSlug">slug（网址标识）</label>
+            <input id="postSlug" type="text">
+          </div>
+          <div class="field">
+            <label for="postCategory">分类</label>
+            <input id="postCategory" type="text" list="categoryOptions">
+            <datalist id="categoryOptions"></datalist>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="postDate">日期</label>
+            <input id="postDate" type="date">
+          </div>
+          <div class="field">
+            <label for="postReading">阅读时长（分钟）</label>
+            <input id="postReading" type="number" min="1" step="1">
+          </div>
+        </div>
+        <div class="field">
+          <label for="postTags">标签（用逗号分隔）</label>
+          <input id="postTags" type="text" placeholder="Web, 生活">
+        </div>
+        <div class="field">
+          <label for="postCover">封面路径</label>
+          <input id="postCover" type="text" list="coverOptions">
+          <datalist id="coverOptions"></datalist>
+          <img id="coverPreview" class="cover-preview" alt="封面预览" hidden>
+        </div>
+        <div class="field">
+          <label for="coverFile">上传新封面</label>
+          <input id="coverFile" type="file" accept="image/*">
+        </div>
+        <div class="field checkbox">
+          <label><input id="postFeatured" type="checkbox"> 设为首页精选</label>
+        </div>
+        <div class="field">
+          <label for="postExcerpt">摘要</label>
+          <textarea id="postExcerpt" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="postContent">正文（HTML）</label>
+          <div class="content-toolbar" id="contentToolbar"></div>
+          <textarea id="postContent" class="content-textarea" spellcheck="false"></textarea>
+        </div>
+        <div id="previewWrap" class="preview-wrap" hidden>
+          <div class="preview"><div id="previewBody" class="prose"></div></div>
+        </div>
+        <div class="editor-actions">
+          <button class="btn primary" id="saveBtn" type="button">保存并发布</button>
+          <button class="btn" id="previewBtn" type="button">预览</button>
+          <button class="btn" id="backBtn" type="button">返回列表</button>
+          <button class="btn danger" id="deleteBtn" type="button">删除</button>
+        </div>
+        <p id="editorStatus" class="status-line"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/posts.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
