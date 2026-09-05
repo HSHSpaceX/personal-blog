@@ -64,11 +64,46 @@
         <span id="repoInfo" class="hint"></span>
         <div class="admin-row">
           <button class="btn primary" id="newPostBtn" type="button">新文章</button>
+          <button class="btn" id="pageBtn" type="button">页面内容</button>
           <button class="btn" id="logoutBtn" type="button">退出</button>
         </div>
       </div>
       <ul id="postList" class="admin-list"></ul>
       <p id="listStatus" class="status-line"></p>
+    </section>
+
+    <section id="pagePanel" hidden>
+      <div class="admin-card wide">
+        <div class="field">
+          <label for="siteName">站点名称</label>
+          <input id="siteName" type="text">
+        </div>
+        <div class="field">
+          <label for="introTitle">首页主标题</label>
+          <input id="introTitle" type="text">
+        </div>
+        <div class="field">
+          <label for="introText">首页简介</label>
+          <textarea id="introText" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="aboutTitle">首页“关于”标题</label>
+          <input id="aboutTitle" type="text">
+        </div>
+        <div class="field">
+          <label for="aboutText">首页“关于”正文</label>
+          <textarea id="aboutText" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label for="aboutPage">关于页内容（HTML）</label>
+          <textarea id="aboutPage" rows="12"></textarea>
+        </div>
+        <div class="admin-row">
+          <button class="btn primary" id="savePageBtn" type="button">保存并发布</button>
+          <button class="btn" id="backPageBtn" type="button">返回列表</button>
+        </div>
+        <p id="pageStatus" class="status-line"></p>
+      </div>
     </section>
 
     <section id="editorPanel" hidden>

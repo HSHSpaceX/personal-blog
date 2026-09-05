@@ -392,8 +392,75 @@
     });
   }
 
+  function setupReveal() {
+    var reduceMotion = false;
+    try {
+      reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+      /* 忽略 */
+    }
+    if (reduceMotion || !('IntersectionObserver' in window)) return;
+
+    var selectors = [
+      '#featuredPost .featured-card',
+      '.section-head',
+      '#postGrid .post-card',
+      '.category-list .category-chip',
+      '.about-inner',
+      '#archiveList .archive-row',
+      '#timelineList .timeline-year'
+    ];
+    var targets = [];
+    selectors.forEach(function (selector) {
+      document.querySelectorAll(selector).forEach(function (el, index) {
+        el.classList.add('reveal');
+        el.style.transitionDelay = Math.min((index % 6) * 70, 350) + 'ms';
+        targets.push(el);
+      });
+    });
+    if (targets.length === 0) return;
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        el.classList.add('in');
+        observer.unobserve(el);
+        window.setTimeout(function () {
+          el.classList.remove('reveal');
+          el.classList.remove('in');
+          el.style.transitionDelay = '';
+        }, 1100);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+
+    targets.forEach(function (el) {
+      observer.observe(el);
+    });
+  }
+
+  function applyContent() {
+    var content = window.SITE_CONTENT || {};
+    if (content.siteName) {
+      document.querySelectorAll('.brand-name').forEach(function (el) {
+        el.textContent = content.siteName;
+      });
+    }
+    var introTitle = document.getElementById('introTitle');
+    if (introTitle && content.introTitle) introTitle.textContent = content.introTitle;
+    var introText = document.getElementById('introText');
+    if (introText && content.introText) introText.textContent = content.introText;
+    var aboutTitle = document.getElementById('aboutTitle');
+    if (aboutTitle && content.aboutTitle) aboutTitle.textContent = content.aboutTitle;
+    var aboutText = document.getElementById('aboutText');
+    if (aboutText && content.aboutText) aboutText.textContent = content.aboutText;
+    var aboutProse = document.getElementById('aboutProse');
+    if (aboutProse && content.aboutPage) aboutProse.innerHTML = content.aboutPage;
+  }
+
   function init() {
     posts = window.BLOG_POSTS || [];
+    applyContent();
     var yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
@@ -404,6 +471,7 @@
     setupReadingProgress();
     setupTheme();
     setupMenu();
+    setupReveal();
   }
 
   if (window.BLOG_POSTS) {

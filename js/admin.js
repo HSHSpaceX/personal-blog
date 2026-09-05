@@ -5,9 +5,18 @@
   var REPO = 'personal-blog';
   var BRANCH = 'main';
   var POSTS_PATH = 'js/posts.js';
+  var CONTENT_PATH = 'js/content.js';
   var API_ROOT = 'https://api.github.com';
   var TOKEN_KEY = 'blog-gh-token';
   var AUTH_KEY = 'blog-auth';
+  var DEFAULT_CONTENT = {
+    siteName: '拾光手记',
+    introTitle: '记录思考，也记录生活。',
+    introText: '这里写一些技术笔记、读书感想和日常观察。不赶热点，只写值得留下来的内容。',
+    aboutTitle: '关于这个博客',
+    aboutText: '这是一个安静的个人空间。文章以技术笔记、阅读记录和旅途见闻为主，偶尔也会写一些不成体系的思考。内容不多，但每篇都认真对待。',
+    aboutPage: '<p>你好，欢迎来到拾光手记。这里是我用来安放文字和想法的小角落。</p>\n<p>我平时写代码，也读书、拍照、去山里走走。这个博客不追求更新频率，只希望留下的每一篇，过一段时间回头看仍然觉得值得。</p>\n<h2>我在写什么</h2>\n<ul>\n<li>技术笔记：以实用和长期有效为标准，记录踩坑和思考。</li>\n<li>读书清单：把读过的书和当时的感受放在一起。</li>\n<li>生活记录：旅行、散步、季节变化，以及一些不成体系的想法。</li>\n</ul>\n<h2>联系我</h2>\n<p>欢迎通过邮件交流：<a href="mailto:hello@example.com">hello@example.com</a></p>'
+  };
 
   var posts = [];
   var deletedSlugs = [];
@@ -274,6 +283,74 @@
     $('authPanel').hidden = true;
     $('appPanel').hidden = true;
     $('editorPanel').hidden = false;
+  }
+
+  function showPage() {
+    $('authPanel').hidden = true;
+    $('appPanel').hidden = true;
+    $('editorPanel').hidden = true;
+    $('pagePanel').hidden = false;
+  }
+
+  function openPagePanel() {
+    var content = Object.assign({}, DEFAULT_CONTENT, window.SITE_CONTENT || {});
+    $('siteName').value = content.siteName || '';
+    $('introTitle').value = content.introTitle || '';
+    $('introText').value = content.introText || '';
+    $('aboutTitle').value = content.aboutTitle || '';
+    $('aboutText').value = content.aboutText || '';
+    $('aboutPage').value = content.aboutPage || '';
+    setStatus($('pageStatus'), previewMode ? '本地预览模式：连接 GitHub 后才能保存。' : '');
+    $('savePageBtn').disabled = previewMode;
+    showPage();
+    window.scrollTo({ top: 0 });
+  }
+
+  function collectContent() {
+    var siteName = $('siteName').value.trim();
+    if (!siteName) throw new Error('站点名称不能为空');
+    return {
+      siteName: siteName,
+      introTitle: $('introTitle').value.trim() || DEFAULT_CONTENT.introTitle,
+      introText: $('introText').value.trim(),
+      aboutTitle: $('aboutTitle').value.trim() || DEFAULT_CONTENT.aboutTitle,
+      aboutText: $('aboutText').value.trim(),
+      aboutPage: $('aboutPage').value.trim() || DEFAULT_CONTENT.aboutPage
+    };
+  }
+
+  function serializeContent(content) {
+    return '/* 页面文案：在后台“页面内容”中修改。 */\nwindow.SITE_CONTENT = ' + JSON.stringify(content, null, 2) + ';\n';
+  }
+
+  async function savePageContent() {
+    if (!token) {
+      setStatus($('pageStatus'), '尚未连接 GitHub，无法保存。', 'err');
+      return;
+    }
+    var content;
+    try {
+      content = collectContent();
+    } catch (e) {
+      setStatus($('pageStatus'), e.message, 'err');
+      return;
+    }
+    setStatus($('pageStatus'), '正在提交到 GitHub…');
+    try {
+      var remote = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH + '?ref=' + BRANCH);
+      await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH, {
+        method: 'PUT',
+        body: {
+          message: '更新页面内容',
+          content: toBase64(serializeContent(content)),
+          branch: BRANCH,
+          sha: remote.sha
+        }
+      });
+      setStatus($('pageStatus'), '已保存并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
+    } catch (e) {
+      setStatus($('pageStatus'), '保存失败：' + friendlyApiError(e), 'err');
+    }
   }
 
   function updateCoverPreview() {
@@ -687,6 +764,12 @@
       insertArticleImage(file);
     });
 
+    $('pageBtn').addEventListener('click', openPagePanel);
+    $('savePageBtn').addEventListener('click', savePageContent);
+    $('backPageBtn').addEventListener('click', function () {
+      showList();
+    });
+
     $('postCover').addEventListener('input', updateCoverPreview);
     $('editorPanel').addEventListener('input', function () {
       dirty = true;
@@ -702,6 +785,7 @@
 
   function enterApp() {
     $('repoInfo').textContent = OWNER + '/' + REPO + ' · ' + BRANCH;
+    $('pageBtn').disabled = previewMode;
     if (previewMode) {
       showList();
       setStatus($('listStatus'), '本地预览模式：保存和上传功能未启用。', 'err');
