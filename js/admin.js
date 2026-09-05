@@ -26,7 +26,7 @@
     { label: '列表', cmd: 'insertUnorderedList', snippet: '<ul>\n  <li>列表项</li>\n</ul>' },
     { label: '代码', block: 'pre', snippet: '<pre><code>code here</code></pre>' },
     { label: '链接', cmd: 'createLink', snippet: '<a href="https://example.com">链接文字</a>' },
-    { label: '图片', cmd: 'insertImage', snippet: '<img src="assets/covers/xxx.jpg" alt="描述">' }
+    { label: '图片', cmd: 'insertLocalImage', snippet: '<img src="assets/posts/xxx.jpg" alt="插图">' }
   ];
 
   function $(id) {
@@ -494,10 +494,9 @@
       var url = window.prompt('链接地址：', 'https://');
       if (!url) return;
       document.execCommand('createLink', false, url);
-    } else if (tool.cmd === 'insertImage') {
-      var src = window.prompt('图片地址：', 'assets/covers/');
-      if (!src) return;
-      document.execCommand('insertHTML', false, '<img src="' + src + '" alt="描述">');
+    } else if (tool.cmd === 'insertLocalImage') {
+      $('insertImageFile').click();
+      return;
     } else if (tool.block) {
       var current = String(document.queryCommandValue('formatBlock') || '').toLowerCase();
       document.execCommand('formatBlock', false, current === tool.block ? '<p>' : '<' + tool.block + '>');
@@ -522,25 +521,49 @@
   }
 
   async function uploadCover(file) {
-    var extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    if (!/^(jpg|jpeg|png|webp|gif|avif|svg)$/.test(extension)) extension = 'jpg';
-    var name = 'cover-' + stamp(new Date()) + '.' + extension;
     setStatus($('editorStatus'), '正在上传封面…');
     try {
-      var base64 = await fileToBase64(file);
-      await api('/repos/' + OWNER + '/' + REPO + '/contents/assets/covers/' + name, {
-        method: 'PUT',
-        body: {
-          message: '上传封面：' + name,
-          content: base64,
-          branch: BRANCH
-        }
-      });
-      $('postCover').value = 'assets/covers/' + name;
+      var path = await uploadFile(file, 'assets/covers');
+      $('postCover').value = path;
       updateCoverPreview();
-      setStatus($('editorStatus'), '封面上传成功：' + name, 'ok');
+      setStatus($('editorStatus'), '封面上传成功：' + path, 'ok');
     } catch (e) {
       setStatus($('editorStatus'), '封面上传失败：' + friendlyApiError(e), 'err');
+    }
+  }
+
+  async function uploadFile(file, folder) {
+    var extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    if (!/^(jpg|jpeg|png|webp|gif|avif|svg)$/.test(extension)) extension = 'jpg';
+    var name = 'img-' + stamp(new Date()) + '-' + Math.random().toString(36).slice(2, 6) + '.' + extension;
+    var base64 = await fileToBase64(file);
+    await api('/repos/' + OWNER + '/' + REPO + '/contents/' + folder + '/' + name, {
+      method: 'PUT',
+      body: {
+        message: '上传图片：' + name,
+        content: base64,
+        branch: BRANCH
+      }
+    });
+    return folder + '/' + name;
+  }
+
+  async function insertArticleImage(file) {
+    setStatus($('editorStatus'), '正在上传图片…');
+    try {
+      var path = await uploadFile(file, 'assets/posts');
+      var html = '<img src="' + path + '" alt="插图">';
+      if (sourceMode) {
+        insertAtCursor($('postContent'), html);
+      } else {
+        var editor = $('richEditor');
+        editor.focus();
+        document.execCommand('insertHTML', false, html);
+      }
+      dirty = true;
+      setStatus($('editorStatus'), '图片已插入：' + path, 'ok');
+    } catch (e) {
+      setStatus($('editorStatus'), '图片上传失败：' + friendlyApiError(e), 'err');
     }
   }
 
@@ -626,7 +649,7 @@
     $('settingsToggle').addEventListener('click', function () {
       var meta = $('editorMeta');
       meta.hidden = !meta.hidden;
-      this.textContent = meta.hidden ? '文章设置' : '收起设置';
+      this.textContent = meta.hidden ? '设置' : '收起';
     });
 
     $('backBtn').addEventListener('click', function () {
@@ -651,6 +674,17 @@
         return;
       }
       uploadCover(file);
+    });
+
+    $('insertImageFile').addEventListener('change', function () {
+      var file = this.files[0];
+      this.value = '';
+      if (!file) return;
+      if (!token) {
+        setStatus($('editorStatus'), '连接 GitHub 后才能插入图片。', 'err');
+        return;
+      }
+      insertArticleImage(file);
     });
 
     $('postCover').addEventListener('input', updateCoverPreview);

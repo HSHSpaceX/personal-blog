@@ -74,14 +74,20 @@
     <section id="editorPanel" hidden>
       <div class="editor-shell">
         <div class="editor-topbar">
-          <button class="btn" id="backBtn" type="button">返回</button>
-          <input id="postTitle" class="title-input" type="text" placeholder="文章标题">
-          <div class="topbar-actions">
-            <button class="btn" id="settingsToggle" type="button">文章设置</button>
-            <button class="btn" id="previewBtn" type="button">预览</button>
-            <button class="btn" id="sourceBtn" type="button">源码</button>
-            <button class="btn danger" id="deleteBtn" type="button">删除</button>
-            <button class="btn primary" id="saveBtn" type="button">保存并发布</button>
+          <div class="tb-row">
+            <button class="btn" id="backBtn" type="button">返回</button>
+            <input id="postTitle" class="title-input" type="text" placeholder="文章标题">
+            <div class="topbar-actions">
+              <button class="btn" id="settingsToggle" type="button">设置</button>
+              <button class="btn" id="previewBtn" type="button">预览</button>
+              <button class="btn" id="sourceBtn" type="button">源码</button>
+              <button class="btn danger" id="deleteBtn" type="button">删除</button>
+              <button class="btn primary" id="saveBtn" type="button">保存并发布</button>
+            </div>
+          </div>
+          <div class="tb-row">
+            <span class="tb-group" id="contentToolbar"></span>
+            <input id="insertImageFile" type="file" accept="image/*" hidden>
           </div>
         </div>
         <div class="editor-meta" id="editorMeta" hidden>
@@ -124,7 +130,6 @@
           </div>
           <img id="coverPreview" class="cover-preview" alt="封面预览" hidden>
         </div>
-        <div class="content-toolbar" id="contentToolbar"></div>
         <div id="richEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div>
         <textarea id="postContent" class="source-textarea" hidden spellcheck="false"></textarea>
         <div id="previewWrap" class="preview-wrap" hidden>

@@ -54,7 +54,7 @@
         '<div class="post-card-body">' +
           categoryChip(post) +
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
-          '<p class="post-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' +
+          (post.excerpt ? '<p class="post-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="post-card-meta">' +
             '<span class="post-date">' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
@@ -233,8 +233,6 @@
       titleEl.textContent = '未找到这篇文章';
       var contentEl = document.getElementById('postContent');
       if (contentEl) contentEl.innerHTML = '<p>文章可能已被移动或删除，请返回归档页继续浏览。</p>';
-      var coverEl = document.getElementById('postCover');
-      if (coverEl) coverEl.style.display = 'none';
       return;
     }
 
@@ -246,10 +244,6 @@
     document.getElementById('postTags').innerHTML = post.tags.map(function (tag) {
       return '<a class="tag-chip" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
     }).join('');
-
-    var cover = document.getElementById('postCover');
-    cover.src = post.cover;
-    cover.alt = post.title;
 
     document.getElementById('postContent').innerHTML = post.content;
 
