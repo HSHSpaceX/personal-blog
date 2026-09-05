@@ -88,6 +88,6 @@ let activeItems = items.filter(item =&gt; item.active);</code></pre>
     cover: "assets/covers/cover-20260905-1455.jpeg",
     featured: true,
     excerpt: "",
-    content: `<blockquote><span style="color: var(--ink); font-family: var(--font-sans);"><b>测试</b></span></blockquote><img src="assets/posts/img-20260905-1736-0fcs.jpg" alt="插图">`
+    content: `<blockquote><span style="color: var(--ink); font-family: var(--font-sans);"><b>测试</b></span></blockquote><blockquote><img src="assets/posts/img-20260905-1736-0fcs.jpg" alt="插图"></blockquote>`
   }
 ];
