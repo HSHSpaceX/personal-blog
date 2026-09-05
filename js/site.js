@@ -347,13 +347,22 @@
     });
   }
 
-  var yearEl = document.getElementById('year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
+  function init() {
+    posts = window.BLOG_POSTS || [];
+    var yearEl = document.getElementById('year');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  renderHome();
-  renderArchive();
-  renderPost();
-  setupReadingProgress();
-  setupTheme();
-  setupMenu();
+    renderHome();
+    renderArchive();
+    renderPost();
+    setupReadingProgress();
+    setupTheme();
+    setupMenu();
+  }
+
+  if (window.BLOG_POSTS) {
+    init();
+  } else {
+    document.addEventListener('posts-ready', init);
+  }
 })();

@@ -9,7 +9,8 @@
   var TOKEN_KEY = 'blog-gh-token';
   var AUTH_KEY = 'blog-auth';
 
-  var posts = window.BLOG_POSTS || [];
+  var posts = [];
+  var deletedSlugs = [];
   var postsSha = null;
   var token = '';
   var editingIndex = -1;
@@ -179,16 +180,48 @@
     return btoa(binary);
   }
 
+  function fromBase64(base64) {
+    var binary = atob(String(base64).replace(/\s/g, ''));
+    var bytes = Uint8Array.from(binary, function (char) {
+      return char.charCodeAt(0);
+    });
+    return new TextDecoder().decode(bytes);
+  }
+
+  function parsePostsFromText(text) {
+    var sandbox = {};
+    var result = new Function('window', text + '\n;return window.BLOG_POSTS || [];')(sandbox);
+    if (!Array.isArray(result)) throw new Error('posts.js 内容格式不正确');
+    return result;
+  }
+
   async function commitPosts(message) {
-    var body = {
-      message: message,
-      content: toBase64(serializePosts()),
-      branch: BRANCH
-    };
-    if (postsSha) body.sha = postsSha;
+    var remote = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + POSTS_PATH + '?ref=' + BRANCH);
+    var remotePosts = parsePostsFromText(fromBase64(remote.content));
+
+    var merged = [];
+    var seen = {};
+    remotePosts.forEach(function (post) {
+      if (!post || !post.slug || deletedSlugs.indexOf(post.slug) !== -1) return;
+      var local = posts.filter(function (item) { return item.slug === post.slug; })[0];
+      merged.push(local || post);
+      seen[post.slug] = true;
+    });
+    posts.forEach(function (post) {
+      if (seen[post.slug] || deletedSlugs.indexOf(post.slug) !== -1) return;
+      merged.push(post);
+      seen[post.slug] = true;
+    });
+    posts = merged;
+
     var data = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + POSTS_PATH, {
       method: 'PUT',
-      body: body
+      body: {
+        message: message,
+        content: toBase64(serializePosts()),
+        branch: BRANCH,
+        sha: remote.sha
+      }
     });
     postsSha = data.content.sha;
     return data;
@@ -383,6 +416,7 @@
     var post = posts[index];
     if (!post) return;
     if (!window.confirm('确定删除《' + post.title + '》？删除会直接提交到 GitHub。')) return;
+    deletedSlugs.push(post.slug);
     posts.splice(index, 1);
     setStatus($('listStatus'), '正在删除…');
     try {
@@ -675,5 +709,14 @@
     }
   }
 
-  start();
+  function init() {
+    posts = window.BLOG_POSTS || [];
+    start();
+  }
+
+  if (window.BLOG_POSTS) {
+    init();
+  } else {
+    document.addEventListener('posts-ready', init);
+  }
 })();
