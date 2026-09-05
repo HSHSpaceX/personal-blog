@@ -77,17 +77,5 @@ let activeItems = items.filter(item =&gt; item.active);</code></pre>
       <h2>从小的承诺开始</h2>
       <p>不必追求一步到位。从今天开始，给变量好好命名，写完函数回头读一遍，把重复的段落抽出来。坚持一个月，你会发现自己的代码已经有了明显变化。</p>
     `
-  },
-  {
-    slug: "post-20260905-1423",
-    title: "示例",
-    category: "技术",
-    tags: ["示例"],
-    date: "2026-09-05",
-    readingTime: 1,
-    cover: "assets/covers/cover-20260905-1455.jpeg",
-    featured: true,
-    excerpt: "",
-    content: `<blockquote><span style="color: var(--ink); font-family: var(--font-sans);"><b>测试</b></span></blockquote><blockquote><img src="assets/posts/img-20260905-1736-0fcs.jpg" alt="插图"></blockquote>`
   }
 ];
