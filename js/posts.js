@@ -82,11 +82,12 @@ let activeItems = items.filter(item =&gt; item.active);</code></pre>
     slug: "post-20260905-1423",
     title: "示例",
     category: "技术",
-    tags: [],
+    tags: ["示例"],
     date: "2026-09-05",
-    readingTime: 5,
-    cover: "assets/covers/cover-20260905-1424.jpg",
+    readingTime: 1,
+    cover: "assets/covers/cover-20260905-1455.jpeg",
+    featured: true,
     excerpt: "",
-    content: `测试`
+    content: `<blockquote><span style="color: var(--ink); font-family: var(--font-sans);">测试</span><br></blockquote><p><span style="color: var(--ink); font-family: var(--font-sans);"><br></span></p>`
   }
 ];
