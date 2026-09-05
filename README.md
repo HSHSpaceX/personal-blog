@@ -5,7 +5,7 @@
 ## 页面
 
 - 首页：精选文章、最新文章、分类入口
-- 归档：按分类筛选，按标题或标签搜索
+- 归档：按分类和标签筛选，按标题或标签搜索
 - 文章页：阅读进度、上一篇 / 下一篇
 - 关于：个人介绍与联系方式
 - RSS：`feed.xml`
@@ -19,7 +19,7 @@
 ## 手机后台编辑（可选）
 
 1. 在 GitHub 创建只授权本仓库的 Fine-grained Token（Settings → Developer settings → Fine-grained tokens）：Repository access 选择 `personal-blog`，Permissions 中将 Contents 设为 Read and write。
-2. 手机或电脑打开 `https://hshspacex.github.io/personal-blog/login.html`（或点击网站底部“管理”），输入账号密码登录后进入后台。
+2. 手机或电脑点击网站菜单栏的“登录”，或打开 `https://hshspacex.github.io/personal-blog/login.html`，输入账号密码登录后进入后台。
 3. 每台设备首次进入后台需要粘贴 GitHub Token 并连接，之后 Token 会记住在本机。
 4. 在后台可以新增、修改、删除文章，也能直接上传封面图。保存后会自动提交到 `main`，GitHub Pages 一两分钟内自动发布。
 5. GitHub Token 只保存在当前设备的浏览器 localStorage 中，不会进入仓库；在后台点“退出”会同时清除登录状态和 Token。

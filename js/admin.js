@@ -16,6 +16,17 @@
   var isNewPost = false;
   var dirty = false;
   var previewMode = new URLSearchParams(window.location.search).has('preview');
+  var sourceMode = false;
+  var tools = [
+    { label: 'H2', block: 'h2', snippet: '<h2>小标题</h2>\n' },
+    { label: '粗体', cmd: 'bold', snippet: '<strong>加粗文字</strong>' },
+    { label: '斜体', cmd: 'italic', snippet: '<em>斜体文字</em>' },
+    { label: '引用', block: 'blockquote', snippet: '<blockquote><p>引用的话</p></blockquote>' },
+    { label: '列表', cmd: 'insertUnorderedList', snippet: '<ul>\n  <li>列表项</li>\n</ul>' },
+    { label: '代码', block: 'pre', snippet: '<pre><code>code here</code></pre>' },
+    { label: '链接', cmd: 'createLink', snippet: '<a href="https://example.com">链接文字</a>' },
+    { label: '图片', cmd: 'insertImage', snippet: '<img src="assets/covers/xxx.jpg" alt="描述">' }
+  ];
 
   function $(id) {
     return document.getElementById(id);
@@ -69,6 +80,13 @@
     el.textContent = message;
     el.classList.remove('ok', 'err');
     if (kind) el.classList.add(kind);
+  }
+
+  function friendlyApiError(error) {
+    if (error.status === 403 && /not accessible/i.test(error.message || '')) {
+      return 'Token 缺少写权限（Contents: Read and write）。请按“如何创建 Token”重新生成，然后退出并重新连接。';
+    }
+    return error.message;
   }
 
   function pad(value) {
@@ -280,12 +298,17 @@
     $('postCover').value = post.cover || '';
     $('postFeatured').checked = Boolean(post.featured);
     $('postExcerpt').value = post.excerpt || '';
-    $('postContent').value = post.content || '<p></p>';
+    setEditorContent(post.content);
 
     fillDatalists();
     updateCoverPreview();
     $('previewWrap').hidden = true;
     $('previewBtn').textContent = '预览';
+    sourceMode = false;
+    $('richEditor').hidden = false;
+    $('postContent').hidden = true;
+    $('sourceBtn').textContent = '源码';
+    $('editorMeta').hidden = !isNewPost;
     setStatus($('editorStatus'), previewMode ? '本地预览模式：连接 GitHub 后才能保存。' : '');
     $('saveBtn').disabled = previewMode;
     $('coverFile').disabled = previewMode;
@@ -319,7 +342,7 @@
       cover: $('postCover').value.trim() || 'assets/covers/cover-code.jpg',
       featured: $('postFeatured').checked,
       excerpt: $('postExcerpt').value.trim(),
-      content: $('postContent').value.trim() || '<p></p>'
+      content: getEditorContent().trim() || '<p></p>'
     };
   }
 
@@ -351,7 +374,7 @@
         fetchPostsMeta().catch(function () {});
         setStatus($('editorStatus'), '远端文件有更新，已同步状态，请再点一次“保存并发布”。', 'err');
       } else {
-        setStatus($('editorStatus'), '保存失败：' + e.message, 'err');
+        setStatus($('editorStatus'), '保存失败：' + friendlyApiError(e), 'err');
       }
     }
   }
@@ -367,7 +390,7 @@
       setStatus($('listStatus'), '已删除并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
     } catch (e) {
       posts.splice(index, 0, post);
-      setStatus($('listStatus'), '删除失败：' + e.message, 'err');
+      setStatus($('listStatus'), '删除失败：' + friendlyApiError(e), 'err');
     }
     renderList();
   }
@@ -381,26 +404,73 @@
     textarea.focus();
   }
 
+  function getEditorContent() {
+    return sourceMode ? $('postContent').value : $('richEditor').innerHTML;
+  }
+
+  function setEditorContent(html) {
+    var content = html && String(html).trim() ? html : '<p></p>';
+    $('richEditor').innerHTML = content;
+    $('postContent').value = content;
+  }
+
+  function toggleSourceMode() {
+    var rich = $('richEditor');
+    var source = $('postContent');
+    if (!sourceMode) {
+      source.value = rich.innerHTML;
+      rich.hidden = true;
+      source.hidden = false;
+      sourceMode = true;
+      $('sourceBtn').textContent = '可视化';
+    } else {
+      setEditorContent(source.value);
+      rich.hidden = false;
+      source.hidden = true;
+      sourceMode = false;
+      $('sourceBtn').textContent = '源码';
+    }
+  }
+
   function setupToolbar() {
-    var tools = [
-      ['H2', '<h2>小标题</h2>'],
-      ['粗体', '<strong>加粗文字</strong>'],
-      ['斜体', '<em>斜体文字</em>'],
-      ['引用', '<blockquote><p>引用的话</p></blockquote>'],
-      ['列表', '<ul>\n  <li>列表项</li>\n</ul>'],
-      ['代码', '<pre><code>code here</code></pre>'],
-      ['链接', '<a href="https://example.com">链接文字</a>'],
-      ['图片', '<img src="assets/covers/xxx.jpg" alt="描述">']
-    ];
+    try {
+      document.execCommand('styleWithCSS', false, 'false');
+    } catch (e) {
+      /* 忽略 */
+    }
     var toolbar = $('contentToolbar');
     toolbar.innerHTML = tools.map(function (tool, index) {
-      return '<button type="button" class="btn" data-tool="' + index + '">' + escapeHtml(tool[0]) + '</button>';
+      return '<button type="button" class="btn" data-tool="' + index + '">' + escapeHtml(tool.label) + '</button>';
     }).join('');
     toolbar.addEventListener('click', function (event) {
       var button = event.target.closest('button[data-tool]');
       if (!button) return;
-      insertAtCursor($('postContent'), tools[Number(button.dataset.tool)][1]);
+      runTool(tools[Number(button.dataset.tool)]);
     });
+  }
+
+  function runTool(tool) {
+    if (sourceMode) {
+      insertAtCursor($('postContent'), tool.snippet);
+      return;
+    }
+    var editor = $('richEditor');
+    editor.focus();
+    if (tool.cmd === 'createLink') {
+      var url = window.prompt('链接地址：', 'https://');
+      if (!url) return;
+      document.execCommand('createLink', false, url);
+    } else if (tool.cmd === 'insertImage') {
+      var src = window.prompt('图片地址：', 'assets/covers/');
+      if (!src) return;
+      document.execCommand('insertHTML', false, '<img src="' + src + '" alt="描述">');
+    } else if (tool.block) {
+      var current = String(document.queryCommandValue('formatBlock') || '').toLowerCase();
+      document.execCommand('formatBlock', false, current === tool.block ? '<p>' : '<' + tool.block + '>');
+    } else {
+      document.execCommand(tool.cmd, false, false);
+    }
+    dirty = true;
   }
 
   function fileToBase64(file) {
@@ -436,7 +506,7 @@
       updateCoverPreview();
       setStatus($('editorStatus'), '封面上传成功：' + name, 'ok');
     } catch (e) {
-      setStatus($('editorStatus'), '封面上传失败：' + e.message, 'err');
+      setStatus($('editorStatus'), '封面上传失败：' + friendlyApiError(e), 'err');
     }
   }
 
@@ -469,7 +539,7 @@
         showList();
       } catch (e) {
         token = '';
-        setStatus($('authStatus'), '连接失败：' + e.message, 'err');
+        setStatus($('authStatus'), '连接失败：' + friendlyApiError(e), 'err');
       }
     });
 
@@ -508,13 +578,21 @@
     $('previewBtn').addEventListener('click', function () {
       var wrap = $('previewWrap');
       if (wrap.hidden) {
-        $('previewBody').innerHTML = $('postContent').value;
+        $('previewBody').innerHTML = getEditorContent();
         wrap.hidden = false;
         this.textContent = '收起预览';
       } else {
         wrap.hidden = true;
         this.textContent = '预览';
       }
+    });
+
+    $('sourceBtn').addEventListener('click', toggleSourceMode);
+
+    $('settingsToggle').addEventListener('click', function () {
+      var meta = $('editorMeta');
+      meta.hidden = !meta.hidden;
+      this.textContent = meta.hidden ? '文章设置' : '收起设置';
     });
 
     $('backBtn').addEventListener('click', function () {

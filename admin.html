@@ -42,13 +42,19 @@
       </div>
       <details class="auth-details">
         <summary>如何创建 Token？</summary>
+        <p><strong>方式一（推荐，最简单）：经典 Token</strong></p>
+        <ol>
+          <li>打开 <a href="https://github.com/settings/tokens/new?scopes=public_repo&amp;description=blog-admin" target="_blank" rel="noopener">经典 Token 创建页</a>，已自动勾选 <code>public_repo</code> 权限。</li>
+          <li>Expiration 建议 90 天或 No expiration，点击底部 Generate token。</li>
+          <li>复制以 <code>ghp_</code> 开头的 Token，粘贴到上方输入框。</li>
+        </ol>
+        <p><strong>方式二（更安全）：Fine-grained Token</strong></p>
         <ol>
           <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained Token 创建页</a>。</li>
-          <li>Token name 随意，例如 blog-admin；Expiration 建议选 90 天。</li>
-          <li>Repository access 选择 Only select repositories，并勾选 <code>personal-blog</code>。</li>
-          <li>Permissions 里把 Contents 设为 Read and write，其余保持默认。</li>
-          <li>生成后复制 Token，粘贴到上方输入框。</li>
+          <li>Repository access 只勾选 <code>personal-blog</code>。</li>
+          <li>Permissions 中 Contents 必须选 <strong>Read and write</strong>。</li>
         </ol>
+        <p>如果保存或删除时提示 Resource not accessible，说明 Token 没有写权限，按上面任一方式重新生成后，退出并重新连接即可。</p>
       </details>
       <p id="authStatus" class="status-line"></p>
     </section>
@@ -66,12 +72,19 @@
     </section>
 
     <section id="editorPanel" hidden>
-      <div class="admin-card wide">
-        <div class="field">
-          <label for="postTitle">标题</label>
-          <input id="postTitle" type="text" placeholder="文章标题">
+      <div class="editor-shell">
+        <div class="editor-topbar">
+          <button class="btn" id="backBtn" type="button">返回</button>
+          <input id="postTitle" class="title-input" type="text" placeholder="文章标题">
+          <div class="topbar-actions">
+            <button class="btn" id="settingsToggle" type="button">文章设置</button>
+            <button class="btn" id="previewBtn" type="button">预览</button>
+            <button class="btn" id="sourceBtn" type="button">源码</button>
+            <button class="btn danger" id="deleteBtn" type="button">删除</button>
+            <button class="btn primary" id="saveBtn" type="button">保存并发布</button>
+          </div>
         </div>
-        <div class="grid-2">
+        <div class="editor-meta" id="editorMeta" hidden>
           <div class="field">
             <label for="postSlug">slug（网址标识）</label>
             <input id="postSlug" type="text">
@@ -81,8 +94,6 @@
             <input id="postCategory" type="text" list="categoryOptions">
             <datalist id="categoryOptions"></datalist>
           </div>
-        </div>
-        <div class="grid-2">
           <div class="field">
             <label for="postDate">日期</label>
             <input id="postDate" type="date">
@@ -91,41 +102,33 @@
             <label for="postReading">阅读时长（分钟）</label>
             <input id="postReading" type="number" min="1" step="1">
           </div>
-        </div>
-        <div class="field">
-          <label for="postTags">标签（用逗号分隔）</label>
-          <input id="postTags" type="text" placeholder="Web, 生活">
-        </div>
-        <div class="field">
-          <label for="postCover">封面路径</label>
-          <input id="postCover" type="text" list="coverOptions">
-          <datalist id="coverOptions"></datalist>
+          <div class="field">
+            <label for="postTags">标签（用逗号分隔）</label>
+            <input id="postTags" type="text" placeholder="Web, 生活">
+          </div>
+          <div class="field checkbox">
+            <label><input id="postFeatured" type="checkbox"> 首页精选</label>
+          </div>
+          <div class="field meta-full">
+            <label for="postExcerpt">摘要</label>
+            <textarea id="postExcerpt" rows="2"></textarea>
+          </div>
+          <div class="field meta-full">
+            <label for="postCover">封面路径</label>
+            <input id="postCover" type="text" list="coverOptions">
+            <datalist id="coverOptions"></datalist>
+          </div>
+          <div class="field meta-full">
+            <label for="coverFile">上传新封面</label>
+            <input id="coverFile" type="file" accept="image/*">
+          </div>
           <img id="coverPreview" class="cover-preview" alt="封面预览" hidden>
         </div>
-        <div class="field">
-          <label for="coverFile">上传新封面</label>
-          <input id="coverFile" type="file" accept="image/*">
-        </div>
-        <div class="field checkbox">
-          <label><input id="postFeatured" type="checkbox"> 设为首页精选</label>
-        </div>
-        <div class="field">
-          <label for="postExcerpt">摘要</label>
-          <textarea id="postExcerpt" rows="2"></textarea>
-        </div>
-        <div class="field">
-          <label for="postContent">正文（HTML）</label>
-          <div class="content-toolbar" id="contentToolbar"></div>
-          <textarea id="postContent" class="content-textarea" spellcheck="false"></textarea>
-        </div>
+        <div class="content-toolbar" id="contentToolbar"></div>
+        <div id="richEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div>
+        <textarea id="postContent" class="source-textarea" hidden spellcheck="false"></textarea>
         <div id="previewWrap" class="preview-wrap" hidden>
           <div class="preview"><div id="previewBody" class="prose"></div></div>
-        </div>
-        <div class="editor-actions">
-          <button class="btn primary" id="saveBtn" type="button">保存并发布</button>
-          <button class="btn" id="previewBtn" type="button">预览</button>
-          <button class="btn" id="backBtn" type="button">返回列表</button>
-          <button class="btn danger" id="deleteBtn" type="button">删除</button>
         </div>
         <p id="editorStatus" class="status-line"></p>
       </div>

@@ -5,6 +5,15 @@
   var PASS_HASH = '8fe5479a3dd10ee6932d5b3cd0530481dbf35d0241641176aca9bf1b6b05f1d9';
   var AUTH_KEY = 'blog-auth';
 
+  try {
+    if (sessionStorage.getItem(AUTH_KEY) === '1') {
+      window.location.replace('admin.html');
+      return;
+    }
+  } catch (e) {
+    /* 忽略 */
+  }
+
   function $(id) {
     return document.getElementById(id);
   }

@@ -656,6 +656,24 @@ h1, h2, h3 {
   font-size: 13px;
 }
 
+.tag-filter {
+  margin-top: 10px;
+}
+
+.crumb-link {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.crumb-link:hover {
+  text-decoration: underline;
+}
+
+a.tag-chip:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
 /* Archive list */
 .archive-list {
   padding-top: 0;

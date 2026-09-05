@@ -33,6 +33,10 @@
     return 'archive.html?category=' + encodeURIComponent(category);
   }
 
+  function tagUrl(tag) {
+    return 'archive.html?tag=' + encodeURIComponent(tag);
+  }
+
   function arrowSvg() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   }
@@ -140,26 +144,39 @@
     var listEl = document.getElementById('archiveList');
     var countEl = document.getElementById('resultCount');
     var chipsEl = document.getElementById('filterChips');
+    var tagChipsEl = document.getElementById('tagChips');
     var searchInput = document.getElementById('searchInput');
     if (!listEl) return;
 
     var params = new URLSearchParams(window.location.search);
     var activeCategory = params.get('category') || '全部';
+    var activeTag = params.get('tag') || '全部';
     var query = '';
 
     var categories = ['全部'];
+    var tags = ['全部'];
     posts.forEach(function (post) {
       if (categories.indexOf(post.category) === -1) categories.push(post.category);
+      (post.tags || []).forEach(function (tag) {
+        if (tags.indexOf(tag) === -1) tags.push(tag);
+      });
     });
 
     chipsEl.innerHTML = categories.map(function (category) {
       return '<button type="button" class="filter-chip' + (category === activeCategory ? ' active' : '') + '" data-category="' + escapeHtml(category) + '">' + escapeHtml(category) + '</button>';
     }).join('');
 
+    if (tagChipsEl) {
+      tagChipsEl.innerHTML = tags.map(function (tag) {
+        return '<button type="button" class="filter-chip' + (tag === activeTag ? ' active' : '') + '" data-tag="' + escapeHtml(tag) + '">' + escapeHtml(tag) + '</button>';
+      }).join('');
+    }
+
     function matches(post) {
       var inCategory = activeCategory === '全部' || post.category === activeCategory;
+      var inTag = activeTag === '全部' || (post.tags || []).indexOf(activeTag) !== -1;
       var haystack = (post.title + ' ' + post.excerpt + ' ' + post.category + ' ' + post.tags.join(' ')).toLowerCase();
-      return inCategory && haystack.indexOf(query) !== -1;
+      return inCategory && inTag && haystack.indexOf(query) !== -1;
     }
 
     function update() {
@@ -167,7 +184,10 @@
       listEl.innerHTML = filtered.length
         ? filtered.map(renderArchiveRow).join('')
         : '<p class="empty-state">没有找到匹配的文章。</p>';
-      countEl.textContent = '共 ' + filtered.length + ' 篇文章';
+      var label = '共 ' + filtered.length + ' 篇文章';
+      if (activeCategory !== '全部') label += ' · 分类：' + activeCategory;
+      if (activeTag !== '全部') label += ' · 标签：' + activeTag;
+      countEl.textContent = label;
     }
 
     chipsEl.addEventListener('click', function (event) {
@@ -179,6 +199,18 @@
       });
       update();
     });
+
+    if (tagChipsEl) {
+      tagChipsEl.addEventListener('click', function (event) {
+        var chip = event.target.closest('.filter-chip');
+        if (!chip) return;
+        activeTag = chip.dataset.tag;
+        tagChipsEl.querySelectorAll('.filter-chip').forEach(function (el) {
+          el.classList.toggle('active', el === chip);
+        });
+        update();
+      });
+    }
 
     searchInput.addEventListener('input', function () {
       query = searchInput.value.trim().toLowerCase();
@@ -208,11 +240,11 @@
 
     document.title = post.title + ' - ' + SITE_NAME;
     titleEl.textContent = post.title;
-    document.getElementById('postCategory').textContent = post.category + ' · ' + formatDate(post.date);
+    document.getElementById('postCategory').innerHTML = '<a class="crumb-link" href="' + categoryUrl(post.category) + '">' + escapeHtml(post.category) + '</a> · ' + formatDate(post.date);
     document.getElementById('postDate').textContent = formatDate(post.date);
     document.getElementById('postReading').textContent = post.readingTime + ' 分钟阅读';
     document.getElementById('postTags').innerHTML = post.tags.map(function (tag) {
-      return '<span class="tag-chip">' + escapeHtml(tag) + '</span>';
+      return '<a class="tag-chip" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
     }).join('');
 
     var cover = document.getElementById('postCover');
