@@ -4,7 +4,7 @@ window.BLOG_POSTS = [
     slug: "static-blog-guide",
     title: "从零搭建一个免费个人博客",
     category: "技术",
-    tags: ["Web", "指南"],
+    tags: ["Web","指南"],
     date: "2026-09-02",
     readingTime: 8,
     cover: "assets/covers/cover-code.jpg",
@@ -45,7 +45,7 @@ js/site.js    页面交互</code></pre>
     slug: "clean-code-notes",
     title: "写给初学者的代码整洁笔记",
     category: "技术",
-    tags: ["编程", "效率"],
+    tags: ["编程","效率"],
     date: "2026-08-22",
     readingTime: 6,
     cover: "assets/covers/cover-notes.jpg",
@@ -84,7 +84,7 @@ let activeItems = items.filter(item =&gt; item.active);</code></pre>
     slug: "mountain-lake-weekend",
     title: "周末去山里走了一趟",
     category: "生活",
-    tags: ["徒步", "旅行"],
+    tags: ["徒步","旅行"],
     date: "2026-08-15",
     readingTime: 4,
     cover: "assets/covers/cover-travel.jpg",
@@ -101,36 +101,6 @@ let activeItems = items.filter(item =&gt; item.active);</code></pre>
       <h2>下山之后</h2>
       <p>下午三点回到市区，腿有点酸，心里却很轻。手机上多了几十条消息，但都不急着回。</p>
       <p>下次再去，也许换个季节。春天有花，秋天有落叶，冬天也许能看到雪。每一次都会有不一样的答案。</p>
-    `
-  },
-  {
-    slug: "reading-list-2026",
-    title: "2026 上半年读书清单",
-    category: "阅读",
-    tags: ["书单", "成长"],
-    date: "2026-08-02",
-    readingTime: 5,
-    cover: "assets/covers/cover-reading.jpg",
-    excerpt: "上半年读了九本书，挑出五本想反复推荐的，记录一下它们打动我的地方。",
-    content: `
-      <p>上半年一共读完九本书，不算多，但每本都认真做了笔记。下面这五本是我最想推荐的，顺序不分先后。</p>
-
-      <h2>技术之外的理解</h2>
-      <p><strong>《软件随想录》</strong> 让我重新理解“软件工程”这个词。它不是教你写代码的书，而是关于团队、产品、权衡和长期主义。适合在工作几年后读，很多困惑会被一句话点破。</p>
-
-      <h2>关于思考方法</h2>
-      <p><strong>《像火箭科学家一样思考》</strong> 讲的是如何面对不确定：把问题拆到足够小、接受失败是过程的一部分、从第一性原理出发。书里的例子都很有趣，读起来不枯燥。</p>
-
-      <h2>慢下来生活</h2>
-      <p><strong>《山茶文具店》</strong> 是一本很轻的小说，讲代笔人替别人写信的故事。字里行间都是日常的温度，适合周末下午配一杯茶读完。</p>
-
-      <h2>两本需要反复读的</h2>
-      <ul>
-        <li><strong>《深度工作》</strong>：不是简单地“少看手机”，而是重新设计注意力如何使用。</li>
-        <li><strong>《原则》</strong>：内容很长，我把它当工具书用，遇到决策问题就翻对应的章节。</li>
-      </ul>
-      <blockquote><p>读书的意义不在于数量，而在于读完之后，想法和生活是否悄悄变了一点。</p></blockquote>
-      <p>下半年想多读一些历史，也补几本一直没读完的技术经典。到时候再回来更新。</p>
     `
   }
 ];
