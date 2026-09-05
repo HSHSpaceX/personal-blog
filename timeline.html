@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>关于 - 拾光手记</title>
-  <meta name="description" content="关于拾光手记和它的作者。">
-  <meta property="og:type" content="website">
+  <title>时间线 - 拾光手记</title>
+  <meta name="description" content="按时间浏览拾光手记的全部文章。">
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
   <link rel="stylesheet" href="css/style.css">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
@@ -16,18 +15,17 @@
   <header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="拾光手记首页">
-        <span class="brand-mark" aria-hidden="true">
-          <img src="assets/icon.jpg" alt="">
-        </span>
+        <span class="brand-mark" aria-hidden="true"><img src="assets/icon.jpg" alt=""></span>
         <span class="brand-name">拾光手记</span>
       </a>
       <nav class="site-nav" id="siteNav" aria-label="主导航">
         <a class="nav-link" href="index.html">首页</a>
         <a class="nav-link" href="archive.html">归档</a>
-        <a class="nav-link" href="timeline.html">时间线</a>
-        <a class="nav-link active" href="about.html">关于</a>
+        <a class="nav-link active" href="timeline.html">时间线</a>
+        <a class="nav-link" href="about.html">关于</a>
       </nav>
       <div class="header-actions">
+        <a class="btn-login" href="login.html">登录</a>
         <button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
           <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -35,7 +33,6 @@
         <button class="icon-btn menu-btn" id="menuToggle" type="button" aria-label="打开菜单" title="菜单" aria-expanded="false" aria-controls="siteNav">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
-        <a class="btn-login" href="login.html">登录</a>
       </div>
     </div>
   </header>
@@ -43,26 +40,15 @@
   <main id="main">
     <section class="page-head band">
       <div class="container">
-        <p class="eyebrow">ABOUT</p>
-        <h1>关于我</h1>
+        <p class="eyebrow">TIMELINE</p>
+        <h1>时间线</h1>
+        <p class="intro-text">按年份和月份浏览全部文章。</p>
       </div>
     </section>
 
-    <section class="about-page band">
-      <div class="container about-page-inner">
-        <div class="avatar avatar-large" aria-hidden="true">拾</div>
-        <div class="prose">
-          <p>你好，欢迎来到拾光手记。这里是我用来安放文字和想法的小角落。</p>
-          <p>我平时写代码，也读书、拍照、去山里走走。这个博客不追求更新频率，只希望留下的每一篇，过一段时间回头看仍然觉得值得。</p>
-          <h2>我在写什么</h2>
-          <ul>
-            <li>技术笔记：以实用和长期有效为标准，记录踩坑和思考。</li>
-            <li>读书清单：把读过的书和当时的感受放在一起。</li>
-            <li>生活记录：旅行、散步、季节变化，以及一些不成体系的想法。</li>
-          </ul>
-          <h2>联系我</h2>
-          <p>欢迎通过邮件交流：<a href="mailto:hello@example.com">hello@example.com</a></p>
-        </div>
+    <section class="band timeline-band">
+      <div class="container">
+        <div id="timelineList" class="timeline-list"></div>
       </div>
     </section>
   </main>

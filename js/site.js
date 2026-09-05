@@ -220,6 +220,57 @@
     update();
   }
 
+  function renderTimeline() {
+    var listEl = document.getElementById('timelineList');
+    if (!listEl) return;
+
+    if (posts.length === 0) {
+      listEl.innerHTML = '<p class="empty-state">还没有文章。</p>';
+      return;
+    }
+
+    var sorted = posts.slice().sort(function (a, b) {
+      return a.date < b.date ? 1 : -1;
+    });
+    var years = [];
+    var byYear = {};
+    sorted.forEach(function (post) {
+      var year = String(post.date).slice(0, 4);
+      if (!byYear[year]) {
+        byYear[year] = [];
+        years.push(year);
+      }
+      byYear[year].push(post);
+    });
+
+    listEl.innerHTML = years.map(function (year) {
+      var months = [];
+      var byMonth = {};
+      byYear[year].forEach(function (post) {
+        var month = String(post.date).slice(5, 7);
+        if (!byMonth[month]) {
+          byMonth[month] = [];
+          months.push(month);
+        }
+        byMonth[month].push(post);
+      });
+      return '<section class="timeline-year">' +
+        '<h2>' + escapeHtml(year) + '</h2>' +
+        months.map(function (month) {
+          return '<div class="timeline-month">' +
+            '<span class="timeline-month-label">' + parseInt(month, 10) + ' 月</span>' +
+            byMonth[month].map(function (post) {
+              return '<a class="timeline-item" href="' + postUrl(post.slug) + '">' +
+                '<span class="timeline-item-title">' + escapeHtml(post.title) + '</span>' +
+                '<span class="timeline-item-meta">' + formatDate(post.date) + ' · ' + escapeHtml(post.category) + '</span>' +
+              '</a>';
+            }).join('') +
+          '</div>';
+        }).join('') +
+      '</section>';
+    }).join('');
+  }
+
   function renderPost() {
     var titleEl = document.getElementById('postTitle');
     if (!titleEl) return;
@@ -348,6 +399,7 @@
 
     renderHome();
     renderArchive();
+    renderTimeline();
     renderPost();
     setupReadingProgress();
     setupTheme();

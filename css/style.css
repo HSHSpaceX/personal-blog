@@ -714,6 +714,65 @@ h1, h2, h3 {
   text-align: center;
 }
 
+/* Timeline */
+.timeline-band {
+  padding-top: 0;
+}
+
+.timeline-year {
+  margin-bottom: 44px;
+}
+
+.timeline-year h2 {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+
+.timeline-month {
+  margin-bottom: 26px;
+}
+
+.timeline-month-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.timeline-item:hover {
+  background: var(--surface-2);
+}
+
+.timeline-item-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.timeline-item:hover .timeline-item-title {
+  color: var(--link);
+}
+
+.timeline-item-meta {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 /* Post page */
 .progress-track {
   position: fixed;
@@ -1053,6 +1112,16 @@ a.tag-chip:hover {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+
+  .timeline-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .timeline-item-meta {
+    white-space: normal;
   }
 }
 
