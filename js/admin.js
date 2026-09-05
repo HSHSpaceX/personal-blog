@@ -7,6 +7,7 @@
   var POSTS_PATH = 'js/posts.js';
   var API_ROOT = 'https://api.github.com';
   var TOKEN_KEY = 'blog-gh-token';
+  var AUTH_KEY = 'blog-auth';
 
   var posts = window.BLOG_POSTS || [];
   var postsSha = null;
@@ -53,6 +54,14 @@
       localStorage.removeItem(TOKEN_KEY);
     } catch (e) {
       /* 忽略 */
+    }
+  }
+
+  function isAuthed() {
+    try {
+      return sessionStorage.getItem(AUTH_KEY) === '1';
+    } catch (e) {
+      return false;
     }
   }
 
@@ -472,7 +481,12 @@
       clearToken();
       token = '';
       postsSha = null;
-      showAuth('已退出，Token 已从本机清除。');
+      try {
+        sessionStorage.removeItem(AUTH_KEY);
+      } catch (e) {
+        /* 忽略 */
+      }
+      window.location.href = 'login.html';
     });
 
     $('newPostBtn').addEventListener('click', function () {
@@ -551,6 +565,11 @@
   }
 
   async function start() {
+    if (!previewMode && !isAuthed()) {
+      window.location.replace('login.html');
+      return;
+    }
+
     setupTheme();
     setupToolbar();
     setupEvents();
