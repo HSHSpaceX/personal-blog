@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文章 - 拾光手记</title>
+  <meta name="description" content="拾光手记的文章页面。">
+  <meta property="og:type" content="article">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="拾光手记首页">
+        <span class="brand-mark" aria-hidden="true">拾</span>
+        <span class="brand-name">拾光手记</span>
+      </a>
+      <nav class="site-nav" id="siteNav" aria-label="主导航">
+        <a class="nav-link" href="index.html">首页</a>
+        <a class="nav-link" href="archive.html">归档</a>
+        <a class="nav-link" href="about.html">关于</a>
+        <a class="nav-link" href="feed.xml">RSS</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="icon-btn menu-btn" id="menuToggle" type="button" aria-label="打开菜单" title="菜单" aria-expanded="false" aria-controls="siteNav">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="progress-track" aria-hidden="true"><div id="progressBar"></div></div>
+
+  <main id="main">
+    <section class="post-hero band">
+      <div class="container post-header">
+        <p class="eyebrow" id="postCategory"></p>
+        <h1 id="postTitle"></h1>
+        <div class="post-meta">
+          <span id="postDate"></span>
+          <span class="meta-dot" aria-hidden="true">·</span>
+          <span class="reading-time">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span id="postReading"></span>
+          </span>
+        </div>
+        <div class="post-tags" id="postTags"></div>
+      </div>
+    </section>
+
+    <article class="post-body band">
+      <div class="container">
+        <img id="postCover" class="post-cover" src="" alt="">
+        <div id="postContent" class="prose"></div>
+      </div>
+    </article>
+
+    <nav class="post-nav band" aria-label="上下篇文章">
+      <div class="container post-nav-inner">
+        <a id="prevPost" class="post-nav-card" href="#"></a>
+        <a id="nextPost" class="post-nav-card" href="#"></a>
+      </div>
+    </nav>
+
+    <section class="back-band band">
+      <div class="container">
+        <a class="text-link" href="archive.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          返回归档
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> 拾光手记</p>
+      <p>保留所有权利</p>
+    </div>
+  </footer>
+
+  <script src="js/posts.js"></script>
+  <script src="js/site.js"></script>
+</body>
+</html>
