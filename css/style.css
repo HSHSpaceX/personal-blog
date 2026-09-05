@@ -136,6 +136,11 @@ h1, h2, h3 {
   font-size: 18px;
 }
 
+.brand-mark svg {
+  width: 22px;
+  height: 22px;
+}
+
 .site-nav {
   display: flex;
   align-items: center;
