@@ -5,7 +5,7 @@ window.BLOG_POSTS = [
     title: "从零搭建一个免费个人博客",
     category: "技术",
     tags: ["Web","指南"],
-    date: "2026-09-02",
+    date: "2026-09-05",
     readingTime: 8,
     cover: "assets/covers/cover-code.jpg",
     featured: true,
