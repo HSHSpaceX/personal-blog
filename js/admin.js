@@ -277,30 +277,21 @@
   }
 
   function showAuth(message, kind) {
-    $('authPanel').hidden = false;
-    $('appPanel').hidden = true;
-    $('editorPanel').hidden = true;
+    showOnly('authPanel');
     setStatus($('authStatus'), message || '', kind);
   }
 
   function showList() {
-    $('authPanel').hidden = true;
-    $('appPanel').hidden = false;
-    $('editorPanel').hidden = true;
+    showOnly('appPanel');
     renderList();
   }
 
   function showEditor() {
-    $('authPanel').hidden = true;
-    $('appPanel').hidden = true;
-    $('editorPanel').hidden = false;
+    showOnly('editorPanel');
   }
 
   function showPage() {
-    $('authPanel').hidden = true;
-    $('appPanel').hidden = true;
-    $('editorPanel').hidden = true;
-    $('pagePanel').hidden = false;
+    showOnly('pagePanel');
   }
 
   function openPagePanel() {
@@ -367,11 +358,15 @@
   }
 
   function showMessage() {
-    $('authPanel').hidden = true;
-    $('appPanel').hidden = true;
-    $('editorPanel').hidden = true;
-    $('pagePanel').hidden = true;
-    $('messagePanel').hidden = false;
+    showOnly('messagePanel');
+    refreshPendingList();
+  }
+
+  function showOnly(panelId) {
+    ['authPanel', 'appPanel', 'editorPanel', 'pagePanel', 'messagePanel'].forEach(function (pid) {
+      var el = $(pid);
+      if (el) el.hidden = pid !== panelId;
+    });
   }
 
   function openMessageBox() {
