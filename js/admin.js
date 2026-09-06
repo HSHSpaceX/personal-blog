@@ -406,6 +406,7 @@
       return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(slug) + '</option>';
     }).join('');
     if (current && slugOptions.indexOf(current) !== -1) slugSelect.value = current;
+    refreshPendingList();
   }
 
   function renderMsgItem(item) {
@@ -429,6 +430,10 @@
     var listEl = $('msgPendingList');
     var countEl = $('pendingCount');
     if (!listEl) return;
+    if (!window.PendingComments) {
+      listEl.innerHTML = '<p class="empty-state">评论通道加载中，请刷新页面重试。</p>';
+      return;
+    }
     window.PendingComments.list().then(function (pending) {
       if (countEl) {
         countEl.textContent = pending.length > 99 ? '99+' : String(pending.length);
@@ -1053,6 +1058,7 @@
       showList();
     });
     $('msgRefreshLikes').addEventListener('click', refreshLikeStats);
+    $('msgRefreshPending').addEventListener('click', refreshPendingList);
     $('msgCommentList').addEventListener('click', function (event) {
       var btn = event.target.closest('button[data-del-comment]');
       if (!btn) return;

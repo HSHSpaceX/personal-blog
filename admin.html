@@ -7,8 +7,8 @@
   <title>博客管理 - 拾光手记</title>
   <meta name="description" content="拾光手记的内容管理后台。">
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/admin.css?v=2">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -118,6 +118,7 @@
           <h2>待审核 <span id="pendingCount" class="menu-badge" hidden></span></h2>
           <p class="hint">读者提交的评论会先出现在这里，点“通过”后才会显示在网站上。</p>
           <div id="msgPendingList" class="msg-comment-list"></div>
+          <button class="btn" id="msgRefreshPending" type="button">刷新待审核列表</button>
         </div>
         <div class="msg-section">
           <h2>点赞统计</h2>
@@ -231,9 +232,9 @@
     </section>
   </main>
 
-  <script src="js/boot.js"></script>
+  <script src="js/boot.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <script src="js/admin.js"></script>
+  <script src="js/admin.js?v=2"></script>
 </body>
 </html>
