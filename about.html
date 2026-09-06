@@ -67,6 +67,23 @@
           <p>欢迎通过邮件交流：<a href="mailto:hello@example.com">hello@example.com</a></p>
         </div>
       </div>
+
+      <div class="container comments-section" id="commentsSection" data-slug="about">
+        <h2 class="comments-title">评论</h2>
+        <div id="commentList" class="comment-list"></div>
+        <form id="commentForm" class="comment-form">
+          <div class="comment-form-row">
+            <input id="commentNick" type="text" required placeholder="称呼（必填）">
+            <input id="commentEmail" type="email" placeholder="邮箱（选填，仅用于回复通知）">
+          </div>
+          <textarea id="commentContent" rows="4" required placeholder="写下你的评论…"></textarea>
+          <div class="comment-form-foot">
+            <button class="comment-submit" type="submit">提交评论</button>
+            <span class="comment-tip">提交后会唤起邮件发给博主，审核通过后才会显示。</span>
+          </div>
+          <p id="commentStatus" class="status-line"></p>
+        </form>
+      </div>
     </section>
   </main>
 

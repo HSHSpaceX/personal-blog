@@ -344,6 +344,8 @@
       titleEl.textContent = '未找到这篇文章';
       var contentEl = document.getElementById('postContent');
       if (contentEl) contentEl.innerHTML = '<p>文章可能已被移动或删除，请返回归档页继续浏览。</p>';
+      var commentsEl = document.getElementById('commentsSection');
+      if (commentsEl) commentsEl.hidden = true;
       return;
     }
 
@@ -357,6 +359,11 @@
     }).join('');
 
     document.getElementById('postContent').innerHTML = post.content;
+    renderMathIn(document.getElementById('postContent'));
+    buildToc();
+    initLikes(post.slug);
+    var section = document.getElementById('commentsSection');
+    if (section) section.dataset.slug = post.slug;
 
     var index = posts.indexOf(post);
     var prev = index > 0 ? posts[index - 1] : null;
@@ -518,6 +525,151 @@
     if (aboutText && content.aboutText) aboutText.textContent = content.aboutText;
     var aboutProse = document.getElementById('aboutProse');
     if (aboutProse && content.aboutPage) aboutProse.innerHTML = content.aboutPage;
+    if (aboutProse) renderMathIn(aboutProse);
+  }
+
+  function renderMathIn(el) {
+    if (!el || !window.renderMathInElement) return;
+    try {
+      window.renderMathInElement(el, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '\\[', right: '\\]', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false }
+        ],
+        throwOnError: false
+      });
+    } catch (e) {
+      /* 忽略 */
+    }
+  }
+
+  function buildToc() {
+    var toc = document.getElementById('toc');
+    var content = document.getElementById('postContent');
+    if (!toc || !content) return;
+    var heads = content.querySelectorAll('h2, h3');
+    var card = toc.closest('.aside-card');
+    if (heads.length === 0) {
+      if (card) card.style.display = 'none';
+      return;
+    }
+    var html = '';
+    heads.forEach(function (head, index) {
+      var id = 'sec-' + index;
+      head.id = id;
+      html += '<a class="toc-link toc-' + head.tagName.toLowerCase() + '" href="#' + id + '">' + escapeHtml(head.textContent) + '</a>';
+    });
+    toc.innerHTML = html;
+  }
+
+  function initLikes(slug) {
+    var btn = document.getElementById('likeBtn');
+    var countEl = document.getElementById('likeCount');
+    if (!btn || !countEl) return;
+    var key = 'blog-liked-' + slug;
+    var liked = false;
+    try {
+      liked = localStorage.getItem(key) === '1';
+    } catch (e) {
+      liked = false;
+    }
+
+    function render(count) {
+      countEl.textContent = count === null ? '—' : String(count);
+      btn.classList.toggle('liked', liked);
+      btn.disabled = liked;
+      btn.setAttribute('aria-label', liked ? '已点赞' : '点赞这篇文章');
+    }
+
+    render('…');
+    fetch('https://abacus.jasoncameron.dev/get/shiguang-blog/' + encodeURIComponent(slug))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        render((data && (data.count || data.value)) || 0);
+      })
+      .catch(function () {
+        render(null);
+      });
+
+    btn.addEventListener('click', function () {
+      if (liked) return;
+      liked = true;
+      try {
+        localStorage.setItem(key, '1');
+      } catch (e) {
+        /* 忽略 */
+      }
+      btn.disabled = true;
+      countEl.textContent = '…';
+      fetch('https://abacus.jasoncameron.dev/hit/shiguang-blog/' + encodeURIComponent(slug))
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          render((data && (data.count || data.value)) || 1);
+        })
+        .catch(function () {
+          countEl.textContent = '1';
+          btn.classList.add('liked');
+        });
+    });
+  }
+
+  function renderComment(item) {
+    return '' +
+      '<div class="comment-item">' +
+        '<div class="comment-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span></div>' +
+        '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
+        (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
+      '</div>';
+  }
+
+  function setStatus(el, message, kind) {
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('ok', 'err');
+    if (kind) el.classList.add(kind);
+  }
+
+  function initComments() {
+    var section = document.getElementById('commentsSection');
+    if (!section) return;
+    var slug = section.dataset.slug;
+    if (!slug) {
+      section.hidden = true;
+      return;
+    }
+    var listEl = document.getElementById('commentList');
+    var data = (window.SITE_COMMENTS || {})[slug] || [];
+    listEl.innerHTML = data.length
+      ? data.map(renderComment).join('')
+      : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
+
+    var form = document.getElementById('commentForm');
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var nick = document.getElementById('commentNick').value.trim();
+      var mail = document.getElementById('commentEmail').value.trim();
+      var content = document.getElementById('commentContent').value.trim();
+      var status = document.getElementById('commentStatus');
+      if (!nick) {
+        setStatus(status, '请填写称呼。', 'err');
+        return;
+      }
+      if (!content) {
+        setStatus(status, '请填写评论内容。', 'err');
+        return;
+      }
+      var owner = (window.SITE_CONTENT && window.SITE_CONTENT.contactEmail) || '';
+      if (!owner) {
+        setStatus(status, '博主还没有配置接收邮箱，暂时无法提交。', 'err');
+        return;
+      }
+      var subject = encodeURIComponent('[博客评论] ' + slug);
+      var body = encodeURIComponent('称呼：' + nick + '\n邮箱：' + (mail || '未填写') + '\n页面：' + slug + '\n时间：' + new Date().toLocaleString() + '\n\n' + content);
+      window.location.href = 'mailto:' + owner + '?subject=' + subject + '&body=' + body;
+      setStatus(status, '已唤起邮件客户端，发送后博主审核通过就会显示你的评论。', 'ok');
+    });
   }
 
   function setupRail() {
@@ -553,6 +705,7 @@
     renderArchive();
     renderTimeline();
     renderPost();
+    initComments();
     setupReadingProgress();
     setupTheme();
     setupMenu();

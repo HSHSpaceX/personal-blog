@@ -8,6 +8,7 @@
   <meta property="og:type" content="article">
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -62,9 +63,43 @@
       </div>
     </section>
 
-    <article class="post-body band">
+  <article class="post-body band">
       <div class="container">
-        <div id="postContent" class="prose"></div>
+        <div class="post-layout">
+          <div class="post-main">
+            <div id="postContent" class="prose"></div>
+          </div>
+          <aside class="post-aside">
+            <div class="aside-card like-box">
+              <span class="like-label">觉得这篇有帮助？点个赞</span>
+              <button class="like-btn" id="likeBtn" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.6-4.9-10-9.4C.4 8.5 2.5 4.9 6 4.9c2 0 3.4 1.1 4.2 2.4h3.6c.8-1.3 2.2-2.4 4.2-2.4 3.5 0 5.6 3.6 4 6.7C19.6 16.1 12 21 12 21z"/></svg>
+                <span id="likeCount">…</span>
+              </button>
+            </div>
+            <div class="aside-card">
+              <span class="toc-title">目录</span>
+              <nav id="toc" class="toc"></nav>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="container comments-section" id="commentsSection" data-slug="">
+        <h2 class="comments-title">评论</h2>
+        <div id="commentList" class="comment-list"></div>
+        <form id="commentForm" class="comment-form">
+          <div class="comment-form-row">
+            <input id="commentNick" type="text" required placeholder="称呼（必填）">
+            <input id="commentEmail" type="email" placeholder="邮箱（选填，仅用于回复通知）">
+          </div>
+          <textarea id="commentContent" rows="4" required placeholder="写下你的评论…"></textarea>
+          <div class="comment-form-foot">
+            <button class="comment-submit" type="submit">提交评论</button>
+            <span class="comment-tip">提交后会唤起邮件发给博主，审核通过后才会显示。</span>
+          </div>
+          <p id="commentStatus" class="status-line"></p>
+        </form>
       </div>
     </article>
 
@@ -93,6 +128,8 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script src="js/boot.js"></script>
   <script src="js/site.js"></script>
 </body>

@@ -15,6 +15,7 @@
     introText: '这里写一些技术笔记、读书感想和日常观察。不赶热点，只写值得留下来的内容。',
     aboutTitle: '关于这个博客',
     aboutText: '这是一个安静的个人空间。文章以技术笔记、阅读记录和旅途见闻为主，偶尔也会写一些不成体系的思考。内容不多，但每篇都认真对待。',
+    contactEmail: 'hello@example.com',
     aboutPage: '<p>你好，欢迎来到拾光手记。这里是我用来安放文字和想法的小角落。</p>\n<p>我平时写代码，也读书、拍照、去山里走走。这个博客不追求更新频率，只希望留下的每一篇，过一段时间回头看仍然觉得值得。</p>\n<h2>我在写什么</h2>\n<ul>\n<li>技术笔记：以实用和长期有效为标准，记录踩坑和思考。</li>\n<li>读书清单：把读过的书和当时的感受放在一起。</li>\n<li>生活记录：旅行、散步、季节变化，以及一些不成体系的想法。</li>\n</ul>\n<h2>联系我</h2>\n<p>欢迎通过邮件交流：<a href="mailto:hello@example.com">hello@example.com</a></p>'
   };
 
@@ -35,8 +36,13 @@
     { label: '列表', cmd: 'insertUnorderedList', snippet: '<ul>\n  <li>列表项</li>\n</ul>' },
     { label: '代码', block: 'pre', snippet: '<pre><code>code here</code></pre>' },
     { label: '链接', cmd: 'createLink', snippet: '<a href="https://example.com">链接文字</a>' },
-    { label: '图片', cmd: 'insertLocalImage', snippet: '<img src="assets/posts/xxx.jpg" alt="插图">' }
+    { label: '图片', cmd: 'insertLocalImage', snippet: '<img src="assets/posts/xxx.jpg" alt="插图">' },
+    { label: '视频', cmd: 'insertLocalVideo', snippet: '<video controls preload="metadata" src="assets/videos/xxx.mp4"></video>' },
+    { label: '资源', cmd: 'insertLocalFile', snippet: '<p><a href="assets/files/xxx.zip" download>资源下载</a></p>' },
+    { label: '公式', cmd: 'insertFormula', snippet: '$$公式$$' }
   ];
+
+  var messageComments = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -190,6 +196,10 @@
     return btoa(binary);
   }
 
+  function rawUrl(path) {
+    return 'https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/main/' + path;
+  }
+
   function fromBase64(base64) {
     var binary = atob(String(base64).replace(/\s/g, ''));
     var bytes = Uint8Array.from(binary, function (char) {
@@ -300,6 +310,7 @@
     $('introText').value = content.introText || '';
     $('aboutTitle').value = content.aboutTitle || '';
     $('aboutText').value = content.aboutText || '';
+    $('contactEmail').value = content.contactEmail || '';
     $('aboutPage').value = content.aboutPage || '';
     setStatus($('pageStatus'), previewMode ? '本地预览模式：连接 GitHub 后才能保存。' : '');
     $('savePageBtn').disabled = previewMode;
@@ -316,6 +327,7 @@
       introText: $('introText').value.trim(),
       aboutTitle: $('aboutTitle').value.trim() || DEFAULT_CONTENT.aboutTitle,
       aboutText: $('aboutText').value.trim(),
+      contactEmail: $('contactEmail').value.trim(),
       aboutPage: $('aboutPage').value.trim() || DEFAULT_CONTENT.aboutPage
     };
   }
@@ -351,6 +363,140 @@
       setStatus($('pageStatus'), '已保存并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
     } catch (e) {
       setStatus($('pageStatus'), '保存失败：' + friendlyApiError(e), 'err');
+    }
+  }
+
+  function showMessage() {
+    $('authPanel').hidden = true;
+    $('appPanel').hidden = true;
+    $('editorPanel').hidden = true;
+    $('pagePanel').hidden = true;
+    $('messagePanel').hidden = false;
+  }
+
+  function openMessageBox() {
+    messageComments = JSON.parse(JSON.stringify(window.SITE_COMMENTS || {}));
+    var slugOptions = posts.map(function (post) { return post.slug; });
+    if (slugOptions.indexOf('about') === -1) slugOptions.push('about');
+    $('msgSlug').innerHTML = slugOptions.map(function (slug) {
+      return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(slug) + '</option>';
+    }).join('');
+    renderMessageBox();
+    showMessage();
+    window.scrollTo({ top: 0 });
+  }
+
+  function renderMessageBox() {
+    var flat = [];
+    Object.keys(messageComments).forEach(function (slug) {
+      (messageComments[slug] || []).forEach(function (item) {
+        flat.push(Object.assign({ slug: slug }, item));
+      });
+    });
+    var listEl = $('msgCommentList');
+    listEl.innerHTML = flat.length
+      ? flat.map(renderMsgItem).join('')
+      : '<p class="empty-state">暂无评论，收到读者评论后在这里添加并发布。</p>';
+
+    var slugSelect = $('msgSlug');
+    var current = slugSelect.value;
+    var slugOptions = posts.map(function (post) { return post.slug; });
+    if (slugOptions.indexOf('about') === -1) slugOptions.push('about');
+    slugSelect.innerHTML = slugOptions.map(function (slug) {
+      return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(slug) + '</option>';
+    }).join('');
+    if (current && slugOptions.indexOf(current) !== -1) slugSelect.value = current;
+  }
+
+  function renderMsgItem(item) {
+    var ownerName = (window.SITE_CONTENT && window.SITE_CONTENT.siteName) || '拾光手记';
+    var actions = '';
+    if (item.email) {
+      var body = (item.reply || '') + '\n\n—— ' + ownerName;
+      actions += '<a class="btn" href="mailto:' + escapeHtml(item.email) + '?subject=' + encodeURIComponent('回复你的评论 - ' + ownerName) + '&body=' + encodeURIComponent(body) + '">邮件回复</a>';
+    }
+    actions += '<button type="button" class="btn danger" data-del-comment="' + escapeHtml(item.id) + '" data-del-slug="' + escapeHtml(item.slug) + '">删除</button>';
+    return '' +
+      '<div class="msg-item">' +
+        '<div class="msg-item-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.slug) + ' · ' + escapeHtml(item.time || '') + '</span></div>' +
+        '<p class="msg-item-content">' + escapeHtml(item.content) + '</p>' +
+        (item.reply ? '<div class="msg-item-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
+        '<div class="msg-item-actions">' + actions + '</div>' +
+      '</div>';
+  }
+
+  function addCommentFromForm() {
+    var slug = $('msgSlug').value || 'about';
+    var nick = $('msgNick').value.trim();
+    var email = $('msgEmail').value.trim();
+    var content = $('msgContent').value.trim();
+    var reply = $('msgReply').value.trim();
+    if (!nick) {
+      setStatus($('msgStatus'), '请填写称呼。', 'err');
+      return;
+    }
+    if (!content) {
+      setStatus($('msgStatus'), '请填写评论内容。', 'err');
+      return;
+    }
+    if (!messageComments[slug]) messageComments[slug] = [];
+    messageComments[slug].push({
+      id: 'c' + Date.now(),
+      nick: nick,
+      email: email,
+      time: new Date().toISOString().slice(0, 10),
+      content: content,
+      reply: reply
+    });
+    $('msgNick').value = '';
+    $('msgEmail').value = '';
+    $('msgContent').value = '';
+    $('msgReply').value = '';
+    renderMessageBox();
+    setStatus($('msgStatus'), '已添加，点击“保存并发布”后才会显示在网站上。', 'ok');
+  }
+
+  async function refreshLikeStats() {
+    var likesEl = $('msgLikes');
+    var slugs = posts.map(function (post) { return post.slug; });
+    likesEl.innerHTML = '<span class="hint">加载中…</span>';
+    var rows = await Promise.all(slugs.map(function (slug) {
+      return fetch('https://abacus.jasoncameron.dev/get/shiguang-blog/' + encodeURIComponent(slug))
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          return { slug: slug, count: (data && (data.count || data.value)) || 0 };
+        })
+        .catch(function () {
+          return { slug: slug, count: null };
+        });
+    }));
+    likesEl.innerHTML = rows.map(function (row) {
+      return '<div class="msg-like-row"><span>' + escapeHtml(row.slug) + '</span><strong>' + (row.count === null ? '暂时无法获取' : row.count + ' 个赞') + '</strong></div>';
+    }).join('');
+  }
+
+  async function saveComments() {
+    if (!token) {
+      setStatus($('msgStatus'), '尚未连接 GitHub，无法保存。', 'err');
+      return;
+    }
+    setStatus($('msgStatus'), '正在提交到 GitHub…');
+    try {
+      var text = '/* 评论数据：在后台“消息”栏目中管理。 */\nwindow.SITE_COMMENTS = ' + JSON.stringify(messageComments, null, 2) + ';\n';
+      var remote = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js') + '?ref=' + BRANCH);
+      await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js'), {
+        method: 'PUT',
+        body: {
+          message: '更新评论',
+          content: toBase64(text),
+          branch: BRANCH,
+          sha: remote.sha
+        }
+      });
+      window.SITE_COMMENTS = JSON.parse(JSON.stringify(messageComments));
+      setStatus($('msgStatus'), '已保存并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
+    } catch (e) {
+      setStatus($('msgStatus'), '保存失败：' + friendlyApiError(e), 'err');
     }
   }
 
@@ -568,13 +714,23 @@
     }
     var editor = $('richEditor');
     editor.focus();
-    if (tool.cmd === 'createLink') {
+    if (tool.cmd === 'insertLocalImage') {
+      $('insertImageFile').click();
+      return;
+    } else if (tool.cmd === 'insertLocalVideo') {
+      $('insertVideoFile').click();
+      return;
+    } else if (tool.cmd === 'insertLocalFile') {
+      $('insertAttachFile').click();
+      return;
+    } else if (tool.cmd === 'insertFormula') {
+      document.execCommand('insertText', false, tool.snippet);
+      dirty = true;
+      return;
+    } else if (tool.cmd === 'createLink') {
       var url = window.prompt('链接地址：', 'https://');
       if (!url) return;
       document.execCommand('createLink', false, url);
-    } else if (tool.cmd === 'insertLocalImage') {
-      $('insertImageFile').click();
-      return;
     } else if (tool.block) {
       var current = String(document.queryCommandValue('formatBlock') || '').toLowerCase();
       document.execCommand('formatBlock', false, current === tool.block ? '<p>' : '<' + tool.block + '>');
@@ -601,7 +757,7 @@
   async function uploadCover(file) {
     setStatus($('editorStatus'), '正在上传封面…');
     try {
-      var path = await uploadFile(file, 'assets/covers');
+      var path = await uploadFile(file, 'assets/covers', { prefix: 'cover', ext: /^(jpg|jpeg|png|webp|gif|avif|svg)$/ });
       $('postCover').value = path;
       updateCoverPreview();
       setStatus($('editorStatus'), '封面上传成功：' + path, 'ok');
@@ -611,14 +767,21 @@
   }
 
   async function uploadFile(file, folder) {
+    var options = arguments.length > 2 ? arguments[2] : {};
     var extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    if (!/^(jpg|jpeg|png|webp|gif|avif|svg)$/.test(extension)) extension = 'jpg';
-    var name = 'img-' + stamp(new Date()) + '-' + Math.random().toString(36).slice(2, 6) + '.' + extension;
+    if (options.ext && !options.ext.test(extension)) {
+      throw new Error('不支持的文件类型：' + extension);
+    }
+    if (file.size > 90 * 1024 * 1024) {
+      throw new Error('文件超过 90MB，GitHub 不支持，请压缩后再上传');
+    }
+    var prefix = options.prefix || 'file';
+    var name = prefix + '-' + stamp(new Date()) + '-' + Math.random().toString(36).slice(2, 6) + '.' + extension;
     var base64 = await fileToBase64(file);
     await api('/repos/' + OWNER + '/' + REPO + '/contents/' + folder + '/' + name, {
       method: 'PUT',
       body: {
-        message: '上传图片：' + name,
+        message: '上传资源：' + folder + '/' + name,
         content: base64,
         branch: BRANCH
       }
@@ -629,19 +792,44 @@
   async function insertArticleImage(file) {
     setStatus($('editorStatus'), '正在上传图片…');
     try {
-      var path = await uploadFile(file, 'assets/posts');
-      var html = '<img src="' + path + '" alt="插图">';
-      if (sourceMode) {
-        insertAtCursor($('postContent'), html);
-      } else {
-        var editor = $('richEditor');
-        editor.focus();
-        document.execCommand('insertHTML', false, html);
-      }
-      dirty = true;
+      var path = await uploadFile(file, 'assets/posts', { prefix: 'img', ext: /^(jpg|jpeg|png|webp|gif|avif|svg)$/ });
+      insertMediaHtml('<img src="' + rawUrl(path) + '" alt="插图">');
       setStatus($('editorStatus'), '图片已插入：' + path, 'ok');
     } catch (e) {
       setStatus($('editorStatus'), '图片上传失败：' + friendlyApiError(e), 'err');
+    }
+  }
+
+  function insertMediaHtml(html) {
+    if (sourceMode) {
+      insertAtCursor($('postContent'), html);
+    } else {
+      var editor = $('richEditor');
+      editor.focus();
+      document.execCommand('insertHTML', false, html);
+    }
+    dirty = true;
+  }
+
+  async function insertVideoFile(file) {
+    setStatus($('editorStatus'), '正在上传视频…');
+    try {
+      var path = await uploadFile(file, 'assets/videos', { prefix: 'video', ext: /^(mp4|webm|mov|m4v)$/ });
+      insertMediaHtml('<figure><video controls preload="metadata" src="' + rawUrl(path) + '" style="max-width:100%"></video></figure>');
+      setStatus($('editorStatus'), '视频已插入', 'ok');
+    } catch (e) {
+      setStatus($('editorStatus'), '视频上传失败：' + friendlyApiError(e), 'err');
+    }
+  }
+
+  async function insertAttachFile(file) {
+    setStatus($('editorStatus'), '正在上传资源…');
+    try {
+      var path = await uploadFile(file, 'assets/files', { prefix: 'file' });
+      insertMediaHtml('<p><a class="file-link" href="' + rawUrl(path) + '" download="' + escapeHtml(file.name) + '">' + escapeHtml(file.name) + '（点击下载）</a></p>');
+      setStatus($('editorStatus'), '资源已插入：' + file.name, 'ok');
+    } catch (e) {
+      setStatus($('editorStatus'), '资源上传失败：' + friendlyApiError(e), 'err');
     }
   }
 
@@ -772,6 +960,25 @@
       showList();
     });
 
+    $('messageBtn').addEventListener('click', openMessageBox);
+    $('msgAddBtn').addEventListener('click', addCommentFromForm);
+    $('msgSaveBtn').addEventListener('click', saveComments);
+    $('msgBackBtn').addEventListener('click', function () {
+      showList();
+    });
+    $('msgRefreshLikes').addEventListener('click', refreshLikeStats);
+    $('msgCommentList').addEventListener('click', function (event) {
+      var btn = event.target.closest('button[data-del-comment]');
+      if (!btn) return;
+      var slug = btn.dataset.delSlug;
+      var id = btn.dataset.delComment;
+      messageComments[slug] = (messageComments[slug] || []).filter(function (item) {
+        return item.id !== id;
+      });
+      renderMessageBox();
+      setStatus($('msgStatus'), '已删除，点击“保存并发布”后生效。');
+    });
+
     $('postCover').addEventListener('input', updateCoverPreview);
     $('editorPanel').addEventListener('input', function () {
       dirty = true;
@@ -788,6 +995,7 @@
   function enterApp() {
     $('repoInfo').textContent = OWNER + '/' + REPO + ' · ' + BRANCH;
     $('pageBtn').disabled = previewMode;
+    $('messageBtn').disabled = previewMode;
     if (previewMode) {
       showList();
       setStatus($('listStatus'), '本地预览模式：保存和上传功能未启用。', 'err');

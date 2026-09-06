@@ -49,7 +49,8 @@
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   padding: 11px 14px;
   border-radius: 12px;
@@ -62,7 +63,8 @@
 }
 
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   outline: none;
   border-color: var(--accent);
   background: var(--bg);
@@ -437,6 +439,93 @@
 
 .auth-details a {
   color: var(--link);
+}
+
+.msg-section {
+  margin-bottom: 30px;
+}
+
+.msg-section h2 {
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.msg-likes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.msg-like-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 14px;
+}
+
+.msg-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.msg-item {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+}
+
+.msg-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.msg-item-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.msg-item-content {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.msg-item-reply {
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.msg-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.msg-item-actions .btn {
+  min-height: 32px;
+  padding: 5px 14px;
+  font-size: 12px;
+}
+
+.msg-add-form {
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
 }
 
 @media (max-width: 720px) {

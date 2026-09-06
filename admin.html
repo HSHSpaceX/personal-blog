@@ -9,6 +9,7 @@
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -65,6 +66,7 @@
         <div class="admin-row">
           <button class="btn primary" id="newPostBtn" type="button">新文章</button>
           <button class="btn" id="pageBtn" type="button">页面内容</button>
+          <button class="btn" id="messageBtn" type="button">消息</button>
           <button class="btn" id="logoutBtn" type="button">退出</button>
         </div>
       </div>
@@ -95,6 +97,10 @@
           <textarea id="aboutText" rows="3"></textarea>
         </div>
         <div class="field">
+          <label for="contactEmail">联系邮箱（用于接收评论通知）</label>
+          <input id="contactEmail" type="email">
+        </div>
+        <div class="field">
           <label for="aboutPage">关于页内容（HTML）</label>
           <textarea id="aboutPage" rows="12"></textarea>
         </div>
@@ -103,6 +109,49 @@
           <button class="btn" id="backPageBtn" type="button">返回列表</button>
         </div>
         <p id="pageStatus" class="status-line"></p>
+      </div>
+    </section>
+
+    <section id="messagePanel" hidden>
+      <div class="admin-card wide">
+        <div class="msg-section">
+          <h2>点赞统计</h2>
+          <div id="msgLikes" class="msg-likes"><span class="hint">打开本页面时自动加载。</span></div>
+          <button class="btn" id="msgRefreshLikes" type="button">刷新点赞数据</button>
+        </div>
+        <div class="msg-section">
+          <h2>评论管理</h2>
+          <p class="hint">读者通过文章底部表单提交的评论会发到你的邮箱，在这里录入并发布后才会显示。</p>
+          <div id="msgCommentList" class="msg-comment-list"></div>
+          <div class="msg-add-form">
+            <div class="field">
+              <label for="msgSlug">所属文章</label>
+              <select id="msgSlug"></select>
+            </div>
+            <div class="field">
+              <label for="msgNick">称呼（必填）</label>
+              <input id="msgNick" type="text">
+            </div>
+            <div class="field">
+              <label for="msgEmail">邮箱（选填，用于回复通知）</label>
+              <input id="msgEmail" type="email">
+            </div>
+            <div class="field">
+              <label for="msgContent">评论内容（必填）</label>
+              <textarea id="msgContent" rows="3"></textarea>
+            </div>
+            <div class="field">
+              <label for="msgReply">博主回复（选填，会显示在评论下方）</label>
+              <textarea id="msgReply" rows="2"></textarea>
+            </div>
+            <div class="admin-row">
+              <button class="btn" id="msgAddBtn" type="button">添加到列表</button>
+              <button class="btn primary" id="msgSaveBtn" type="button">保存并发布</button>
+              <button class="btn" id="msgBackBtn" type="button">返回列表</button>
+            </div>
+            <p id="msgStatus" class="status-line"></p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -123,6 +172,8 @@
           <div class="tb-row">
             <span class="tb-group" id="contentToolbar"></span>
             <input id="insertImageFile" type="file" accept="image/*" hidden>
+            <input id="insertVideoFile" type="file" accept="video/*" hidden>
+            <input id="insertAttachFile" type="file" hidden>
           </div>
         </div>
         <div class="editor-meta" id="editorMeta" hidden>
@@ -176,6 +227,8 @@
   </main>
 
   <script src="js/boot.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
