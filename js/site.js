@@ -19,8 +19,47 @@
     document.querySelectorAll('.btn-login').forEach(function (el) {
       el.hidden = authed;
     });
-    document.querySelectorAll('.user-avatar').forEach(function (el) {
+    document.querySelectorAll('.user-menu-wrap').forEach(function (el) {
       el.hidden = !authed;
+    });
+    if (!authed) closeUserMenus();
+  }
+
+  function closeUserMenus() {
+    document.querySelectorAll('.user-menu').forEach(function (el) {
+      el.hidden = true;
+    });
+    document.querySelectorAll('.user-avatar').forEach(function (el) {
+      el.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function setupUserMenu() {
+    document.querySelectorAll('.user-avatar').forEach(function (btn) {
+      btn.addEventListener('click', function (event) {
+        event.stopPropagation();
+        var menu = btn.parentElement.querySelector('.user-menu');
+        if (!menu) return;
+        var open = menu.hidden;
+        closeUserMenus();
+        menu.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+      });
+    });
+    document.querySelectorAll('[data-logout]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        try {
+          localStorage.removeItem(AUTH_KEY);
+          localStorage.removeItem('blog-gh-token');
+          sessionStorage.removeItem('blog-auth');
+        } catch (e) {
+          /* 忽略 */
+        }
+        applyAuthUi();
+      });
+    });
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest('.user-menu-wrap')) closeUserMenus();
     });
   }
 
@@ -570,6 +609,7 @@
     if (!btn || !countEl) return;
     var key = 'blog-liked-' + slug;
     var liked = false;
+    var lastCount = null;
     try {
       liked = localStorage.getItem(key) === '1';
     } catch (e) {
@@ -577,10 +617,11 @@
     }
 
     function render(count) {
+      if (typeof count === 'number' && !isNaN(count)) lastCount = count;
       countEl.textContent = count === null ? '—' : String(count);
       btn.classList.toggle('liked', liked);
-      btn.disabled = liked;
-      btn.setAttribute('aria-label', liked ? '已点赞' : '点赞这篇文章');
+      btn.disabled = false;
+      btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
     }
 
     render('…');
@@ -594,23 +635,33 @@
       });
 
     btn.addEventListener('click', function () {
-      if (liked) return;
-      liked = true;
+      liked = !liked;
       try {
-        localStorage.setItem(key, '1');
+        if (liked) localStorage.setItem(key, '1');
+        else localStorage.removeItem(key);
       } catch (e) {
         /* 忽略 */
       }
       btn.disabled = true;
       countEl.textContent = '…';
-      fetch('https://abacus.jasoncameron.dev/hit/shiguang-blog/' + encodeURIComponent(slug))
+      var optimistic = Math.max(0, (Number(lastCount) || 0) + (liked ? 1 : -1));
+      render(optimistic);
+      fetch('https://abacus.jasoncameron.dev/' + (liked ? 'hit' : 'down') + '/shiguang-blog/' + encodeURIComponent(slug))
         .then(function (res) { return res.json(); })
         .then(function (data) {
-          render((data && (data.count || data.value)) || 1);
+          render((data && (data.count || data.value)) || optimistic);
+          btn.disabled = false;
         })
         .catch(function () {
-          countEl.textContent = '1';
-          btn.classList.add('liked');
+          liked = !liked;
+          try {
+            if (liked) localStorage.setItem(key, '1');
+            else localStorage.removeItem(key);
+          } catch (e2) {
+            /* 忽略 */
+          }
+          render(lastCount);
+          btn.disabled = false;
         });
     });
   }
@@ -697,6 +748,7 @@
     posts = window.BLOG_POSTS || [];
     applyContent();
     applyAuthUi();
+    setupUserMenu();
     updateFavicon();
     var yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();

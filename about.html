@@ -36,9 +36,15 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
         <a class="btn-login" href="login.html">登录</a>
-        <a class="user-avatar" href="admin.html" aria-label="管理后台" hidden>
-          <img src="assets/icon.jpg" alt="">
-        </a>
+        <span class="user-menu-wrap" hidden>
+          <button class="user-avatar" type="button" aria-label="账号菜单" aria-haspopup="true" aria-expanded="false">
+            <img src="assets/icon.jpg" alt="">
+          </button>
+          <div class="user-menu" hidden>
+            <a class="user-menu-item" href="admin.html">管理后台</a>
+            <button class="user-menu-item" type="button" data-logout>退出登录</button>
+          </div>
+        </span>
       </div>
     </div>
   </header>
