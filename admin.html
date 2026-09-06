@@ -115,6 +115,11 @@
     <section id="messagePanel" hidden>
       <div class="admin-card wide">
         <div class="msg-section">
+          <h2>待审核 <span id="pendingCount" class="menu-badge" hidden></span></h2>
+          <p class="hint">读者提交的评论会先出现在这里，点“通过”后才会显示在网站上。</p>
+          <div id="msgPendingList" class="msg-comment-list"></div>
+        </div>
+        <div class="msg-section">
           <h2>点赞统计</h2>
           <div id="msgLikes" class="msg-likes"><span class="hint">打开本页面时自动加载。</span></div>
           <button class="btn" id="msgRefreshLikes" type="button">刷新点赞数据</button>

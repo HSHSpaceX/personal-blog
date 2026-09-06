@@ -711,15 +711,99 @@
         setStatus(status, '请填写评论内容。', 'err');
         return;
       }
-      var owner = (window.SITE_CONTENT && window.SITE_CONTENT.contactEmail) || '';
-      if (!owner) {
-        setStatus(status, '博主还没有配置接收邮箱，暂时无法提交。', 'err');
+      var now = new Date();
+      var item = {
+        id: 'c' + now.getTime(),
+        slug: slug,
+        nick: nick,
+        email: mail,
+        time: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'),
+        content: content
+      };
+      var ownerToken = '';
+      try {
+        ownerToken = localStorage.getItem('blog-gh-token') || '';
+      } catch (e2) {
+        ownerToken = '';
+      }
+      if (isAuthed() && ownerToken) {
+        setStatus(status, '已登录：正在直接发布…', 'ok');
+        githubCommentPut(slug, item).then(function () {
+          var data = (window.SITE_COMMENTS || {})[slug] || [];
+          var listEl = document.getElementById('commentList');
+          if (listEl) listEl.innerHTML = data.map(renderComment).join('');
+          setStatus(status, '已发布。', 'ok');
+        }).catch(function (e3) {
+          setStatus(status, '发布失败：' + e3.message, 'err');
+        });
         return;
       }
-      var subject = encodeURIComponent('[博客评论] ' + slug);
-      var body = encodeURIComponent('称呼：' + nick + '\n邮箱：' + (mail || '未填写') + '\n页面：' + slug + '\n时间：' + new Date().toLocaleString() + '\n\n' + content);
-      window.location.href = 'mailto:' + owner + '?subject=' + subject + '&body=' + body;
-      setStatus(status, '已唤起邮件客户端，发送后博主审核通过就会显示你的评论。', 'ok');
+      if (!window.PendingComments) {
+        setStatus(status, '提交通道暂不可用，请稍后再试。', 'err');
+        return;
+      }
+      setStatus(status, '正在提交…');
+      window.PendingComments.add(item).then(function () {
+        setStatus(status, '已提交，博主审核通过后就会显示。', 'ok');
+        document.getElementById('commentNick').value = '';
+        document.getElementById('commentEmail').value = '';
+        document.getElementById('commentContent').value = '';
+      }).catch(function () {
+        setStatus(status, '提交失败，请稍后再试。', 'err');
+      });
+    });
+  }
+
+  function githubCommentPut(slug, comment) {
+    var ownerToken = localStorage.getItem('blog-gh-token') || '';
+    var headers = {
+      Authorization: 'Bearer ' + ownerToken,
+      Accept: 'application/vnd.github+json'
+    };
+    var data = window.SITE_COMMENTS || {};
+    if (!data[slug]) data[slug] = [];
+    data[slug].push(comment);
+    var text = '/* 评论数据：在后台“消息”栏目中管理。 */\nwindow.SITE_COMMENTS = ' + JSON.stringify(data, null, 2) + ';\n';
+    return fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js?ref=main', { headers: headers })
+      .then(function (res) { return res.json(); })
+      .then(function (meta) {
+        return fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js', {
+          method: 'PUT',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+          body: JSON.stringify({
+            message: '新增评论：' + comment.nick,
+            content: btoa(unescape(encodeURIComponent(text))),
+            branch: 'main',
+            sha: meta.sha
+          })
+        });
+      })
+      .then(function (res) {
+        if (!res.ok) throw new Error('GitHub ' + res.status);
+        return res.json();
+      })
+      .then(function () {
+        window.SITE_COMMENTS = data;
+      });
+  }
+
+  function updatePendingBadge(count) {
+    document.querySelectorAll('.menu-badge').forEach(function (el) {
+      if (count > 0) {
+        el.textContent = count > 99 ? '99+' : String(count);
+        el.hidden = false;
+      } else {
+        el.hidden = true;
+      }
+    });
+  }
+
+  function refreshPendingBadge() {
+    if (!isAuthed() || !window.PendingComments) return;
+    window.PendingComments.list().then(function (pending) {
+      updatePendingBadge(pending.length);
+    }).catch(function () {
+      /* 忽略 */
     });
   }
 
@@ -749,6 +833,7 @@
     applyContent();
     applyAuthUi();
     setupUserMenu();
+    refreshPendingBadge();
     updateFavicon();
     var yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();

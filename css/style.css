@@ -220,6 +220,7 @@ h1, h2, h3 {
   background: transparent;
   padding: 0;
   cursor: pointer;
+  position: relative;
 }
 
 .user-avatar img {
@@ -263,7 +264,10 @@ h1, h2, h3 {
 }
 
 .user-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   width: 100%;
   padding: 10px 14px;
   border: none;
@@ -278,6 +282,25 @@ h1, h2, h3 {
 
 .user-menu-item:hover {
   background: var(--surface-2);
+}
+
+.menu-badge {
+  display: inline-block;
+  min-width: 16px;
+  padding: 1px 5px;
+  border-radius: 980px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.user-avatar .menu-badge {
+  position: absolute;
+  top: -3px;
+  right: -5px;
 }
 
 .btn-login:hover {

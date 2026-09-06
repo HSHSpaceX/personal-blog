@@ -425,6 +425,70 @@
       '</div>';
   }
 
+  function refreshPendingList() {
+    var listEl = $('msgPendingList');
+    var countEl = $('pendingCount');
+    if (!listEl) return;
+    window.PendingComments.list().then(function (pending) {
+      if (countEl) {
+        countEl.textContent = pending.length > 99 ? '99+' : String(pending.length);
+        countEl.hidden = pending.length === 0;
+      }
+      listEl.innerHTML = pending.length
+        ? pending.map(renderPendingItem).join('')
+        : '<p class="empty-state">没有待审核的评论。</p>';
+    }).catch(function () {
+      listEl.innerHTML = '<p class="empty-state">待审核列表加载失败，请稍后重试。</p>';
+    });
+  }
+
+  function renderPendingItem(item) {
+    var actions = '';
+    if (item.email) {
+      actions += '<a class="btn" href="mailto:' + escapeHtml(item.email) + '?subject=' + encodeURIComponent('你的评论已通过审核') + '">邮件回复</a>';
+    }
+    actions += '<button type="button" class="btn primary" data-approve-comment="' + escapeHtml(item.id) + '">通过</button>';
+    actions += '<button type="button" class="btn danger" data-delete-pending="' + escapeHtml(item.id) + '">删除</button>';
+    return '' +
+      '<div class="msg-item">' +
+        '<div class="msg-item-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.slug) + ' · ' + escapeHtml(item.time || '') + '</span></div>' +
+        '<p class="msg-item-content">' + escapeHtml(item.content) + '</p>' +
+        '<div class="msg-item-actions">' + actions + '</div>' +
+      '</div>';
+  }
+
+  function approvePendingItem(id) {
+    setStatus($('msgStatus'), '正在通过并发布…');
+    window.PendingComments.list().then(function (pending) {
+      var item = pending.filter(function (entry) { return entry.id === id; })[0];
+      if (!item) return;
+      if (!messageComments[item.slug]) messageComments[item.slug] = [];
+      messageComments[item.slug].push({
+        id: item.id,
+        nick: item.nick,
+        email: item.email,
+        time: item.time,
+        content: item.content,
+        reply: ''
+      });
+      return saveComments().then(function () {
+        return window.PendingComments.remove(id);
+      }).then(function () {
+        refreshPendingList();
+        setStatus($('msgStatus'), '评论已通过并发布，读者刷新页面即可看到。', 'ok');
+      });
+    }).catch(function (e) {
+      setStatus($('msgStatus'), '发布失败：' + friendlyApiError(e), 'err');
+    });
+  }
+
+  function deletePendingItem(id) {
+    window.PendingComments.remove(id).then(function () {
+      refreshPendingList();
+      setStatus($('msgStatus'), '已删除该待审核评论。');
+    });
+  }
+
   function addCommentFromForm() {
     var slug = $('msgSlug').value || 'about';
     var nick = $('msgNick').value.trim();
@@ -954,6 +1018,28 @@
       insertArticleImage(file);
     });
 
+    $('insertVideoFile').addEventListener('change', function () {
+      var file = this.files[0];
+      this.value = '';
+      if (!file) return;
+      if (!token) {
+        setStatus($('editorStatus'), '连接 GitHub 后才能上传视频。', 'err');
+        return;
+      }
+      insertVideoFile(file);
+    });
+
+    $('insertAttachFile').addEventListener('change', function () {
+      var file = this.files[0];
+      this.value = '';
+      if (!file) return;
+      if (!token) {
+        setStatus($('editorStatus'), '连接 GitHub 后才能上传资源。', 'err');
+        return;
+      }
+      insertAttachFile(file);
+    });
+
     $('pageBtn').addEventListener('click', openPagePanel);
     $('savePageBtn').addEventListener('click', savePageContent);
     $('backPageBtn').addEventListener('click', function () {
@@ -979,6 +1065,17 @@
       setStatus($('msgStatus'), '已删除，点击“保存并发布”后生效。');
     });
 
+    $('msgPendingList').addEventListener('click', function (event) {
+      var approveBtn = event.target.closest('button[data-approve-comment]');
+      if (approveBtn) {
+        approveBtn.disabled = true;
+        approvePendingItem(approveBtn.dataset.approveComment);
+        return;
+      }
+      var delBtn = event.target.closest('button[data-delete-pending]');
+      if (delBtn) deletePendingItem(delBtn.dataset.deletePending);
+    });
+
     $('postCover').addEventListener('input', updateCoverPreview);
     $('editorPanel').addEventListener('input', function () {
       dirty = true;
@@ -996,6 +1093,7 @@
     $('repoInfo').textContent = OWNER + '/' + REPO + ' · ' + BRANCH;
     $('pageBtn').disabled = previewMode;
     $('messageBtn').disabled = previewMode;
+    if (location.hash === '#messages') openMessageBox();
     if (previewMode) {
       showList();
       setStatus($('listStatus'), '本地预览模式：保存和上传功能未启用。', 'err');
