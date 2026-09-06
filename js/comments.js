@@ -8,6 +8,14 @@ window.SITE_COMMENTS = {
       "email": "",
       "time": "2026-09-06",
       "content": "试验"
+    },
+    {
+      "id": "c1788683791769",
+      "nick": "小王",
+      "email": "",
+      "time": "2026-09-06",
+      "content": "是",
+      "reply": ""
     }
   ]
 };
