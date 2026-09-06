@@ -22,7 +22,7 @@ window.BLOG_POSTS = [
       </ul>
 
       <h2>本站的文件结构</h2>
-      <p>为了让内容足够简单，我没有使用复杂的构建工具，而是把所有文章放在一个数据文件里：<a class="file-link" href="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/files/file-20260906-1638-khwe.pdf" download="STM32F103C8T6核心板尺寸.pdf">STM32F103C8T6核心板尺寸.pdf（点击下载）</a></p>
+      <p>为了让内容足够简单，我没有使用复杂的构建工具，而是把所有文章放在一个数据文件里：</p>
       <pre><code>index.html    首页
 post.html     文章页面
 archive.html  归档与搜索
