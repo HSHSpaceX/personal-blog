@@ -4,7 +4,12 @@ window.SITE_ALBUMS = [
     "id": "almtpm9x5imfic",
     "title": "无",
     "visibility": "public",
-    "photos": [],
+    "photos": [
+      {
+        "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almtpm9x5imfic/almtpmxacwzvio.jpeg",
+        "caption": ""
+      }
+    ],
     "created": "2026-09-06"
   },
   {
