@@ -544,23 +544,41 @@
       setStatus($('msgStatus'), '尚未连接 GitHub，无法保存。', 'err');
       return;
     }
+    var saveBtn = $('msgSaveBtn');
+    saveBtn.disabled = true;
     setStatus($('msgStatus'), '正在提交到 GitHub…');
+    var lastError = null;
     try {
       var text = '/* 评论数据：在后台“消息”栏目中管理。 */\nwindow.SITE_COMMENTS = ' + JSON.stringify(messageComments, null, 2) + ';\n';
-      var remote = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js') + '?ref=' + BRANCH);
-      await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js'), {
-        method: 'PUT',
-        body: {
-          message: '更新评论',
-          content: toBase64(text),
-          branch: BRANCH,
-          sha: remote.sha
+      var content = toBase64(text);
+      for (var attempt = 0; attempt < 3; attempt++) {
+        try {
+          var remote = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js') + '?ref=' + BRANCH);
+          await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js'), {
+            method: 'PUT',
+            body: {
+              message: '更新评论',
+              content: content,
+              branch: BRANCH,
+              sha: remote.sha
+            }
+          });
+          window.SITE_COMMENTS = JSON.parse(JSON.stringify(messageComments));
+          setStatus($('msgStatus'), '已保存并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
+          lastError = null;
+          break;
+        } catch (retryError) {
+          lastError = retryError;
+          if (retryError.status !== 409 && retryError.status !== 422) break;
         }
-      });
-      window.SITE_COMMENTS = JSON.parse(JSON.stringify(messageComments));
-      setStatus($('msgStatus'), '已保存并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
+      }
+      if (lastError) {
+        setStatus($('msgStatus'), '保存失败：' + friendlyApiError(lastError), 'err');
+      }
     } catch (e) {
-      setStatus($('msgStatus'), '保存失败：' + friendlyApiError(e), 'err');
+      setStatus($('msgStatus'), '保存失败：' + friendlyApiError(lastError || e), 'err');
+    } finally {
+      saveBtn.disabled = previewMode;
     }
   }
 

@@ -734,7 +734,8 @@
           if (listEl) listEl.innerHTML = data.map(renderComment).join('');
           setStatus(status, '已发布。', 'ok');
         }).catch(function (e3) {
-          setStatus(status, '发布失败：' + e3.message, 'err');
+          var msg = String(e3.message || '').indexOf('409') !== -1 ? '保存冲突，请再点一次提交。' : e3.message;
+          setStatus(status, '发布失败：' + msg, 'err');
         });
         return;
       }
@@ -754,7 +755,7 @@
     });
   }
 
-  function githubCommentPut(slug, comment) {
+  async function githubCommentPut(slug, comment) {
     var ownerToken = localStorage.getItem('blog-gh-token') || '';
     var headers = {
       Authorization: 'Bearer ' + ownerToken,
@@ -764,27 +765,32 @@
     if (!data[slug]) data[slug] = [];
     data[slug].push(comment);
     var text = '/* 评论数据：在后台“消息”栏目中管理。 */\nwindow.SITE_COMMENTS = ' + JSON.stringify(data, null, 2) + ';\n';
-    return fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js?ref=main', { headers: headers })
-      .then(function (res) { return res.json(); })
-      .then(function (meta) {
-        return fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js', {
+    var content = btoa(unescape(encodeURIComponent(text)));
+    var lastError = null;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        var metaRes = await fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js?ref=main', { headers: headers });
+        if (!metaRes.ok) throw new Error('GitHub ' + metaRes.status);
+        var meta = await metaRes.json();
+        var putRes = await fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js', {
           method: 'PUT',
           headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
           body: JSON.stringify({
             message: '新增评论：' + comment.nick,
-            content: btoa(unescape(encodeURIComponent(text))),
+            content: content,
             branch: 'main',
             sha: meta.sha
           })
         });
-      })
-      .then(function (res) {
-        if (!res.ok) throw new Error('GitHub ' + res.status);
-        return res.json();
-      })
-      .then(function () {
+        if (!putRes.ok) throw new Error('GitHub ' + putRes.status);
         window.SITE_COMMENTS = data;
-      });
+        return;
+      } catch (e) {
+        lastError = e;
+        if (String(e.message).indexOf('409') === -1 && String(e.message).indexOf('422') === -1) throw e;
+      }
+    }
+    throw lastError;
   }
 
   function updatePendingBadge(count) {
