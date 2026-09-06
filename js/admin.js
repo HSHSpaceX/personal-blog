@@ -80,7 +80,8 @@
 
   function isAuthed() {
     try {
-      return sessionStorage.getItem(AUTH_KEY) === '1';
+      var until = Number(localStorage.getItem(AUTH_KEY) || 0);
+      return until > Date.now();
     } catch (e) {
       return false;
     }
@@ -686,6 +687,7 @@
       token = '';
       postsSha = null;
       try {
+        localStorage.removeItem(AUTH_KEY);
         sessionStorage.removeItem(AUTH_KEY);
       } catch (e) {
         /* 忽略 */

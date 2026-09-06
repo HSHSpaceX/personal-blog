@@ -3,6 +3,55 @@
 
   var posts = window.BLOG_POSTS || [];
   var SITE_NAME = '拾光手记';
+  var AUTH_KEY = 'blog-auth';
+
+  function isAuthed() {
+    try {
+      var until = Number(localStorage.getItem(AUTH_KEY) || 0);
+      return until > Date.now();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function applyAuthUi() {
+    var authed = isAuthed();
+    document.querySelectorAll('.btn-login').forEach(function (el) {
+      el.hidden = authed;
+    });
+    document.querySelectorAll('.user-avatar').forEach(function (el) {
+      el.hidden = !authed;
+    });
+  }
+
+  function updateFavicon() {
+    var link = document.querySelector('link[rel="icon"]');
+    if (!link) return;
+    var image = new Image();
+    image.onload = function () {
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        var context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0);
+        if (document.documentElement.dataset.theme !== 'dark') {
+          var data = context.getImageData(0, 0, canvas.width, canvas.height);
+          var px = data.data;
+          for (var i = 0; i < px.length; i += 4) {
+            px[i] = 255 - px[i];
+            px[i + 1] = 255 - px[i + 1];
+            px[i + 2] = 255 - px[i + 2];
+          }
+          context.putImageData(data, 0, 0);
+        }
+        link.href = canvas.toDataURL('image/png');
+      } catch (e) {
+        /* 忽略 */
+      }
+    };
+    image.src = 'assets/icon.jpg';
+  }
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, function (char) {
@@ -370,6 +419,7 @@
       document.documentElement.dataset.theme = next;
       writeTheme(next);
       applyLabel();
+      updateFavicon();
     });
   }
 
@@ -461,6 +511,8 @@
   function init() {
     posts = window.BLOG_POSTS || [];
     applyContent();
+    applyAuthUi();
+    updateFavicon();
     var yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 

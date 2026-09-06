@@ -4,9 +4,27 @@
   var USER_HASH = '32d816bfe8b14ea8fd6d12314183f648c54136f8a344506f50dcc63f772f035a';
   var PASS_HASH = '8fe5479a3dd10ee6932d5b3cd0530481dbf35d0241641176aca9bf1b6b05f1d9';
   var AUTH_KEY = 'blog-auth';
+  var AUTH_DAYS = 30;
+
+  function isAuthed() {
+    try {
+      var until = Number(localStorage.getItem(AUTH_KEY) || 0);
+      return until > Date.now();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function rememberLogin() {
+    try {
+      localStorage.setItem(AUTH_KEY, String(Date.now() + AUTH_DAYS * 24 * 60 * 60 * 1000));
+    } catch (e) {
+      /* 忽略 */
+    }
+  }
 
   try {
-    if (sessionStorage.getItem(AUTH_KEY) === '1') {
+    if (isAuthed()) {
       window.location.replace('admin.html');
       return;
     }
@@ -48,11 +66,7 @@
         setStatus('账号或密码不正确。', 'err');
         return;
       }
-      try {
-        sessionStorage.setItem(AUTH_KEY, '1');
-      } catch (e) {
-        /* 忽略 */
-      }
+      rememberLogin();
       window.location.href = 'admin.html';
     } catch (e) {
       setStatus('验证失败，请通过 HTTPS 访问本页。', 'err');
