@@ -49,6 +49,6 @@ js/site.js    页面交互</code></pre>
     cover: "assets/covers/img-20260906-1213-w670.webp",
     featured: true,
     excerpt: "",
-    content: `示例<p></p>`
+    content: `示例<div><br></div>`
   }
 ];
