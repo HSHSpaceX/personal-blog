@@ -51,6 +51,23 @@
   </header>
 
   <main id="main">
+    <section class="band gallery-connect-band" id="galleryConnect" hidden>
+      <div class="container">
+        <div class="admin-card">
+          <h2>连接 GitHub</h2>
+          <p class="hint">上传照片需要 GitHub 授权，连接一次即可。Token 只保存在当前设备浏览器中。</p>
+          <div class="field">
+            <label for="galleryTokenInput">GitHub Token</label>
+            <input id="galleryTokenInput" type="password" placeholder="ghp_… 或 github_pat_…" autocomplete="off">
+          </div>
+          <div class="admin-row">
+            <button class="btn primary" id="galleryConnectBtn" type="button">连接</button>
+            <a class="btn" href="https://github.com/settings/tokens/new?scopes=public_repo&amp;description=blog-gallery" target="_blank" rel="noopener">创建 Token</a>
+          </div>
+          <p id="galleryConnectStatus" class="status-line"></p>
+        </div>
+      </div>
+    </section>
     <section class="page-head band">
       <div class="container gallery-head">
         <div>

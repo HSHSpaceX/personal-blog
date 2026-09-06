@@ -43,6 +43,51 @@
     }
   }
 
+  function needsConnect() {
+    return isAuthed() && !getToken();
+  }
+
+  function showConnectCard(message, kind) {
+    var card = $('galleryConnect');
+    if (!card) return;
+    card.hidden = false;
+    var status = $('galleryConnectStatus');
+    status.textContent = message || '';
+    status.classList.remove('ok', 'err');
+    if (kind) status.classList.add(kind);
+  }
+
+  function hideConnectCard() {
+    var card = $('galleryConnect');
+    if (card) card.hidden = true;
+  }
+
+  async function connectGallery() {
+    var input = $('galleryTokenInput');
+    var value = input.value.trim();
+    if (!value) {
+      showConnectCard('请先粘贴 Token。', 'err');
+      return;
+    }
+    showConnectCard('正在验证…');
+    try {
+      var res = await fetch('https://api.github.com/user', {
+        headers: { Authorization: 'Bearer ' + value, Accept: 'application/vnd.github+json' }
+      });
+      if (!res.ok) throw new Error('Token 无效（' + res.status + '）');
+      try {
+        localStorage.setItem('blog-gh-token', value);
+      } catch (e) {
+        /* 忽略 */
+      }
+      hideConnectCard();
+      refreshPlusVisibility();
+      render();
+    } catch (e) {
+      showConnectCard('连接失败：' + e.message, 'err');
+    }
+  }
+
   function rawUrl(path) {
     return 'https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/main/' + path;
   }
@@ -239,12 +284,20 @@
 
   function refreshPlusVisibility() {
     var plus = $('galleryPlus');
-    if (plus) plus.hidden = !isAuthed();
+    var connect = needsConnect();
+    if (plus) plus.hidden = !isAuthed() || connect;
+    var card = $('galleryConnect');
+    if (card) card.hidden = isAuthed() && !!getToken();
+    if (connect) {
+      card = $('galleryConnect');
+      if (card) card.hidden = false;
+    }
   }
 
   function render() {
     if (currentAlbumId) renderAlbumView(currentAlbumId);
     else renderGrid();
+    if (needsConnect()) showConnectCard();
   }
 
   function openLightbox(index) {
@@ -315,6 +368,7 @@
       window.location.href = 'gallery.html?album=' + encodeURIComponent(album.id);
     }).catch(function (e) {
       albums = albums.filter(function (item) { return item.id !== album.id; });
+      if (String(e.message).indexOf('Token') !== -1) showConnectCard('需要连接 GitHub，请在上方粘贴 Token。', 'err');
       throw e;
     });
   }
@@ -324,7 +378,7 @@
     if (!album) return;
     var token = getToken();
     if (!token) {
-      setStatus('需要先在后台连接 GitHub Token 才能上传。', 'err');
+      showConnectCard('上传前需要连接 GitHub，请在上方粘贴 Token。', 'err');
       return;
     }
     for (var i = 0; i < files.length; i++) {
@@ -355,6 +409,10 @@
   function setup() {
     var yearEl = $('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
+    $('galleryConnectBtn').addEventListener('click', connectGallery);
+    $('galleryTokenInput').addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') connectGallery();
+    });
     refreshPlusVisibility();
     render();
 
