@@ -1,2 +1,13 @@
 /* 评论数据：在后台“消息”栏目中管理。 */
-window.SITE_COMMENTS = {};
+window.SITE_COMMENTS = {
+  "post-20260906-1212": [
+    {
+      "id": "c1788684079396",
+      "slug": "post-20260906-1212",
+      "nick": "站长",
+      "email": "",
+      "time": "2026-09-06",
+      "content": "试验"
+    }
+  ]
+};
