@@ -6,10 +6,6 @@ window.SITE_ALBUMS = [
     "visibility": "public",
     "photos": [
       {
-        "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almtpm9x5imfic/almtpmcfeui926.webp",
-        "caption": ""
-      },
-      {
         "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almtpm9x5imfic/almtpmdplot0uf.jpeg",
         "caption": ""
       }
