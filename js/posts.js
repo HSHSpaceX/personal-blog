@@ -49,6 +49,6 @@ js/site.js    页面交互</code></pre>
     cover: "assets/covers/img-20260906-1213-w670.webp",
     featured: true,
     excerpt: "",
-    content: `示例<div><figure><video controls="" preload="metadata" src="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/videos/video-20260906-1923-kqbd.mov" style="max-width:100%"></video></figure><br></div>`
+    content: `示例<div><img src="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/posts/img-20260906-2005-dws6.gif" alt="插图"></div>`
   }
 ];
