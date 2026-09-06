@@ -113,17 +113,23 @@
   }
 
   function renderFeatured(post) {
+    return renderRailCard(post, 0);
+  }
+
+  function renderRailCard(post, index) {
     return '' +
-      '<article class="featured-card">' +
-        '<div class="featured-media">' +
-          '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '">' +
-        '</div>' +
-        '<div class="featured-content">' +
+      '<article class="rail-card reveal" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
+        '<a class="rail-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
+          '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy">' +
+        '</a>' +
+        '<div class="rail-card-body">' +
           categoryChip(post) +
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
-          '<p class="featured-excerpt">' + escapeHtml(post.excerpt) + '</p>' +
-          '<span class="post-date">' + formatDate(post.date) + ' · ' + post.readingTime + ' 分钟阅读</span>' +
-          '<a class="arrow-link" href="' + postUrl(post.slug) + '">阅读全文 ' + arrowSvg() + '</a>' +
+          (post.excerpt ? '<p class="rail-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
+          '<div class="rail-card-meta">' +
+            '<span>' + formatDate(post.date) + '</span>' +
+            '<span>' + post.readingTime + ' 分钟</span>' +
+          '</div>' +
         '</div>' +
       '</article>';
   }
@@ -148,20 +154,25 @@
   function renderHome() {
     if (posts.length === 0) return;
 
-    var featuredEl = document.getElementById('featuredPost');
     var gridEl = document.getElementById('postGrid');
     var statsEl = document.getElementById('introStats');
     var categoryEl = document.getElementById('categoryList');
 
-    var featured = posts.filter(function (post) { return post.featured; })[0] || posts[0];
+    var sorted = posts.slice().sort(function (a, b) {
+      return a.date < b.date ? 1 : -1;
+    });
 
-    if (featuredEl) {
-      featuredEl.innerHTML = renderFeatured(featured);
+    var railEl = document.getElementById('featuredRail');
+    if (railEl) {
+      var featured = sorted.slice(0, 4);
+      railEl.innerHTML = featured.map(renderRailCard).join('');
     }
 
     if (gridEl) {
-      var latest = posts.filter(function (post) { return post.slug !== featured.slug; }).slice(0, 3);
-      gridEl.innerHTML = latest.map(renderPostCard).join('');
+      var rest = sorted.slice(4, 7);
+      var latestSection = document.querySelector('.latest-band');
+      if (latestSection) latestSection.hidden = rest.length === 0;
+      gridEl.innerHTML = rest.map(renderPostCard).join('');
     }
 
     if (statsEl) {
@@ -455,6 +466,7 @@
       '#featuredPost .featured-card',
       '.section-head',
       '#postGrid .post-card',
+      '#featuredRail .rail-card',
       '.category-list .category-chip',
       '.about-inner',
       '#archiveList .archive-row',
@@ -508,6 +520,27 @@
     if (aboutProse && content.aboutPage) aboutProse.innerHTML = content.aboutPage;
   }
 
+  function setupRail() {
+    var rail = document.getElementById('featuredRail');
+    var prev = document.getElementById('railPrev');
+    var next = document.getElementById('railNext');
+    if (!rail || !prev || !next) return;
+
+    function scrollRail(direction) {
+      rail.scrollBy({
+        left: direction * Math.max(rail.clientWidth - 100, 260),
+        behavior: 'smooth'
+      });
+    }
+
+    prev.addEventListener('click', function () {
+      scrollRail(-1);
+    });
+    next.addEventListener('click', function () {
+      scrollRail(1);
+    });
+  }
+
   function init() {
     posts = window.BLOG_POSTS || [];
     applyContent();
@@ -524,6 +557,7 @@
     setupTheme();
     setupMenu();
     setupReveal();
+    setupRail();
   }
 
   if (window.BLOG_POSTS) {
