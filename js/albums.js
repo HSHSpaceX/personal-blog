@@ -8,6 +8,10 @@ window.SITE_ALBUMS = [
       {
         "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almtpm9x5imfic/almtppuf1021m7.png",
         "caption": ""
+      },
+      {
+        "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almtpm9x5imfic/almtppwmhq0blq.jpeg",
+        "caption": ""
       }
     ],
     "created": "2026-09-06"
