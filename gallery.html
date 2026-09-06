@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>画廊 - 拾光手记</title>
+  <meta name="description" content="拾光手记的图片画廊。">
+  <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/admin.css?v=2">
+  <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="拾光手记首页">
+        <span class="brand-mark" aria-hidden="true"><img src="assets/icon.jpg" alt=""></span>
+        <span class="brand-name">拾光手记</span>
+      </a>
+      <nav class="site-nav" id="siteNav" aria-label="主导航">
+        <a class="nav-link" href="index.html">首页</a>
+        <a class="nav-link" href="archive.html">归档</a>
+        <a class="nav-link" href="timeline.html">时间线</a>
+        <a class="nav-link active" href="gallery.html">画廊</a>
+        <a class="nav-link" href="about.html">关于</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn-login" href="login.html">登录</a>
+        <span class="user-menu-wrap" hidden>
+          <button class="user-avatar" type="button" aria-label="账号菜单" aria-haspopup="true" aria-expanded="false">
+            <img src="assets/icon.jpg" alt="">
+            <span class="menu-badge" hidden></span>
+          </button>
+          <div class="user-menu" hidden>
+            <a class="user-menu-item" href="admin.html#messages">消息 <span class="menu-badge" hidden></span></a>
+            <a class="user-menu-item" href="admin.html">管理后台</a>
+            <button class="user-menu-item" type="button" data-logout>退出登录</button>
+          </div>
+        </span>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="icon-btn menu-btn" id="menuToggle" type="button" aria-label="打开菜单" title="菜单" aria-expanded="false" aria-controls="siteNav">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head band">
+      <div class="container gallery-head">
+        <div>
+          <p class="eyebrow">GALLERY</p>
+          <h1>画廊</h1>
+          <p class="intro-text">用照片记录生活，按图册整理。</p>
+        </div>
+        <button class="icon-btn gallery-plus" id="galleryPlus" type="button" aria-label="创建图册" title="创建图册" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="band gallery-band">
+      <div class="container">
+        <div id="galleryGrid" class="album-grid"></div>
+        <div id="albumView" class="album-view" hidden>
+          <div class="album-view-head">
+            <a class="text-link" href="gallery.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+              返回画廊
+            </a>
+            <div class="album-view-actions" id="albumActions" hidden></div>
+          </div>
+          <h2 id="albumTitle" class="album-view-title"></h2>
+          <div id="albumMeta" class="album-meta"></div>
+          <div id="photoGrid" class="photo-grid"></div>
+        </div>
+        <p id="galleryStatus" class="status-line"></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="gallery-modal" id="albumModal" hidden>
+    <div class="gallery-modal-card">
+      <h2>创建图册</h2>
+      <div class="field">
+        <label for="albumTitleInput">图册名称</label>
+        <input id="albumTitleInput" type="text" placeholder="例如：2026 夏日旅行">
+      </div>
+      <div class="field">
+        <label for="albumVisibility">可见性</label>
+        <select id="albumVisibility">
+          <option value="public">公开 - 所有人可见</option>
+          <option value="private">仅我可见 - 需登录</option>
+        </select>
+      </div>
+      <div class="admin-row">
+        <button class="btn primary" id="albumCreateBtn" type="button">创建</button>
+        <button class="btn" id="albumCancelBtn" type="button">取消</button>
+      </div>
+      <p id="albumModalStatus" class="status-line"></p>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lightbox-btn lightbox-close" id="lightboxClose" type="button" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <img id="lightboxImg" alt="">
+    <div class="lightbox-caption" id="lightboxCaption"></div>
+    <div class="lightbox-counter" id="lightboxCounter"></div>
+    <div class="lightbox-controls">
+      <button class="lightbox-btn" id="lightboxPrev" type="button" aria-label="上一张">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="lightbox-btn" id="lightboxPlay" type="button" aria-label="幻灯片播放">
+        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+      </button>
+      <button class="lightbox-btn" id="lightboxNext" type="button" aria-label="下一张">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <input id="galleryFileInput" type="file" accept="image/*" multiple hidden>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> 拾光手记</p>
+      <p>保留所有权利</p>
+      <a class="footer-link" href="login.html">管理</a>
+    </div>
+  </footer>
+
+  <script src="js/boot.js?v=2"></script>
+  <script src="js/site.js?v=2"></script>
+  <script src="js/gallery.js?v=2"></script>
+</body>
+</html>
