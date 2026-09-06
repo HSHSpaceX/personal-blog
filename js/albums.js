@@ -15,5 +15,12 @@ window.SITE_ALBUMS = [
       }
     ],
     "created": "2026-09-06"
+  },
+  {
+    "id": "almtpmfv2lvram",
+    "title": "是",
+    "visibility": "private",
+    "photos": [],
+    "created": "2026-09-06"
   }
 ];
