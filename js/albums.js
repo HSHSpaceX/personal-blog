@@ -20,7 +20,12 @@ window.SITE_ALBUMS = [
     "id": "almtpmfv2lvram",
     "title": "是",
     "visibility": "private",
-    "photos": [],
+    "photos": [
+      {
+        "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almtpmfv2lvram/almtpmh782m20j.jpeg",
+        "caption": ""
+      }
+    ],
     "created": "2026-09-06"
   }
 ];
