@@ -1,6 +1,6 @@
 /* 页面文案：在后台“页面内容”中修改。 */
 window.SITE_CONTENT = {
-  "siteName": "拾光手记",
+  "siteName": "拾光印迹",
   "introTitle": "记录思考，也记录生活。",
   "introText": "这里写一些技术笔记、读书感想和日常观察。不赶热点，只写值得留下来的内容。",
   "aboutTitle": "关于这个博客",
