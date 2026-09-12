@@ -382,6 +382,8 @@
       if (contentEl) contentEl.innerHTML = '<p>文章可能已被移动或删除，请返回归档页继续浏览。</p>';
       var commentsEl = document.getElementById('commentsSection');
       if (commentsEl) commentsEl.hidden = true;
+      var asideEl = document.querySelector('.post-aside');
+      if (asideEl) asideEl.hidden = true;
       return;
     }
 
@@ -395,6 +397,17 @@
     }).join('');
 
     document.getElementById('postContent').innerHTML = post.content;
+    document.getElementById('postContent').querySelectorAll('video').forEach(function (video) {
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      video.addEventListener('error', function () {
+        if (video.nextElementSibling && video.nextElementSibling.classList.contains('video-fallback')) return;
+        var tip = document.createElement('p');
+        tip.className = 'video-fallback';
+        tip.innerHTML = '视频无法在当前设备播放？<a href="' + escapeHtml(video.src) + '" target="_blank" rel="noopener">点此打开原视频</a>';
+        video.after(tip);
+      });
+    });
     renderMathIn(document.getElementById('postContent'));
     buildToc();
     initLikes(post.slug);
@@ -605,30 +618,45 @@
     var countEl = document.getElementById('likeCount');
     if (!btn || !countEl) return;
     var key = 'blog-liked-' + slug;
+    var countKey = 'blog-like-count-' + slug;
+    var queueKey = 'blog-like-queue';
     var liked = false;
     var lastCount = null;
     try {
       liked = localStorage.getItem(key) === '1';
-    } catch (e) {
+      lastCount = Number(localStorage.getItem(countKey));
+      if (isNaN(lastCount)) lastCount = null;
+    } catch (e2) {
       liked = false;
+      lastCount = null;
+    }
+
+    function persistCount(count) {
+      if (typeof count !== 'number' || isNaN(count)) return;
+      lastCount = count;
+      try {
+        localStorage.setItem(countKey, String(count));
+      } catch (e3) {
+        /* 忽略 */
+      }
     }
 
     function render(count) {
-      if (typeof count === 'number' && !isNaN(count)) lastCount = count;
-      countEl.textContent = count === null ? '—' : String(count);
+      persistCount(count);
+      countEl.textContent = lastCount === null ? '—' : String(lastCount);
       btn.classList.toggle('liked', liked);
       btn.disabled = false;
       btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
     }
 
-    render('…');
+    render(lastCount);
     fetch('https://abacus.jasoncameron.dev/get/shiguang-blog/' + encodeURIComponent(slug))
       .then(function (res) { return res.json(); })
       .then(function (data) {
         render((data && (data.count || data.value)) || 0);
       })
       .catch(function () {
-        render(null);
+        render(lastCount);
       });
 
     btn.addEventListener('click', function () {
@@ -636,11 +664,10 @@
       try {
         if (liked) localStorage.setItem(key, '1');
         else localStorage.removeItem(key);
-      } catch (e) {
+      } catch (e4) {
         /* 忽略 */
       }
       btn.disabled = true;
-      countEl.textContent = '…';
       var optimistic = Math.max(0, (Number(lastCount) || 0) + (liked ? 1 : -1));
       render(optimistic);
       fetch('https://abacus.jasoncameron.dev/' + (liked ? 'hit' : 'down') + '/shiguang-blog/' + encodeURIComponent(slug))
@@ -650,17 +677,30 @@
           btn.disabled = false;
         })
         .catch(function () {
-          liked = !liked;
           try {
-            if (liked) localStorage.setItem(key, '1');
-            else localStorage.removeItem(key);
-          } catch (e2) {
+            var queue = JSON.parse(localStorage.getItem('blog-like-queue') || '[]');
+            queue.push({ slug: slug, op: liked ? 'hit' : 'down' });
+            localStorage.setItem('blog-like-queue', JSON.stringify(queue));
+          } catch (e5) {
             /* 忽略 */
           }
-          render(lastCount);
           btn.disabled = false;
         });
     });
+
+    try {
+      var queue = JSON.parse(localStorage.getItem('blog-like-queue') || '[]');
+      if (queue.length) {
+        localStorage.setItem('blog-like-queue', '[]');
+        queue.forEach(function (job) {
+          fetch('https://abacus.jasoncameron.dev/' + job.op + '/shiguang-blog/' + encodeURIComponent(job.slug)).catch(function () {
+            /* 补发失败则放弃 */
+          });
+        });
+      }
+    } catch (e6) {
+      /* 忽略 */
+    }
   }
 
   function renderComment(item) {

@@ -37,7 +37,7 @@
     { label: '代码', block: 'pre', snippet: '<pre><code>code here</code></pre>' },
     { label: '链接', cmd: 'createLink', snippet: '<a href="https://example.com">链接文字</a>' },
     { label: '图片', cmd: 'insertLocalImage', snippet: '<img src="assets/posts/xxx.jpg" alt="插图">' },
-    { label: '视频', cmd: 'insertLocalVideo', snippet: '<video controls preload="metadata" src="assets/videos/xxx.mp4"></video>' },
+    { label: '视频', cmd: 'insertLocalVideo', snippet: '<video controls playsinline webkit-playsinline preload="metadata" src="assets/videos/xxx.mp4"></video>' },
     { label: '资源', cmd: 'insertLocalFile', snippet: '<p><a href="assets/files/xxx.zip" download>资源下载</a></p>' },
     { label: '公式', cmd: 'insertFormula', snippet: '$$公式$$' }
   ];
@@ -897,7 +897,7 @@
     setStatus($('editorStatus'), '正在上传视频…');
     try {
       var path = await uploadFile(file, 'assets/videos', { prefix: 'video', ext: /^(mp4|webm|mov|m4v)$/ });
-      insertMediaHtml('<figure><video controls preload="metadata" src="' + rawUrl(path) + '" style="max-width:100%"></video></figure>');
+      insertMediaHtml('<figure><video controls playsinline webkit-playsinline preload="metadata" src="' + rawUrl(path) + '" style="max-width:100%"></video></figure>');
       setStatus($('editorStatus'), '视频已插入', 'ok');
     } catch (e) {
       setStatus($('editorStatus'), '视频上传失败：' + friendlyApiError(e), 'err');
