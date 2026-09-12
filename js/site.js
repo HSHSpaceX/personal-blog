@@ -208,10 +208,7 @@
     }
 
     if (gridEl) {
-      var rest = sorted.slice(4, 7);
-      var latestSection = document.querySelector('.latest-band');
-      if (latestSection) latestSection.hidden = rest.length === 0;
-      gridEl.innerHTML = rest.map(renderPostCard).join('');
+      gridEl.innerHTML = sorted.map(renderPostCard).join('');
     }
 
     if (statsEl) {
@@ -672,7 +669,19 @@
         '<div class="comment-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span></div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
         (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
+        '<div class="comment-foot"><button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button></div>' +
       '</div>';
+  }
+
+  function renderCommentTree(item, all) {
+    var replies = all.filter(function (c) { return c.parentId === item.id; });
+    var html = renderComment(item);
+    if (replies.length) {
+      html += '<div class="comment-replies">' + replies.map(function (reply) {
+        return renderCommentTree(reply, all);
+      }).join('') + '</div>';
+    }
+    return html;
   }
 
   function setStatus(el, message, kind) {
@@ -693,10 +702,37 @@
     var listEl = document.getElementById('commentList');
     var data = (window.SITE_COMMENTS || {})[slug] || [];
     listEl.innerHTML = data.length
-      ? data.map(renderComment).join('')
+      ? data.filter(function (item) { return !item.parentId; }).map(function (item) {
+          return renderCommentTree(item, data);
+        }).join('')
       : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
 
     var form = document.getElementById('commentForm');
+    var replyTarget = null;
+    var replyBanner = document.createElement('div');
+    replyBanner.className = 'comment-reply-banner';
+    replyBanner.hidden = true;
+    form.insertBefore(replyBanner, form.firstChild);
+
+    function clearReplyTarget() {
+      replyTarget = null;
+      replyBanner.hidden = true;
+      replyBanner.textContent = '';
+    }
+
+    listEl.addEventListener('click', function (event) {
+      var btn = event.target.closest('.comment-reply-btn');
+      if (!btn) return;
+      replyTarget = { id: btn.dataset.replyId, nick: btn.dataset.replyNick };
+      replyBanner.innerHTML = '回复 @' + escapeHtml(replyTarget.nick) + ' <button type="button" class="comment-reply-cancel" aria-label="取消回复">×</button>';
+      replyBanner.hidden = false;
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    replyBanner.addEventListener('click', function (event) {
+      if (event.target.closest('.comment-reply-cancel')) clearReplyTarget();
+    });
+
     form.addEventListener('submit', function (event) {
       event.preventDefault();
       var nick = document.getElementById('commentNick').value.trim();
@@ -720,6 +756,10 @@
         time: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'),
         content: content
       };
+      if (replyTarget) {
+        item.parentId = replyTarget.id;
+        item.parentNick = replyTarget.nick;
+      }
       var ownerToken = '';
       try {
         ownerToken = localStorage.getItem('blog-gh-token') || '';
@@ -731,8 +771,11 @@
         githubCommentPut(slug, item).then(function () {
           var data = (window.SITE_COMMENTS || {})[slug] || [];
           var listEl = document.getElementById('commentList');
-          if (listEl) listEl.innerHTML = data.map(renderComment).join('');
+          if (listEl) listEl.innerHTML = data.filter(function (c) { return !c.parentId; }).map(function (c) {
+            return renderCommentTree(c, data);
+          }).join('');
           setStatus(status, '已发布。', 'ok');
+          clearReplyTarget();
         }).catch(function (e3) {
           var msg = String(e3.message || '').indexOf('409') !== -1 ? '保存冲突，请再点一次提交。' : e3.message;
           setStatus(status, '发布失败：' + msg, 'err');
@@ -746,6 +789,7 @@
       setStatus(status, '正在提交…');
       window.PendingComments.add(item).then(function () {
         setStatus(status, '已提交，博主审核通过后就会显示。', 'ok');
+        clearReplyTarget();
         document.getElementById('commentNick').value = '';
         document.getElementById('commentEmail').value = '';
         document.getElementById('commentContent').value = '';

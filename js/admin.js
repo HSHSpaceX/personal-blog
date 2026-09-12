@@ -451,7 +451,7 @@
     actions += '<button type="button" class="btn danger" data-delete-pending="' + escapeHtml(item.id) + '">删除</button>';
     return '' +
       '<div class="msg-item">' +
-        '<div class="msg-item-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.slug) + ' · ' + escapeHtml(item.time || '') + '</span></div>' +
+        '<div class="msg-item-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + (item.parentId ? '↩ 回复 @' + escapeHtml(item.parentNick || '') + ' · ' : '') + escapeHtml(item.slug) + ' · ' + escapeHtml(item.time || '') + '</span></div>' +
         '<p class="msg-item-content">' + escapeHtml(item.content) + '</p>' +
         '<div class="msg-item-actions">' + actions + '</div>' +
       '</div>';

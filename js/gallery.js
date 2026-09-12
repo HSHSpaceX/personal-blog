@@ -203,15 +203,36 @@
     grid.innerHTML = list.map(function (album) {
       var cover = album.photos[0] ? '<img src="' + escapeHtml(album.photos[0].src) + '" alt="" loading="lazy">' : '<div class="album-cover-empty">暂无照片</div>';
       var badge = album.visibility === 'private' ? '<span class="album-badge">仅我可见</span>' : '';
+      var menuBtn = isAuthed() ? '<button class="album-menu-btn" type="button" data-menu-album="' + escapeHtml(album.id) + '" aria-label="图册菜单" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>' : '';
       return '' +
-        '<a class="album-card" href="gallery.html?album=' + encodeURIComponent(album.id) + '">' +
-          '<div class="album-cover">' + cover + '</div>' +
+        '<div class="album-card">' +
+          '<a class="album-cover-link" href="gallery.html?album=' + encodeURIComponent(album.id) + '"><div class="album-cover">' + cover + '</div></a>' +
+          menuBtn +
           '<div class="album-card-body">' +
-            '<div class="album-card-title-row"><h3>' + escapeHtml(album.title) + '</h3>' + badge + '</div>' +
+            '<div class="album-card-title-row"><h3><a href="gallery.html?album=' + encodeURIComponent(album.id) + '">' + escapeHtml(album.title) + '</a></h3>' + badge + '</div>' +
             '<div class="album-card-meta"><span>' + album.photos.length + ' 张照片</span><span>' + escapeHtml(album.created || '') + '</span></div>' +
           '</div>' +
-        '</a>';
+        '</div>';
     }).join('');
+  }
+
+  var menuAlbumId = null;
+
+  function openAlbumMenu(btn) {
+    menuAlbumId = btn.dataset.menuAlbum;
+    var album = albums.filter(function (item) { return item.id === menuAlbumId; })[0];
+    if (!album) return;
+    var menu = $('albumMenu');
+    menu.querySelector('[data-action="visibility"]').textContent = album.visibility === 'private' ? '设为公开' : '设为仅我可见';
+    menu.hidden = false;
+    var rect = btn.getBoundingClientRect();
+    menu.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+    menu.style.left = Math.max(12, Math.min(rect.left + window.scrollX, window.scrollX + window.innerWidth - menu.offsetWidth - 12)) + 'px';
+  }
+
+  function closeAlbumMenu() {
+    var menu = $('albumMenu');
+    if (menu) menu.hidden = true;
   }
 
   function renderAlbumView(albumId) {
@@ -423,6 +444,84 @@
       }
       $('albumModal').hidden = false;
       $('albumTitleInput').focus();
+    });
+
+    $('galleryGrid').addEventListener('click', function (event) {
+      var menuBtn = event.target.closest('.album-menu-btn');
+      if (!menuBtn) return;
+      event.preventDefault();
+      var menu = $('albumMenu');
+      if (!menu.hidden && menuAlbumId === menuBtn.dataset.menuAlbum) {
+        closeAlbumMenu();
+        return;
+      }
+      openAlbumMenu(menuBtn);
+    });
+
+    $('albumMenu').addEventListener('click', function (event) {
+      var btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      var album = albums.filter(function (item) { return item.id === menuAlbumId; })[0];
+      closeAlbumMenu();
+      if (!album) return;
+      var action = btn.dataset.action;
+
+      if (action === 'rename') {
+        var name = window.prompt('新的图册名称', album.title);
+        if (name === null) return;
+        name = name.trim();
+        if (!name || name === album.title) return;
+        album.title = name;
+        setStatus('正在保存…');
+        saveAlbums('重命名图册：' + name).then(function () {
+          setStatus('已重命名。', 'ok');
+          renderGrid();
+        }).catch(function (e) {
+          setStatus('重命名失败：' + e.message, 'err');
+        });
+      } else if (action === 'visibility') {
+        album.visibility = album.visibility === 'private' ? 'public' : 'private';
+        setStatus('正在保存…');
+        saveAlbums('调整图册可见性：' + album.title).then(function () {
+          setStatus('可见性已调整。', 'ok');
+          renderGrid();
+        }).catch(function (e) {
+          album.visibility = album.visibility === 'private' ? 'public' : 'private';
+          setStatus('调整失败：' + e.message, 'err');
+        });
+      } else if (action === 'up' || action === 'down') {
+        var index = albums.indexOf(album);
+        var target = action === 'up' ? index - 1 : index + 1;
+        if (target < 0 || target >= albums.length) return;
+        var tmp = albums[index];
+        albums[index] = albums[target];
+        albums[target] = tmp;
+        setStatus('正在保存…');
+        saveAlbums('调整图册顺序').then(function () {
+          setStatus('已移动。', 'ok');
+          renderGrid();
+        }).catch(function (e) {
+          var revert = albums[index];
+          albums[index] = albums[target];
+          albums[target] = revert;
+          setStatus('移动失败：' + e.message, 'err');
+        });
+      } else if (action === 'delete') {
+        if (!window.confirm('确定删除图册《' + album.title + '》？')) return;
+        albums = albums.filter(function (item) { return item.id !== album.id; });
+        setStatus('正在保存…');
+        saveAlbums('删除图册：' + album.title).then(function () {
+          setStatus('已删除。', 'ok');
+          renderGrid();
+        }).catch(function (e) {
+          albums.push(album);
+          setStatus('删除失败：' + e.message, 'err');
+        });
+      }
+    });
+
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest('.album-menu-btn') && !event.target.closest('#albumMenu')) closeAlbumMenu();
     });
 
     $('albumCancelBtn').addEventListener('click', function () {
