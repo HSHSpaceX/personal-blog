@@ -7,8 +7,8 @@
   --line: #d2d2d7;
   --accent: #0071e3;
   --link: #0066cc;
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.14);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
   --glass: rgba(255, 255, 255, 0.58);
   --glass-strong: rgba(255, 255, 255, 0.78);
@@ -60,16 +60,16 @@ body::before {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(60% 50% at 12% 8%, rgba(0, 113, 227, 0.16), transparent 60%),
-    radial-gradient(50% 40% at 88% 12%, rgba(255, 45, 85, 0.12), transparent 60%),
-    radial-gradient(70% 60% at 50% 100%, rgba(88, 86, 214, 0.13), transparent 65%);
+    radial-gradient(60% 50% at 12% 8%, rgba(0, 113, 227, 0.22), transparent 60%),
+    radial-gradient(50% 40% at 88% 12%, rgba(255, 45, 85, 0.16), transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgba(88, 86, 214, 0.18), transparent 65%);
 }
 
 [data-theme="dark"] body::before {
   background:
-    radial-gradient(60% 50% at 12% 8%, rgba(41, 151, 255, 0.17), transparent 60%),
-    radial-gradient(50% 40% at 88% 12%, rgba(191, 90, 242, 0.13), transparent 60%),
-    radial-gradient(70% 60% at 50% 100%, rgba(100, 210, 255, 0.09), transparent 65%);
+    radial-gradient(60% 50% at 12% 8%, rgba(41, 151, 255, 0.2), transparent 60%),
+    radial-gradient(50% 40% at 88% 12%, rgba(191, 90, 242, 0.15), transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgba(100, 210, 255, 0.11), transparent 65%);
 }
 
 img {
@@ -125,25 +125,25 @@ h1, h2, h3 {
 /* Header */
 .site-header {
   position: sticky;
-  top: 0;
+  top: 10px;
   z-index: 40;
-  background: var(--glass-strong);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  border-bottom: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
-
-[data-theme="dark"] .site-header {
-  background: var(--glass-strong);
+  background: transparent;
+  margin-top: 10px;
 }
 
 .header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 56px;
   gap: 20px;
+  min-height: 58px;
+  padding: 0 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .brand {
@@ -769,7 +769,7 @@ h1, h2, h3 {
 
 /* Footer */
 .site-footer {
-  background: var(--surface);
+  background: transparent;
   padding: 26px 0;
 }
 
@@ -1029,7 +1029,7 @@ h1, h2, h3 {
 /* Post page */
 .progress-track {
   position: fixed;
-  top: 56px;
+  top: 80px;
   left: 0;
   z-index: 30;
   width: 100%;
@@ -1557,7 +1557,7 @@ a.tag-chip:hover {
   right: 0;
   height: 46%;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.02));
   pointer-events: none;
   z-index: 1;
 }
@@ -2063,16 +2063,18 @@ a.tag-chip:hover {
 
   .site-nav {
     position: absolute;
-    top: 56px;
-    left: 0;
-    right: 0;
+    top: calc(100% + 8px);
+    left: 12px;
+    right: 12px;
     display: none;
     flex-direction: column;
     align-items: stretch;
     gap: 0;
     padding: 8px 24px 14px;
     background: var(--bg);
-    border-bottom: 1px solid var(--line);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
   }
 
   .site-nav.open {

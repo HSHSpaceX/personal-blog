@@ -525,14 +525,20 @@
     var slugs = posts.map(function (post) { return post.slug; });
     likesEl.innerHTML = '<span class="hint">加载中…</span>';
     var rows = await Promise.all(slugs.map(function (slug) {
-      return fetch('https://abacus.jasoncameron.dev/get/shiguang-blog/' + encodeURIComponent(slug))
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          return { slug: slug, count: (data && (data.count || data.value)) || 0 };
-        })
-        .catch(function () {
-          return { slug: slug, count: null };
-        });
+      var getCount = function (ns) {
+        return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug))
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            return (data && (data.count || data.value)) || 0;
+          })
+          .catch(function () {
+            return null;
+          });
+      };
+      return Promise.all([getCount('shiguang-likes'), getCount('shiguang-unlikes')]).then(function (results) {
+        var count = (results[0] === null || results[1] === null) ? null : Math.max(0, results[0] - results[1]);
+        return { slug: slug, count: count };
+      });
     }));
     likesEl.innerHTML = rows.map(function (row) {
       return '<div class="msg-like-row"><span>' + escapeHtml(row.slug) + '</span><strong>' + (row.count === null ? '暂时无法获取' : row.count + ' 个赞') + '</strong></div>';

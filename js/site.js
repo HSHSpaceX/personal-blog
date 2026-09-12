@@ -649,51 +649,48 @@
       btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
     }
 
-    render(lastCount);
-    fetch('https://abacus.jasoncameron.dev/get/shiguang-blog/' + encodeURIComponent(slug))
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        render((data && (data.count || data.value)) || 0);
-      })
-      .catch(function () {
-        render(lastCount);
-      });
-
-    btn.addEventListener('click', function () {
-      liked = !liked;
-      try {
-        if (liked) localStorage.setItem(key, '1');
-        else localStorage.removeItem(key);
-      } catch (e4) {
-        /* 忽略 */
-      }
-      btn.disabled = true;
-      var optimistic = Math.max(0, (Number(lastCount) || 0) + (liked ? 1 : -1));
-      render(optimistic);
-      fetch('https://abacus.jasoncameron.dev/' + (liked ? 'hit' : 'down') + '/shiguang-blog/' + encodeURIComponent(slug))
+    function fetchLikeCount() {
+      var likes = fetch('https://abacus.jasoncameron.dev/get/shiguang-likes/' + encodeURIComponent(slug))
         .then(function (res) { return res.json(); })
         .then(function (data) {
-          render((data && (data.count || data.value)) || optimistic);
-          btn.disabled = false;
+          return (data && (data.count || data.value)) || 0;
         })
         .catch(function () {
-          try {
-            var queue = JSON.parse(localStorage.getItem('blog-like-queue') || '[]');
-            queue.push({ slug: slug, op: liked ? 'hit' : 'down' });
-            localStorage.setItem('blog-like-queue', JSON.stringify(queue));
-          } catch (e5) {
-            /* 忽略 */
-          }
-          btn.disabled = false;
+          return null;
         });
-    });
+      var unlikes = fetch('https://abacus.jasoncameron.dev/get/shiguang-unlikes/' + encodeURIComponent(slug))
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          return (data && (data.count || data.value)) || 0;
+        })
+        .catch(function () {
+          return null;
+        });
+      return Promise.all([likes, unlikes]).then(function (results) {
+        if (results[0] === null || results[1] === null) return null;
+        return Math.max(0, results[0] - results[1]);
+      });
+    }
+
+    render(lastCount);
+    fetchLikeCount();
+
+    btn.dataset.likeSlug = slug;
+    if (!likeHandlerBound) {
+      likeHandlerBound = true;
+      document.addEventListener('click', function (event) {
+        var target = event.target.closest('#likeBtn');
+        if (!target) return;
+        handleLikeToggle(target, target.dataset.likeSlug);
+      });
+    }
 
     try {
       var queue = JSON.parse(localStorage.getItem('blog-like-queue') || '[]');
       if (queue.length) {
         localStorage.setItem('blog-like-queue', '[]');
         queue.forEach(function (job) {
-          fetch('https://abacus.jasoncameron.dev/' + job.op + '/shiguang-blog/' + encodeURIComponent(job.slug)).catch(function () {
+          fetch('https://abacus.jasoncameron.dev/hit/' + job.ns + '/' + encodeURIComponent(job.slug)).catch(function () {
             /* 补发失败则放弃 */
           });
         });
@@ -701,6 +698,61 @@
     } catch (e6) {
       /* 忽略 */
     }
+  }
+
+  var likeHandlerBound = false;
+
+  function handleLikeToggle(btn, slug) {
+    var likeKey = 'blog-liked-' + slug;
+    var countKey = 'blog-like-count-' + slug;
+    var queueKey = 'blog-like-queue';
+    var liked = false;
+    var current = 0;
+    try {
+      liked = localStorage.getItem(likeKey) === '1';
+      current = Number(localStorage.getItem(countKey)) || 0;
+    } catch (e) {
+      liked = false;
+      current = 0;
+    }
+    liked = !liked;
+    try {
+      if (liked) localStorage.setItem(likeKey, '1');
+      else localStorage.removeItem(likeKey);
+    } catch (e2) {
+      /* 忽略 */
+    }
+    var optimistic = Math.max(0, current + (liked ? 1 : -1));
+    try {
+      localStorage.setItem(countKey, String(optimistic));
+    } catch (e3) {
+      /* 忽略 */
+    }
+    btn.classList.toggle('liked', liked);
+    btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
+    var countEl = document.getElementById('likeCount');
+    if (countEl) countEl.textContent = String(optimistic);
+    var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
+    fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(slug))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var value = Math.max(0, (data && (data.count || data.value)) || optimistic);
+        if (countEl) countEl.textContent = String(value);
+        try {
+          localStorage.setItem(countKey, String(value));
+        } catch (e4) {
+          /* 忽略 */
+        }
+      })
+      .catch(function () {
+        try {
+          var queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
+          queue.push({ ns: ns, slug: slug });
+          localStorage.setItem(queueKey, JSON.stringify(queue));
+        } catch (e5) {
+          /* 忽略 */
+        }
+      });
   }
 
   function renderComment(item) {
