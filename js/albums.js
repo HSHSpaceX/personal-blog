@@ -9,7 +9,7 @@ window.SITE_ALBUMS = [
   },
   {
     "id": "almtpm9x5imfic",
-    "title": "无",
+    "title": "蓝箭航天",
     "visibility": "public",
     "photos": [
       {
