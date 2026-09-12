@@ -9,6 +9,16 @@ window.SITE_COMMENTS = {
       "email": "",
       "time": "2026-09-06",
       "content": "大家可以在这里发表评论，我会回复"
+    },
+    {
+      "id": "c1789186225411",
+      "slug": "about",
+      "nick": "站长",
+      "email": "",
+      "time": "2026-09-12",
+      "content": "官方急急急急急急",
+      "parentId": "c1788697051385",
+      "parentNick": "HSH"
     }
   ]
 };
