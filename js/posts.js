@@ -18,7 +18,7 @@ window.BLOG_POSTS = [
       <ul>
         <li>免费托管：GitHub Pages、Vercel、Netlify 都有免费额度。</li>
         <li>安全省心：没有数据库和后台，几乎不存在被入侵的入口。</li>
-        <li>加载快：文件体积小，全球 CDN 都能轻松承担。</li></ul><h2>个性化</h2><div>这里我采用了液态玻璃设计（深色明显）</div><div><img src="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/posts/img-20260912-1538-2tud.jpeg" alt="插图"><span style="color: var(--ink); font-family: var(--font); font-size: 22px; font-weight: 700; letter-spacing: -0.015em;">本站的文件结构</span><br></div>
+        <li>加载快：文件体积小，全球 CDN 都能轻松承担。</li></ul><h2>个性化</h2><div>这里我采用了液态玻璃设计，以及悬浮菜单</div><div>深色模式（上），浅色模式（下）</div><div><img src="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/posts/img-20260912-1538-2tud.jpeg" alt="插图"></div><div><img src="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/posts/img-20260912-1547-v7xi.jpeg" alt="插图"></div><div><span style="color: var(--ink); font-family: var(--font); font-size: 22px; font-weight: 700; letter-spacing: -0.015em;">本站的文件结构</span><br></div>
       <p>为了让内容足够简单，我没有使用复杂的构建工具，而是把所有文章放在一个数据文件里：</p>
       <pre><code>index.html    首页
 post.html     文章页面
