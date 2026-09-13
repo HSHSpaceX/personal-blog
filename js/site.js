@@ -725,7 +725,7 @@
       if (queue.length) {
         localStorage.setItem('blog-like-queue', '[]');
         queue.forEach(function (job) {
-          fetch('https://abacus.jasoncameron.dev/hit/' + job.ns + '/' + encodeURIComponent(job.slug)).catch(function () {
+          fetch('https://abacus.jasoncameron.dev/hit/' + job.ns + '/' + encodeURIComponent(job.slug + LIKE_KEY_SUFFIX)).catch(function () {
             /* 补发失败则放弃 */
           });
         });
@@ -737,9 +737,12 @@
 
   var likeHandlerBound = false;
 
+  // 计数键版本号:旧键上的历史计数无法清零,换版本即全部归零
+  var LIKE_KEY_SUFFIX = '-v2';
+
   function fetchLikeDiff(slug) {
     function getCounter(ns) {
-      return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug))
+      return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug + LIKE_KEY_SUFFIX))
         .then(function (res) {
           // 计数器从未创建过时接口返回 404,按 0 处理
           return res.ok ? res.json() : { value: 0 };
@@ -788,7 +791,7 @@
     var countEl = document.getElementById('likeCount');
     if (countEl) countEl.textContent = String(optimistic);
     var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
-    fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(slug))
+    fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(slug + LIKE_KEY_SUFFIX))
       .then(function (res) { return res.json(); })
       .then(function (data) {
         // 接口只返回单侧计数器的值,必须重新拉两侧求差,否则取消后再点赞会显示成 +2
