@@ -35,5 +35,17 @@ js/site.js    页面交互</code></pre>
 
       <h2>一点建议</h2>
       <p>工具只是起点。真正让博客有价值的是持续记录：写下遇到的问题、读过的书、走过的路。哪怕一周只有一篇，一年后回头看也会很惊人。</p>`
+  },
+  {
+    slug: "post-20260913-1037",
+    title: "测试",
+    category: "技术",
+    tags: ["测试"],
+    date: "2026-09-13",
+    readingTime: 1,
+    cover: "assets/covers/cover-20260913-1038-kvg9.jpg",
+    featured: true,
+    excerpt: "",
+    content: `<h2>视频测试</h2><p></p><div><figure><video controls="" playsinline="" webkit-playsinline="" preload="metadata" src="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/videos/video-20260913-1038-ww33.mp4" style="max-width:100%"></video></figure></div>`
   }
 ];
