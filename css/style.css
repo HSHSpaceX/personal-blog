@@ -1201,6 +1201,43 @@ a.tag-chip:hover {
   background: transparent;
 }
 
+.code-block-wrap {
+  position: relative;
+  margin: 22px 0;
+}
+
+.prose .code-block-wrap pre {
+  margin: 0;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.code-copy-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.code-copy-btn.copied {
+  opacity: 1;
+  color: var(--accent);
+}
+
 .prose img {
   margin: 22px 0;
   border-radius: 14px;

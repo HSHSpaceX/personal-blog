@@ -409,6 +409,7 @@
       });
     });
     renderMathIn(document.getElementById('postContent'));
+    enhanceCodeBlocks(document.getElementById('postContent'));
     buildToc();
     initLikes(post.slug);
     var section = document.getElementById('commentsSection');
@@ -613,6 +614,57 @@
     toc.innerHTML = html;
   }
 
+  function enhanceCodeBlocks(container) {
+    if (!container) return;
+    container.querySelectorAll('pre').forEach(function (pre) {
+      if (pre.parentElement && pre.parentElement.classList.contains('code-block-wrap')) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'code-block-wrap';
+      pre.before(wrap);
+      wrap.appendChild(pre);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy-btn';
+      btn.textContent = '复制';
+      btn.addEventListener('click', function () {
+        var text = pre.innerText;
+        function markCopied() {
+          btn.textContent = '已复制';
+          btn.classList.add('copied');
+          window.setTimeout(function () {
+            btn.textContent = '复制';
+            btn.classList.remove('copied');
+          }, 1600);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(markCopied).catch(function () {
+            fallbackCopy(text);
+            markCopied();
+          });
+        } else {
+          fallbackCopy(text);
+          markCopied();
+        }
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function fallbackCopy(text) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+    } catch (e) {
+      /* 忽略 */
+    }
+    textarea.remove();
+  }
+
   function initLikes(slug) {
     var btn = document.getElementById('likeBtn');
     var countEl = document.getElementById('likeCount');
@@ -650,30 +702,13 @@
     }
 
     function fetchLikeCount() {
-      var likes = fetch('https://abacus.jasoncameron.dev/get/shiguang-likes/' + encodeURIComponent(slug))
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          return (data && (data.count || data.value)) || 0;
-        })
-        .catch(function () {
-          return null;
-        });
-      var unlikes = fetch('https://abacus.jasoncameron.dev/get/shiguang-unlikes/' + encodeURIComponent(slug))
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          return (data && (data.count || data.value)) || 0;
-        })
-        .catch(function () {
-          return null;
-        });
-      return Promise.all([likes, unlikes]).then(function (results) {
-        if (results[0] === null || results[1] === null) return null;
-        return Math.max(0, results[0] - results[1]);
-      });
+      return fetchLikeDiff(slug);
     }
 
     render(lastCount);
-    fetchLikeCount();
+    fetchLikeCount().then(function (count) {
+      if (count !== null) render(count);
+    });
 
     btn.dataset.likeSlug = slug;
     if (!likeHandlerBound) {
@@ -701,6 +736,26 @@
   }
 
   var likeHandlerBound = false;
+
+  function fetchLikeDiff(slug) {
+    function getCounter(ns) {
+      return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug))
+        .then(function (res) {
+          // 计数器从未创建过时接口返回 404,按 0 处理
+          return res.ok ? res.json() : { value: 0 };
+        })
+        .then(function (data) {
+          return (data && (data.count || data.value)) || 0;
+        })
+        .catch(function () {
+          return null;
+        });
+    }
+    return Promise.all([getCounter('shiguang-likes'), getCounter('shiguang-unlikes')]).then(function (results) {
+      if (results[0] === null || results[1] === null) return null;
+      return Math.max(0, results[0] - results[1]);
+    });
+  }
 
   function handleLikeToggle(btn, slug) {
     var likeKey = 'blog-liked-' + slug;
@@ -736,13 +791,16 @@
     fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(slug))
       .then(function (res) { return res.json(); })
       .then(function (data) {
-        var value = Math.max(0, (data && (data.count || data.value)) || optimistic);
-        if (countEl) countEl.textContent = String(value);
-        try {
-          localStorage.setItem(countKey, String(value));
-        } catch (e4) {
-          /* 忽略 */
-        }
+        // 接口只返回单侧计数器的值,必须重新拉两侧求差,否则取消后再点赞会显示成 +2
+        fetchLikeDiff(slug).then(function (value) {
+          var finalValue = value === null ? optimistic : value;
+          if (countEl) countEl.textContent = String(finalValue);
+          try {
+            localStorage.setItem(countKey, String(finalValue));
+          } catch (e4) {
+            /* 忽略 */
+          }
+        });
       })
       .catch(function () {
         try {
