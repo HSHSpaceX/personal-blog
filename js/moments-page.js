@@ -76,6 +76,141 @@
     return String(time).slice(0, 10);
   }
 
+  function likedKey(id) {
+    return 'blog-liked-moment-' + id;
+  }
+
+  function likeCacheKey(id) {
+    return 'blog-like-count-moment-' + id;
+  }
+
+  function getLiked(id) {
+    try {
+      return localStorage.getItem(likedKey(id)) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function getCachedCount(id) {
+    try {
+      return Number(localStorage.getItem(likeCacheKey(id))) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function setCachedCount(id, value) {
+    try {
+      localStorage.setItem(likeCacheKey(id), String(value));
+    } catch (e) {
+      /* 忽略 */
+    }
+  }
+
+  // 点赞 = 点赞计数器 - 取消点赞计数器,404(未创建)按 0 处理
+  function fetchMomentLikeDiff(id) {
+    function getCounter(ns) {
+      return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent('moment-' + id))
+        .then(function (res) {
+          return res.ok ? res.json() : { value: 0 };
+        })
+        .then(function (data) {
+          return (data && (data.count || data.value)) || 0;
+        })
+        .catch(function () {
+          return null;
+        });
+    }
+    return Promise.all([getCounter('shiguang-likes'), getCounter('shiguang-unlikes')]).then(function (results) {
+      if (results[0] === null || results[1] === null) return null;
+      return Math.max(0, results[0] - results[1]);
+    });
+  }
+
+  function updateLikeUI(id, liked, count) {
+    var btn = document.querySelector('[data-like="' + id + '"]');
+    if (!btn) return;
+    btn.classList.toggle('liked', liked);
+    btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞');
+    var num = btn.querySelector('.moment-action-count');
+    if (num) num.textContent = String(count);
+  }
+
+  function toggleMomentLike(id) {
+    var liked = !getLiked(id);
+    try {
+      if (liked) localStorage.setItem(likedKey(id), '1');
+      else localStorage.removeItem(likedKey(id));
+    } catch (e) {
+      /* 忽略 */
+    }
+    var optimistic = Math.max(0, getCachedCount(id) + (liked ? 1 : -1));
+    setCachedCount(id, optimistic);
+    updateLikeUI(id, liked, optimistic);
+    var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
+    // 打点之后重新拉两侧计数求差,单侧返回值会导致取消后再点赞显示成 +2
+    fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent('moment-' + id))
+      .then(function () {
+        return fetchMomentLikeDiff(id);
+      })
+      .then(function (value) {
+        if (value === null) return;
+        setCachedCount(id, value);
+        updateLikeUI(id, getLiked(id), value);
+      })
+      .catch(function () {
+        /* 离线时保留乐观值 */
+      });
+  }
+
+  function refreshLikeCounts() {
+    moments.forEach(function (item) {
+      fetchMomentLikeDiff(item.id).then(function (value) {
+        if (value === null) return;
+        setCachedCount(item.id, value);
+        updateLikeUI(item.id, getLiked(item.id), value);
+      });
+    });
+  }
+
+  function momentShareUrl(id) {
+    return location.origin + location.pathname.replace(/[^/]*$/, '') + 'moments.html#moment-' + id;
+  }
+
+  function flashCopied(btn) {
+    btn.classList.add('copied');
+    window.setTimeout(function () {
+      btn.classList.remove('copied');
+    }, 1600);
+  }
+
+  function shareMoment(id) {
+    var item = null;
+    moments.forEach(function (entry) {
+      if (entry.id === id) item = entry;
+    });
+    var url = momentShareUrl(id);
+    var text = item && item.text ? item.text.slice(0, 80) : '一条动态';
+    if (navigator.share) {
+      navigator.share({ title: siteName(), text: text, url: url }).catch(function () {
+        /* 用户取消分享 */
+      });
+      return;
+    }
+    var btn = document.querySelector('[data-share="' + id + '"]');
+    function done() {
+      if (btn) flashCopied(btn);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () {
+        window.prompt('复制这条动态的链接:', url);
+      });
+    } else {
+      window.prompt('复制这条动态的链接:', url);
+    }
+  }
+
   function saveMoments(message) {
     var token = getToken();
     if (!token) return Promise.reject(new Error('需要先连接 GitHub Token'));
@@ -154,7 +289,9 @@
     });
     var authed = isAuthed();
     list.innerHTML = sorted.map(function (item) {
-      return '<article class="moment-card">' +
+      var liked = getLiked(item.id);
+      var count = getCachedCount(item.id);
+      return '<article class="moment-card" id="moment-' + escapeHtml(item.id) + '">' +
         '<img class="moment-avatar" src="assets/icon.jpg" alt="">' +
         '<div class="moment-body">' +
           '<div class="moment-head">' +
@@ -166,9 +303,19 @@
           '</div>' +
           (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +
           (item.image ? '<a class="moment-image" href="' + escapeHtml(item.image) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(item.image) + '" alt="动态配图" loading="lazy"></a>' : '') +
+          '<div class="moment-actions">' +
+            '<button class="moment-action-btn moment-like-btn' + (liked ? ' liked' : '') + '" type="button" data-like="' + escapeHtml(item.id) + '" aria-label="' + (liked ? '取消点赞' : '点赞') + '">' +
+              '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.6-4.9-10-9.4C.4 8.5 2.5 4.9 6 4.9c2 0 3.4 1.1 4.2 2.4h3.6c.8-1.3 2.2-2.4 4.2-2.4 3.5 0 5.6 3.6 4 6.7C19.6 16.1 12 21 12 21z"/></svg>' +
+              '<span class="moment-action-count">' + count + '</span>' +
+            '</button>' +
+            '<button class="moment-action-btn moment-share-btn" type="button" data-share="' + escapeHtml(item.id) + '" aria-label="分享这条动态" title="分享">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
+            '</button>' +
+          '</div>' +
         '</div>' +
       '</article>';
     }).join('');
+    refreshLikeCounts();
   }
 
   function syncPanels() {
@@ -298,6 +445,16 @@
     $('composerRemoveImg').addEventListener('click', clearImage);
     $('momentConnectBtn').addEventListener('click', connect);
     $('momentList').addEventListener('click', function (event) {
+      var likeBtn = event.target.closest('[data-like]');
+      if (likeBtn) {
+        toggleMomentLike(likeBtn.getAttribute('data-like'));
+        return;
+      }
+      var shareBtn = event.target.closest('[data-share]');
+      if (shareBtn) {
+        shareMoment(shareBtn.getAttribute('data-share'));
+        return;
+      }
       var btn = event.target.closest('[data-delete]');
       if (btn) deleteMoment(btn.getAttribute('data-delete'));
     });

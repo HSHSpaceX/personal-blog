@@ -2243,7 +2243,7 @@ a.tag-chip:hover {
 
 /* Moments */
 .moment-container {
-  max-width: 680px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
@@ -2253,6 +2253,7 @@ a.tag-chip:hover {
   gap: 14px;
   position: relative;
   overflow: hidden;
+  scroll-margin-top: 120px;
   padding: 18px;
   border-radius: 22px;
   border: 1px solid var(--glass-border);
@@ -2413,6 +2414,77 @@ a.tag-chip:hover {
   max-height: 380px;
   object-fit: cover;
   border-radius: 14px;
+}
+
+.moment-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.moments-band-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.moments-band-copy p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.moment-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 980px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.moment-action-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.moment-action-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.moment-like-btn.liked {
+  color: #ff2d55;
+  border-color: rgba(255, 45, 85, 0.45);
+  background: rgba(255, 45, 85, 0.1);
+}
+
+.moment-share-btn {
+  position: relative;
+}
+
+.moment-share-btn.copied::after {
+  content: '已复制链接';
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 980px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  pointer-events: none;
 }
 
 @media (max-width: 560px) {
