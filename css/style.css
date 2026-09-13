@@ -10,9 +10,9 @@
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.14);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
-  --glass: rgba(255, 255, 255, 0.58);
-  --glass-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass: rgba(255, 255, 255, 0.42);
+  --glass-strong: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.65);
   --blur: saturate(200%) blur(30px);
 }
 
@@ -27,9 +27,9 @@
   --link: #2997ff;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
-  --glass: rgba(28, 28, 30, 0.6);
-  --glass-strong: rgba(28, 28, 30, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass: rgba(28, 28, 30, 0.45);
+  --glass-strong: rgba(28, 28, 30, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.12);
 }
 
 * {
@@ -139,7 +139,7 @@ h1, h2, h3 {
   min-height: 58px;
   padding: 0 18px;
   border: 1px solid var(--glass-border);
-  border-radius: 18px;
+  border-radius: 980px;
   background: var(--glass-strong);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
@@ -526,12 +526,6 @@ h1, h2, h3 {
 .text-link svg {
   width: 14px;
   height: 14px;
-}
-
-.latest-band,
-.category-band,
-.about-band {
-  background: var(--surface);
 }
 
 .latest-band {

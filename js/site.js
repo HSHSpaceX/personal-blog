@@ -556,6 +556,21 @@
     targets.forEach(function (el) {
       observer.observe(el);
     });
+
+    // 兜底:4 秒后仍未显示的内容直接显示,防止任何情况下板块一直透明
+    window.setTimeout(function () {
+      targets.forEach(function (el) {
+        if (el.classList.contains('reveal') && !el.classList.contains('in')) {
+          el.classList.add('in');
+          observer.unobserve(el);
+          window.setTimeout(function () {
+            el.classList.remove('reveal');
+            el.classList.remove('in');
+            el.style.transitionDelay = '';
+          }, 1100);
+        }
+      });
+    }, 4000);
   }
 
   function applyContent() {
