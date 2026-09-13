@@ -1,2 +1,9 @@
 /* 动态数据:在动态页登录后发布和管理。 */
-window.BLOG_MOMENTS = [];
+window.BLOG_MOMENTS = [
+  {
+    "id": "m20260913-204927-801j",
+    "time": "2026-09-13 20:49",
+    "text": "测试",
+    "image": ""
+  }
+];
