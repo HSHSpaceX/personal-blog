@@ -1586,6 +1586,8 @@ a.tag-chip:hover {
 .aside-card::before,
 .comment-item::before,
 .comment-form::before,
+.composer::before,
+.moment-card::before,
 .admin-card::before {
   content: "";
   position: absolute;
@@ -1606,6 +1608,8 @@ a.tag-chip:hover {
 [data-theme="dark"] .aside-card::before,
 [data-theme="dark"] .comment-item::before,
 [data-theme="dark"] .comment-form::before,
+[data-theme="dark"] .composer::before,
+[data-theme="dark"] .moment-card::before,
 [data-theme="dark"] .admin-card::before {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
@@ -2234,5 +2238,192 @@ a.tag-chip:hover {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+}
+
+/* Moments */
+.moment-container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.composer,
+.moment-card {
+  display: flex;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.composer {
+  margin-bottom: 22px;
+}
+
+.moment-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.composer-body,
+.moment-body {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.composer textarea {
+  width: 100%;
+  min-height: 76px;
+  border: none;
+  background: transparent;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.6;
+  color: var(--ink);
+  outline: none;
+}
+
+.composer textarea::placeholder {
+  color: var(--muted);
+}
+
+.composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.composer-bar .status-line {
+  flex: 1;
+  margin: 0;
+}
+
+.composer-preview {
+  position: relative;
+  margin-top: 10px;
+  max-width: 260px;
+}
+
+.composer-preview img {
+  display: block;
+  width: 100%;
+  border-radius: 14px;
+}
+
+.composer-preview-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+}
+
+.composer-preview-remove svg {
+  width: 14px;
+  height: 14px;
+}
+
+.moment-login-hint {
+  text-align: center;
+  margin: 0 0 18px;
+}
+
+.moment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.moment-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moment-name {
+  font-weight: 600;
+}
+
+.moment-time {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.moment-delete {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.moment-delete:hover {
+  color: #ff3b30;
+  background: rgba(255, 59, 48, 0.12);
+}
+
+.moment-delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+.moment-text {
+  margin: 6px 0 0;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.moment-image {
+  display: block;
+  margin-top: 10px;
+}
+
+.moment-image img {
+  display: block;
+  width: 100%;
+  max-height: 380px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+@media (max-width: 560px) {
+  .moment-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .composer,
+  .moment-card {
+    padding: 14px;
+    gap: 10px;
   }
 }
