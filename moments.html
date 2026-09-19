@@ -84,16 +84,11 @@
           <img class="moment-avatar" src="assets/icon.jpg" alt="">
           <div class="composer-body">
             <textarea id="composerText" rows="3" maxlength="2000" placeholder="有什么新鲜事?"></textarea>
-            <div class="composer-preview" id="composerPreview" hidden>
-              <img id="composerPreviewImg" alt="待上传的图片">
-              <button class="composer-preview-remove" id="composerRemoveImg" type="button" aria-label="移除图片" title="移除图片">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-              </button>
-            </div>
+            <div class="composer-preview" id="composerPreview" hidden></div>
             <div class="composer-bar">
-              <button class="icon-btn" id="composerImgBtn" type="button" aria-label="添加图片" title="添加图片">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-              </button>
+            <button class="icon-btn" id="composerImgBtn" type="button" aria-label="添加图片或视频" title="添加图片或视频">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            </button>
               <span class="status-line" id="composerStatus"></span>
               <button class="btn primary" id="composerPost" type="button">发布</button>
             </div>
@@ -105,7 +100,7 @@
     </section>
   </main>
 
-  <input id="momentFileInput" type="file" accept="image/*" hidden>
+  <input id="momentFileInput" type="file" accept="image/*,video/*" multiple hidden>
 
   <footer class="site-footer">
     <div class="container footer-inner">

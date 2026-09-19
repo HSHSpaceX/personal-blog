@@ -456,6 +456,7 @@
     });
     renderMathIn(document.getElementById('postContent'));
     enhanceCodeBlocks(document.getElementById('postContent'));
+    SiteLightbox.watch(document.getElementById('postContent'));
     buildToc();
     initLikes(post.slug);
     var section = document.getElementById('commentsSection');
@@ -991,6 +992,89 @@
     return { decorate: decorate, button: button };
   })();
   window.CommentLikes = CommentLikes;
+
+  // 通用图片灯箱:文章、动态、评论里的图片点击后放大查看,支持左右滑动
+  var SiteLightbox = (function () {
+    var overlay = null;
+    var img = null;
+    var closeBtn = null;
+    var prevBtn = null;
+    var nextBtn = null;
+    var items = [];
+    var index = 0;
+
+    function build() {
+      if (overlay) return;
+      overlay = document.createElement('div');
+      overlay.className = 'site-lightbox';
+      overlay.hidden = true;
+      overlay.innerHTML =
+        '<button class="site-lightbox-close" type="button" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+        '<img alt="放大查看">' +
+        '<button class="site-lightbox-nav site-lightbox-prev" type="button" aria-label="上一张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+        '<button class="site-lightbox-nav site-lightbox-next" type="button" aria-label="下一张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
+      document.body.appendChild(overlay);
+      img = overlay.querySelector('img');
+      closeBtn = overlay.querySelector('.site-lightbox-close');
+      prevBtn = overlay.querySelector('.site-lightbox-prev');
+      nextBtn = overlay.querySelector('.site-lightbox-next');
+      closeBtn.addEventListener('click', close);
+      prevBtn.addEventListener('click', function () { show(index - 1); });
+      nextBtn.addEventListener('click', function () { show(index + 1); });
+      overlay.addEventListener('click', function (event) {
+        if (event.target === overlay) close();
+      });
+      document.addEventListener('keydown', function (event) {
+        if (!overlay || overlay.hidden) return;
+        if (event.key === 'Escape') close();
+        if (event.key === 'ArrowLeft') show(index - 1);
+        if (event.key === 'ArrowRight') show(index + 1);
+      });
+      var startX = 0;
+      overlay.addEventListener('touchstart', function (event) {
+        startX = event.touches[0].clientX;
+      }, { passive: true });
+      overlay.addEventListener('touchend', function (event) {
+        var dx = event.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > 50) show(dx < 0 ? index + 1 : index - 1);
+      }, { passive: true });
+    }
+
+    function show(newIndex) {
+      if (!items.length) return;
+      index = (newIndex + items.length) % items.length;
+      img.src = items[index];
+    }
+
+    function open(sources, startIndex) {
+      build();
+      items = sources;
+      show(startIndex || 0);
+      overlay.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      if (!overlay) return;
+      overlay.hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    function watch(container) {
+      (container || document).querySelectorAll('img:not([data-no-lightbox])').forEach(function (el) {
+        if (el.dataset.lightboxBound) return;
+        el.dataset.lightboxBound = '1';
+        el.style.cursor = 'zoom-in';
+        el.addEventListener('click', function () {
+          var scope = el.closest('.moment-card') || el.closest('.post-content') || el.closest('.comment-item') || document;
+          var imgs = Array.prototype.slice.call(scope.querySelectorAll('img:not([data-no-lightbox])')).map(function (n) { return n.src || n.currentSrc; });
+          open(imgs, imgs.indexOf(el.src || el.currentSrc));
+        });
+      });
+    }
+    return { open: open, close: close, watch: watch };
+  })();
+  window.SiteLightbox = SiteLightbox;
 
   function renderComment(item) {
     return '' +

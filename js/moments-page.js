@@ -7,7 +7,7 @@
   var MOMENTS_PATH = 'js/moments.js';
 
   var moments = [];
-  var pendingImage = null;
+  var pendingMedia = [];
   var booted = false;
 
   function $(id) {
@@ -467,7 +467,14 @@
               '</button>' : '') +
           '</div>' +
           (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +
-          (item.image ? '<a class="moment-image" href="' + escapeHtml(item.image) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(item.image) + '" alt="动态配图" loading="lazy"></a>' : '') +
+          (item.media && item.media.length
+            ? '<div class="moment-media-grid moment-media-' + Math.min(item.media.length, 4) + '">' + item.media.map(function (m, i) {
+                if (m.type && m.type.indexOf('video/') === 0) {
+                  return '<div class="moment-media-item moment-media-video"><video src="' + escapeHtml(m.src) + '" controls playsinline preload="metadata"></video></div>';
+                }
+                return '<div class="moment-media-item moment-media-img"><img src="' + escapeHtml(m.src) + '" alt="配图' + (i + 1) + '" loading="lazy"></div>';
+              }).join('') + '</div>'
+            : (item.image ? '<div class="moment-media-grid moment-media-1"><div class="moment-media-item moment-media-img"><img src="' + escapeHtml(item.image) + '" alt="动态配图" loading="lazy"></div></div>' : '')) +
           '<div class="moment-actions">' +
             '<button class="moment-action-btn moment-like-btn' + (liked ? ' liked' : '') + '" type="button" data-like="' + escapeHtml(item.id) + '" aria-label="' + (liked ? '取消点赞' : '点赞') + '">' +
               '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.6-4.9-10-9.4C.4 8.5 2.5 4.9 6 4.9c2 0 3.4 1.1 4.2 2.4h3.6c.8-1.3 2.2-2.4 4.2-2.4 3.5 0 5.6 3.6 4 6.7C19.6 16.1 12 21 12 21z"/></svg>' +
@@ -486,6 +493,7 @@
       '</article>';
     }).join('');
     refreshLikeCounts();
+    if (window.SiteLightbox) window.SiteLightbox.watch(list);
   }
 
   function syncPanels() {
@@ -495,11 +503,31 @@
     $('composer').hidden = !(authed && connected);
   }
 
-  function clearImage() {
-    pendingImage = null;
-    $('composerPreview').hidden = true;
-    $('composerPreviewImg').removeAttribute('src');
+  function clearMedia() {
+    pendingMedia = [];
+    renderComposerPreview();
     $('momentFileInput').value = '';
+  }
+
+  function renderComposerPreview() {
+    var preview = $('composerPreview');
+    if (!pendingMedia.length) {
+      preview.innerHTML = '';
+      preview.hidden = true;
+      return;
+    }
+    preview.innerHTML = pendingMedia.map(function (file, index) {
+      var thumb;
+      if (file.type.indexOf('video/') === 0) {
+        thumb = '<div class="composer-thumb-video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>';
+      } else {
+        thumb = '<img src="data:' + file.type + ';base64,' + file.base64 + '" alt="预览">';
+      }
+      return '<div class="composer-thumb">' + thumb +
+        '<button class="composer-thumb-remove" type="button" data-remove-media="' + index + '" aria-label="移除" title="移除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+        '</div>';
+    }).join('');
+    preview.hidden = false;
   }
 
   function postMoment() {
@@ -507,34 +535,39 @@
     var statusEl = $('composerStatus');
     var postBtn = $('composerPost');
     var text = textEl.value.trim();
-    if (!text && !pendingImage) {
-      setStatus(statusEl, '先写点内容,或选一张图片。', 'err');
+    if (!text && !pendingMedia.length) {
+      setStatus(statusEl, '先写点内容,或选图片/视频。', 'err');
       return;
     }
     postBtn.disabled = true;
-    setStatus(statusEl, pendingImage ? '上传图片中…' : '发布中…');
+    setStatus(statusEl, pendingMedia.length ? '上传中 0/' + pendingMedia.length + '…' : '发布中…');
     var added = null;
-    var work = Promise.resolve('');
-    if (pendingImage) {
-      var ext = String(pendingImage.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      var path = 'assets/moments/' + uid('img-') + '.' + ext;
-      work = putFile(path, pendingImage.base64, '上传动态图片').then(function () {
-        return path;
+    var mediaPaths = [];
+    var work = Promise.resolve();
+    pendingMedia.forEach(function (file, i) {
+      work = work.then(function () {
+        setStatus(statusEl, '上传中 ' + (i + 1) + '/' + pendingMedia.length + '…');
+        var ext = String(file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        var path = 'assets/moments/' + uid('m-') + '.' + ext;
+        return putFile(path, file.base64, '上传动态附件').then(function () {
+          mediaPaths.push({ type: file.type, src: path });
+        });
       });
-    }
-    work.then(function (imagePath) {
+    });
+    work.then(function () {
       added = {
         id: uid('m'),
         time: nowText(),
         text: text,
-        image: imagePath || ''
+        image: mediaPaths.length && mediaPaths[0].type.indexOf('image/') === 0 ? mediaPaths[0].src : '',
+        media: mediaPaths
       };
       moments.unshift(added);
       setStatus(statusEl, '发布中…');
       return saveMoments('发布动态');
     }).then(function () {
       textEl.value = '';
-      clearImage();
+      clearMedia();
       renderFeed();
       setStatus(statusEl, '已发布,约 1 分钟后所有人可见。', 'ok');
     }).catch(function (err) {
@@ -601,17 +634,25 @@
       $('momentFileInput').click();
     });
     $('momentFileInput').addEventListener('change', function (event) {
-      var file = event.target.files && event.target.files[0];
-      if (!file) return;
-      fileToBase64(file).then(function (base64) {
-        pendingImage = { base64: base64, name: file.name || 'image.jpg' };
-        $('composerPreviewImg').src = 'data:' + (file.type || 'image/jpeg') + ';base64,' + base64;
-        $('composerPreview').hidden = false;
-      }).catch(function (err) {
-        setStatus($('composerStatus'), err.message, 'err');
+      var files = Array.prototype.slice.call(event.target.files || []);
+      if (!files.length) return;
+      var loaded = 0;
+      files.forEach(function (file) {
+        fileToBase64(file).then(function (base64) {
+          pendingMedia.push({ base64: base64, name: file.name || 'file', type: file.type || 'image/jpeg' });
+          loaded += 1;
+          if (loaded === files.length) renderComposerPreview();
+        }).catch(function (err) {
+          setStatus($('composerStatus'), err.message, 'err');
+        });
       });
     });
-    $('composerRemoveImg').addEventListener('click', clearImage);
+    $('composerPreview').addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-remove-media]');
+      if (!btn) return;
+      pendingMedia.splice(Number(btn.getAttribute('data-remove-media')), 1);
+      renderComposerPreview();
+    });
     $('momentConnectBtn').addEventListener('click', connect);
     $('momentList').addEventListener('click', function (event) {
       var likeBtn = event.target.closest('[data-like]');
