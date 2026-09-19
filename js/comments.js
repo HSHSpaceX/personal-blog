@@ -17,6 +17,16 @@ window.SITE_COMMENTS = {
       "time": "2026-09-19",
       "content": "春秋本经多少字",
       "reply": ""
+    },
+    {
+      "id": "c1789822115197",
+      "slug": "about",
+      "nick": "HSH",
+      "email": "",
+      "time": "2026-09-19",
+      "content": "一万六😄",
+      "parentId": "c1789820778853",
+      "parentNick": "moya"
     }
   ],
   "moment-m20260914-204633-fp3i": []
