@@ -9,6 +9,14 @@ window.SITE_COMMENTS = {
       "email": "",
       "time": "2026-09-06",
       "content": "大家可以在这里发表评论，我会回复"
+    },
+    {
+      "id": "c1789820778853",
+      "nick": "moya",
+      "email": "",
+      "time": "2026-09-19",
+      "content": "春秋本经多少字",
+      "reply": ""
     }
   ],
   "moment-m20260914-204633-fp3i": []
