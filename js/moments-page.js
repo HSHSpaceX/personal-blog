@@ -229,7 +229,9 @@
       (item.parentNick ? '<p class="comment-parent-hint">回复 @' + escapeHtml(item.parentNick) + '</p>' : '') +
       '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
       (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
-      '<div class="comment-foot">' + (window.CommentLikes ? window.CommentLikes.button(String(item.id)) : '') + '</div>' +
+      '<div class="comment-foot">' + (window.CommentLikes ? window.CommentLikes.button(String(item.id)) : '') +
+        '<button type="button" class="comment-reply-btn" data-mcreply="' + escapeHtml(item.id) + '" data-mcnick="' + escapeHtml(item.nick) + '">回复</button>' +
+      '</div>' +
       (replies.length ? '<div class="comment-replies">' + replies.map(function (reply) {
         return commentItemHtml(reply, all);
       }).join('') + '</div>' : '') +
@@ -328,6 +330,7 @@
     var content = form.content.value.trim();
     var status = form.querySelector('.status-line');
     var submitBtn = form.querySelector('button[type="submit"]');
+    var replyTarget = form._replyTarget || null;
     if (!nick) {
       setStatus(status, '请填写称呼。', 'err');
       return;
@@ -345,12 +348,18 @@
       time: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()),
       content: content
     };
+    if (replyTarget) {
+      item.parentId = replyTarget.id;
+      item.parentNick = replyTarget.nick;
+    }
     submitBtn.disabled = true;
     if (isAuthed() && getToken()) {
       setStatus(status, '已登录:正在直接发布…');
       putCommentDirect(item).then(function () {
         submitBtn.disabled = false;
         form.content.value = '';
+        form._replyTarget = null;
+        clearReplyBanner(form);
         setStatus(status, '已发布。', 'ok');
         renderMomentComments(id);
         updateCommentCount(id);
@@ -369,11 +378,31 @@
     window.PendingComments.add(item).then(function () {
       submitBtn.disabled = false;
       form.content.value = '';
+      form._replyTarget = null;
+      clearReplyBanner(form);
       setStatus(status, '已提交,博主审核通过后就会显示。', 'ok');
     }).catch(function () {
       submitBtn.disabled = false;
       setStatus(status, '提交失败,请稍后再试。', 'err');
     });
+  }
+
+  function setReplyTo(form, commentId, nick) {
+    form._replyTarget = { id: commentId, nick: nick };
+    clearReplyBanner(form);
+    var banner = document.createElement('div');
+    banner.className = 'comment-reply-banner';
+    banner.innerHTML = '回复 @' + escapeHtml(nick) + ' <button type="button" class="comment-reply-cancel" aria-label="取消回复">×</button>';
+    form.insertBefore(banner, form.firstChild);
+    banner.querySelector('.comment-reply-cancel').addEventListener('click', function () {
+      form._replyTarget = null;
+      clearReplyBanner(form);
+    });
+  }
+
+  function clearReplyBanner(form) {
+    var old = form.querySelector('.comment-reply-banner');
+    if (old) old.remove();
   }
 
   function saveMoments(message) {
@@ -668,6 +697,14 @@
       var commentBtn = event.target.closest('[data-comments]');
       if (commentBtn) {
         toggleComments(commentBtn.getAttribute('data-comments'));
+        return;
+      }
+      var replyBtn = event.target.closest('[data-mcreply]');
+      if (replyBtn) {
+        var momentId = replyBtn.closest('.moment-comments').id.replace('comments-', '');
+        var form = document.querySelector('[data-moment-form="' + momentId + '"]');
+        if (form) setReplyTo(form, replyBtn.getAttribute('data-mcreply'), replyBtn.getAttribute('data-mcnick'));
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
       var btn = event.target.closest('[data-delete]');
