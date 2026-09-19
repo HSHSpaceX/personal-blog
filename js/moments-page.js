@@ -471,6 +471,51 @@
     });
   }
 
+  // 大图片在浏览器里先压缩再上传,宽度上限 1600px,JPEG 质量 0.78,显著加快速度
+  var IMAGE_MAX_DIM = 1600;
+  var IMAGE_COMPRESS_OVER = 300 * 1024; // 超过 300KB 的图片才压缩
+  function processFile(file) {
+    if (file.type && file.type.indexOf('video/') === 0) {
+      return fileToBase64(file).then(function (base64) {
+        return { base64: base64, name: file.name || 'video.mp4', type: file.type };
+      });
+    }
+    if (!file.type || file.type.indexOf('image/') !== 0 || file.size < IMAGE_COMPRESS_OVER) {
+      return fileToBase64(file).then(function (base64) {
+        return { base64: base64, name: file.name || 'image.jpg', type: file.type || 'image/jpeg' };
+      });
+    }
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var w = img.width;
+        var h = img.height;
+        if (w <= IMAGE_MAX_DIM && h <= IMAGE_MAX_DIM) {
+          fileToBase64(file).then(function (base64) {
+            resolve({ base64: base64, name: file.name || 'image.jpg', type: 'image/jpeg', ext: 'jpg' });
+          });
+          return;
+        }
+        var scale = Math.min(IMAGE_MAX_DIM / w, IMAGE_MAX_DIM / h);
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+        resolve({ base64: dataUrl.slice(dataUrl.indexOf(',') + 1), name: (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg', type: 'image/jpeg', ext: 'jpg' });
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        fileToBase64(file).then(function (base64) {
+          resolve({ base64: base64, name: file.name || 'image.jpg', type: file.type || 'image/jpeg' });
+        });
+      };
+      img.src = url;
+    });
+  }
+
   function renderFeed() {
     var list = $('momentList');
     if (!list) return;
@@ -501,9 +546,9 @@
                 if (m.type && m.type.indexOf('video/') === 0) {
                   return '<div class="moment-media-item moment-media-video"><video src="' + escapeHtml(m.src) + '" controls playsinline preload="metadata"></video></div>';
                 }
-                return '<div class="moment-media-item moment-media-img"><img src="' + escapeHtml(m.src) + '" alt="配图' + (i + 1) + '" loading="lazy"></div>';
+                return '<div class="moment-media-item moment-media-img"><img src="' + escapeHtml(m.src) + '" alt="配图' + (i + 1) + '" loading="eager" decoding="async"></div>';
               }).join('') + '</div>'
-            : (item.image ? '<div class="moment-media-grid moment-media-1"><div class="moment-media-item moment-media-img"><img src="' + escapeHtml(item.image) + '" alt="动态配图" loading="lazy"></div></div>' : '')) +
+            : (item.image ? '<div class="moment-media-grid moment-media-1"><div class="moment-media-item moment-media-img"><img src="' + escapeHtml(item.image) + '" alt="动态配图" loading="eager" decoding="async"></div></div>' : '')) +
           '<div class="moment-actions">' +
             '<button class="moment-action-btn moment-like-btn' + (liked ? ' liked' : '') + '" type="button" data-like="' + escapeHtml(item.id) + '" aria-label="' + (liked ? '取消点赞' : '点赞') + '">' +
               '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.6-4.9-10-9.4C.4 8.5 2.5 4.9 6 4.9c2 0 3.4 1.1 4.2 2.4h3.6c.8-1.3 2.2-2.4 4.2-2.4 3.5 0 5.6 3.6 4 6.7C19.6 16.1 12 21 12 21z"/></svg>' +
@@ -576,7 +621,7 @@
     pendingMedia.forEach(function (file, i) {
       work = work.then(function () {
         setStatus(statusEl, '上传中 ' + (i + 1) + '/' + pendingMedia.length + '…');
-        var ext = String(file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        var ext = file.ext || String(file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
         var path = 'assets/moments/' + uid('m-') + '.' + ext;
         return putFile(path, file.base64, '上传动态附件').then(function () {
           mediaPaths.push({ type: file.type, src: path });
@@ -667,8 +712,8 @@
       if (!files.length) return;
       var loaded = 0;
       files.forEach(function (file) {
-        fileToBase64(file).then(function (base64) {
-          pendingMedia.push({ base64: base64, name: file.name || 'file', type: file.type || 'image/jpeg' });
+        processFile(file).then(function (result) {
+          pendingMedia.push(result);
           loaded += 1;
           if (loaded === files.length) renderComposerPreview();
         }).catch(function (err) {

@@ -137,7 +137,7 @@
     return '' +
       '<article class="post-card">' +
         '<a class="post-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
-          '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="lazy">' +
+          '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="eager" decoding="async" fetchpriority="high">' +
         '</a>' +
         '<div class="post-card-body">' +
           categoryChip(post) +
@@ -159,7 +159,7 @@
     return '' +
       '<article class="rail-card reveal" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
         '<a class="rail-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
-          '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy">' +
+          '<img src="' + escapeHtml(post.cover) + '" alt="" loading="eager" decoding="async" fetchpriority="high">' +
         '</a>' +
         '<div class="rail-card-body">' +
           categoryChip(post) +
@@ -443,6 +443,10 @@
     }).join('');
 
     document.getElementById('postContent').innerHTML = post.content;
+    document.getElementById('postContent').querySelectorAll('img').forEach(function (img) {
+      img.setAttribute('decoding', 'async');
+      img.setAttribute('loading', 'eager');
+    });
     document.getElementById('postContent').querySelectorAll('video').forEach(function (video) {
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
@@ -1313,6 +1317,58 @@
     setupMenu();
     setupReveal();
     setupRail();
+    buildContribChart();
+  }
+
+  // GitHub 贡献热力图:悬停色块显示当天提交次数,不跳转
+  function buildContribChart() {
+    var wrap = document.getElementById('contribCells');
+    if (!wrap) return;
+    fetch('https://github-contributions-api.jogruber.de/v4/HSHSpaceX?y=last')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (!data || !data.contributions) return;
+        var days = data.contributions;
+        var weeks = [];
+        var week = [];
+        days.forEach(function (day, i) {
+          week.push(day);
+          if (week.length === 7 || i === days.length - 1) {
+            weeks.push(week);
+            week = [];
+          }
+        });
+        wrap.innerHTML = weeks.map(function (wk) {
+          return '<div class="contrib-week">' + wk.map(function (d) {
+            var label = d.date + '：' + d.count + ' 次提交';
+            return '<div class="contrib-day" data-level="' + Math.min(d.level, 4) + '" data-tip="' + label + '" title="' + label + '"></div>';
+          }).join('') + '</div>';
+        }).join('');
+        var tip = null;
+        wrap.addEventListener('mouseover', function (event) {
+          var cell = event.target.closest('.contrib-day[data-tip]');
+          if (!cell) {
+            if (tip) { tip.remove(); tip = null; }
+            return;
+          }
+          if (!tip) {
+            tip = document.createElement('div');
+            tip.className = 'contrib-tip';
+            wrap.appendChild(tip);
+          }
+          tip.textContent = cell.getAttribute('data-tip');
+          var rect = cell.getBoundingClientRect();
+          var wrapRect = wrap.getBoundingClientRect();
+          tip.style.left = (rect.left - wrapRect.left + rect.width / 2 - 40) + 'px';
+          tip.style.top = (rect.top - wrapRect.top - 30) + 'px';
+        });
+        wrap.addEventListener('mouseleave', function () {
+          if (tip) { tip.remove(); tip = null; }
+        });
+      })
+      .catch(function () {
+        wrap.innerHTML = '<p style="padding:8px;color:var(--muted);font-size:13px">暂时无法加载贡献数据。</p>';
+      });
   }
 
   if (window.BLOG_POSTS) {
