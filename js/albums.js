@@ -12,6 +12,10 @@ window.SITE_ALBUMS = [
       {
         "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almu42r9g0alb6/almu42sv0o7dda.jpg",
         "caption": ""
+      },
+      {
+        "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almu42r9g0alb6/almu8clihjhmiq.png",
+        "caption": ""
       }
     ],
     "created": "2026-09-16"
