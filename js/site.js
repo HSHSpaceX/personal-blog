@@ -208,7 +208,13 @@
     }
 
     if (gridEl) {
-      gridEl.innerHTML = sorted.map(renderPostCard).join('');
+      gridEl.innerHTML = sorted.slice(0, 9).map(renderPostCard).join('');
+      var latestMoreEl = document.getElementById('latestMore');
+      if (latestMoreEl) {
+        latestMoreEl.innerHTML = sorted.length > 9
+          ? '<a class="text-link" href="archive.html">查看更多' + arrowSvg() + '</a>'
+          : '';
+      }
     }
 
     if (statsEl) {
@@ -233,6 +239,46 @@
         return '<a class="category-chip" href="' + categoryUrl(category) + '">' +
           escapeHtml(category) + ' <span class="count">' + counts[category] + '</span></a>';
       }).join('');
+    }
+
+    var homeCommentsEl = document.getElementById('homeComments');
+    if (homeCommentsEl) {
+      var allComments = [];
+      var commentData = window.SITE_COMMENTS || {};
+      Object.keys(commentData).forEach(function (slug) {
+        (commentData[slug] || []).forEach(function (item) {
+          allComments.push(Object.assign({ slug: slug }, item));
+        });
+      });
+      allComments.sort(function (a, b) {
+        return String(b.time || '').localeCompare(String(a.time || ''));
+      });
+      var latestComments = allComments.slice(0, 9);
+      var commentsBand = homeCommentsEl.closest('.band');
+      if (!latestComments.length) {
+        if (commentsBand) commentsBand.hidden = true;
+      } else {
+        if (commentsBand) commentsBand.hidden = false;
+        homeCommentsEl.innerHTML = latestComments.map(function (item) {
+          var post = posts.filter(function (entry) { return entry.slug === item.slug; })[0];
+          var source;
+          var link;
+          if (item.slug === 'about') {
+            source = '关于';
+            link = 'about.html#commentsSection';
+          } else if (item.slug.indexOf('moment-') === 0) {
+            source = '动态';
+            link = 'moments.html#' + item.slug;
+          } else {
+            source = post ? post.title : item.slug;
+            link = postUrl(item.slug) + '#commentsSection';
+          }
+          return '<a class="home-comment-card" href="' + escapeHtml(link) + '">' +
+            '<p class="home-comment-text">' + escapeHtml(item.content) + '</p>' +
+            '<div class="home-comment-meta"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + ' · ' + escapeHtml(source) + '</span></div>' +
+          '</a>';
+        }).join('');
+      }
     }
   }
 
@@ -524,6 +570,7 @@
       '.section-head',
       '#postGrid .post-card',
       '#featuredRail .rail-card',
+      '#homeComments .home-comment-card',
       '.category-list .category-chip',
       '.about-inner',
       '#archiveList .archive-row',
@@ -831,13 +878,127 @@
       });
   }
 
+  // 评论点赞:每条评论用 comment-<id> 计数键,双计数器求差,每个设备只能点一次
+  var CommentLikes = (function () {
+    function counterKey(id) {
+      return 'comment-' + id;
+    }
+    function likedKey(id) {
+      return 'blog-liked-comment-' + id;
+    }
+    function cacheKey(id) {
+      return 'blog-comment-like-count-' + id;
+    }
+    function isLiked(id) {
+      try {
+        return localStorage.getItem(likedKey(id)) === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+    function cachedCount(id) {
+      try {
+        return Number(localStorage.getItem(cacheKey(id))) || 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+    function setCached(id, value) {
+      try {
+        localStorage.setItem(cacheKey(id), String(value));
+      } catch (e) {
+        /* 忽略 */
+      }
+    }
+    function fetchDiff(id) {
+      function get(ns) {
+        return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(counterKey(id)))
+          .then(function (res) {
+            return res.ok ? res.json() : { value: 0 };
+          })
+          .then(function (data) {
+            return (data && (data.count || data.value)) || 0;
+          })
+          .catch(function () {
+            return null;
+          });
+      }
+      return Promise.all([get('shiguang-likes'), get('shiguang-unlikes')]).then(function (results) {
+        if (results[0] === null || results[1] === null) return null;
+        return Math.max(0, results[0] - results[1]);
+      });
+    }
+    function updateUI(id, liked, count) {
+      document.querySelectorAll('[data-clike="' + id + '"]').forEach(function (btn) {
+        btn.classList.toggle('liked', liked);
+        btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这条评论');
+        var num = btn.querySelector('.comment-like-count');
+        if (num) num.textContent = String(count);
+      });
+    }
+    function toggle(id) {
+      var liked = !isLiked(id);
+      try {
+        if (liked) localStorage.setItem(likedKey(id), '1');
+        else localStorage.removeItem(likedKey(id));
+      } catch (e) {
+        /* 忽略 */
+      }
+      var optimistic = Math.max(0, cachedCount(id) + (liked ? 1 : -1));
+      setCached(id, optimistic);
+      updateUI(id, liked, optimistic);
+      var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
+      fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(counterKey(id)))
+        .then(function () {
+          return fetchDiff(id);
+        })
+        .then(function (value) {
+          if (value === null) return;
+          setCached(id, value);
+          updateUI(id, isLiked(id), value);
+        })
+        .catch(function () {
+          /* 离线时保留乐观值 */
+        });
+    }
+    var bound = false;
+    function bind() {
+      if (bound) return;
+      bound = true;
+      document.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-clike]');
+        if (btn) toggle(btn.getAttribute('data-clike'));
+      });
+    }
+    function decorate(container) {
+      bind();
+      (container || document).querySelectorAll('[data-clike]').forEach(function (btn) {
+        var id = btn.getAttribute('data-clike');
+        updateUI(id, isLiked(id), cachedCount(id));
+        fetchDiff(id).then(function (value) {
+          if (value === null) return;
+          setCached(id, value);
+          updateUI(id, isLiked(id), value);
+        });
+      });
+    }
+    function button(id) {
+      return '<button class="comment-like-btn" type="button" data-clike="' + id + '" aria-label="点赞这条评论">' +
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.6-4.9-10-9.4C.4 8.5 2.5 4.9 6 4.9c2 0 3.4 1.1 4.2 2.4h3.6c.8-1.3 2.2-2.4 4.2-2.4 3.5 0 5.6 3.6 4 6.7C19.6 16.1 12 21 12 21z"/></svg>' +
+        '<span class="comment-like-count">0</span>' +
+      '</button>';
+    }
+    return { decorate: decorate, button: button };
+  })();
+  window.CommentLikes = CommentLikes;
+
   function renderComment(item) {
     return '' +
       '<div class="comment-item">' +
         '<div class="comment-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span></div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
         (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
-        '<div class="comment-foot"><button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button></div>' +
+        '<div class="comment-foot">' + CommentLikes.button(String(item.id)) + '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button></div>' +
       '</div>';
   }
 
@@ -874,6 +1035,7 @@
           return renderCommentTree(item, data);
         }).join('')
       : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
+    CommentLikes.decorate(listEl);
 
     var form = document.getElementById('commentForm');
     var replyTarget = null;
@@ -942,6 +1104,7 @@
           if (listEl) listEl.innerHTML = data.filter(function (c) { return !c.parentId; }).map(function (c) {
             return renderCommentTree(c, data);
           }).join('');
+          if (listEl) CommentLikes.decorate(listEl);
           setStatus(status, '已发布。', 'ok');
           clearReplyTarget();
         }).catch(function (e3) {

@@ -127,36 +127,12 @@
         </div>
         <div class="msg-section">
           <h2>评论管理</h2>
-          <p class="hint">读者通过文章底部表单提交的评论会发到你的邮箱，在这里录入并发布后才会显示。</p>
+          <p class="hint">读者评论通过审核后会显示在这里，删除后立即生效。</p>
           <div id="msgCommentList" class="msg-comment-list"></div>
-          <div class="msg-add-form">
-            <div class="field">
-              <label for="msgSlug">所属文章</label>
-              <select id="msgSlug"></select>
-            </div>
-            <div class="field">
-              <label for="msgNick">称呼（必填）</label>
-              <input id="msgNick" type="text">
-            </div>
-            <div class="field">
-              <label for="msgEmail">邮箱（选填，用于回复通知）</label>
-              <input id="msgEmail" type="email">
-            </div>
-            <div class="field">
-              <label for="msgContent">评论内容（必填）</label>
-              <textarea id="msgContent" rows="3"></textarea>
-            </div>
-            <div class="field">
-              <label for="msgReply">博主回复（选填，会显示在评论下方）</label>
-              <textarea id="msgReply" rows="2"></textarea>
-            </div>
-            <div class="admin-row">
-              <button class="btn" id="msgAddBtn" type="button">添加到列表</button>
-              <button class="btn primary" id="msgSaveBtn" type="button">保存并发布</button>
-              <button class="btn" id="msgBackBtn" type="button">返回列表</button>
-            </div>
-            <p id="msgStatus" class="status-line"></p>
+          <div class="admin-row">
+            <button class="btn" id="msgBackBtn" type="button">返回列表</button>
           </div>
+          <p id="msgStatus" class="status-line"></p>
         </div>
       </div>
     </section>

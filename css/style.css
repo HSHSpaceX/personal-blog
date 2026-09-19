@@ -1569,7 +1569,8 @@ a.tag-chip:hover {
 .aside-card,
 .comment-item,
 .comment-form,
-.admin-card {
+.admin-card,
+.home-comment-card {
   position: relative;
 }
 
@@ -1582,7 +1583,8 @@ a.tag-chip:hover {
 .comment-form::before,
 .composer::before,
 .moment-card::before,
-.admin-card::before {
+.admin-card::before,
+.home-comment-card::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1604,7 +1606,8 @@ a.tag-chip:hover {
 [data-theme="dark"] .comment-form::before,
 [data-theme="dark"] .composer::before,
 [data-theme="dark"] .moment-card::before,
-[data-theme="dark"] .admin-card::before {
+[data-theme="dark"] .admin-card::before,
+[data-theme="dark"] .home-comment-card::before {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
 
@@ -2488,8 +2491,170 @@ a.tag-chip:hover {
   }
 
   .composer,
-  .moment-card {
+ .moment-card {
+   padding: 14px;
+   gap: 10px;
+ }
+}
+/* Home latest comments */
+.home-comment-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-comment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.home-comment-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.home-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.home-comment-meta strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.home-comment-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Comment like button */
+.comment-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 980px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.comment-like-btn svg {
+  width: 13px;
+  height: 13px;
+  color: var(--accent);
+}
+
+.comment-like-btn.liked {
+  color: #ff2d55;
+  border-color: rgba(255, 45, 85, 0.45);
+  background: rgba(255, 45, 85, 0.1);
+}
+
+.comment-like-btn.liked svg {
+  color: #ff2d55;
+}
+
+/* Moment comments panel */
+.moment-comments {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.moment-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.moment-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-strong);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.moment-comment-form input,
+.moment-comment-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.moment-comment-form input:focus,
+.moment-comment-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.moment-comment-form textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.moment-comment-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.moment-comment-foot .status-line {
+  margin: 0;
+}
+
+.moment-comment-foot .comment-submit {
+  padding: 8px 18px;
+}
+
+.moment-comment-item .comment-foot {
+  margin-top: 6px;
+}
+
+.moment-comment-item .comment-replies {
+  margin-top: 8px;
+  padding-left: 14px;
+}
+
+@media (max-width: 560px) {
+  .home-comment-card {
     padding: 14px;
-    gap: 10px;
   }
 }

@@ -522,12 +522,6 @@
   font-size: 12px;
 }
 
-.msg-add-form {
-  margin-top: 6px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-}
-
 @media (max-width: 720px) {
   .admin-main {
     padding: 20px 0 60px;

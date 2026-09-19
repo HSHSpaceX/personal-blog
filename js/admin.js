@@ -371,11 +371,6 @@
 
   function openMessageBox() {
     messageComments = JSON.parse(JSON.stringify(window.SITE_COMMENTS || {}));
-    var slugOptions = posts.map(function (post) { return post.slug; });
-    if (slugOptions.indexOf('about') === -1) slugOptions.push('about');
-    $('msgSlug').innerHTML = slugOptions.map(function (slug) {
-      return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(slug) + '</option>';
-    }).join('');
     renderMessageBox();
     showMessage();
     window.scrollTo({ top: 0 });
@@ -393,15 +388,7 @@
       ? flat.map(renderMsgItem).join('')
       : '<p class="empty-state">暂无评论，收到读者评论后在这里添加并发布。</p>';
 
-    var slugSelect = $('msgSlug');
-    var current = slugSelect.value;
-    var slugOptions = posts.map(function (post) { return post.slug; });
-    if (slugOptions.indexOf('about') === -1) slugOptions.push('about');
-    slugSelect.innerHTML = slugOptions.map(function (slug) {
-      return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(slug) + '</option>';
-    }).join('');
-    if (current && slugOptions.indexOf(current) !== -1) slugSelect.value = current;
-    refreshPendingList();
+   refreshPendingList();
   }
 
   function renderMsgItem(item) {
@@ -469,7 +456,9 @@
         email: item.email,
         time: item.time,
         content: item.content,
-        reply: ''
+        reply: '',
+        parentId: item.parentId,
+        parentNick: item.parentNick
       });
       return saveComments().then(function () {
         return window.PendingComments.remove(id);
@@ -489,44 +478,13 @@
     });
   }
 
-  function addCommentFromForm() {
-    var slug = $('msgSlug').value || 'about';
-    var nick = $('msgNick').value.trim();
-    var email = $('msgEmail').value.trim();
-    var content = $('msgContent').value.trim();
-    var reply = $('msgReply').value.trim();
-    if (!nick) {
-      setStatus($('msgStatus'), '请填写称呼。', 'err');
-      return;
-    }
-    if (!content) {
-      setStatus($('msgStatus'), '请填写评论内容。', 'err');
-      return;
-    }
-    if (!messageComments[slug]) messageComments[slug] = [];
-    messageComments[slug].push({
-      id: 'c' + Date.now(),
-      nick: nick,
-      email: email,
-      time: new Date().toISOString().slice(0, 10),
-      content: content,
-      reply: reply
-    });
-    $('msgNick').value = '';
-    $('msgEmail').value = '';
-    $('msgContent').value = '';
-    $('msgReply').value = '';
-    renderMessageBox();
-    setStatus($('msgStatus'), '已添加，点击“保存并发布”后才会显示在网站上。', 'ok');
-  }
-
   async function refreshLikeStats() {
     var likesEl = $('msgLikes');
     var slugs = posts.map(function (post) { return post.slug; });
     likesEl.innerHTML = '<span class="hint">加载中…</span>';
     var rows = await Promise.all(slugs.map(function (slug) {
       var getCount = function (ns) {
-        return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug))
+        return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug + '-v2'))
           .then(function (res) { return res.json(); })
           .then(function (data) {
             return (data && (data.count || data.value)) || 0;
@@ -551,7 +509,7 @@
       return;
     }
     var saveBtn = $('msgSaveBtn');
-    saveBtn.disabled = true;
+    if (saveBtn) saveBtn.disabled = true;
     setStatus($('msgStatus'), '正在提交到 GitHub…');
     var lastError = null;
     try {
@@ -584,7 +542,7 @@
     } catch (e) {
       setStatus($('msgStatus'), '保存失败：' + friendlyApiError(lastError || e), 'err');
     } finally {
-      saveBtn.disabled = previewMode;
+      if (saveBtn) saveBtn.disabled = false;
     }
   }
 
@@ -1071,24 +1029,26 @@
     });
 
     $('messageBtn').addEventListener('click', openMessageBox);
-    $('msgAddBtn').addEventListener('click', addCommentFromForm);
-    $('msgSaveBtn').addEventListener('click', saveComments);
     $('msgBackBtn').addEventListener('click', function () {
       showList();
     });
     $('msgRefreshLikes').addEventListener('click', refreshLikeStats);
     $('msgRefreshPending').addEventListener('click', refreshPendingList);
-    $('msgCommentList').addEventListener('click', function (event) {
-      var btn = event.target.closest('button[data-del-comment]');
-      if (!btn) return;
-      var slug = btn.dataset.delSlug;
-      var id = btn.dataset.delComment;
-      messageComments[slug] = (messageComments[slug] || []).filter(function (item) {
-        return item.id !== id;
+   $('msgCommentList').addEventListener('click', function (event) {
+     var btn = event.target.closest('button[data-del-comment]');
+     if (!btn) return;
+     var slug = btn.dataset.delSlug;
+     var id = btn.dataset.delComment;
+     messageComments[slug] = (messageComments[slug] || []).filter(function (item) {
+       return item.id !== id;
+     });
+     renderMessageBox();
+      saveComments().then(function () {
+        setStatus($('msgStatus'), '已删除并保存。', 'ok');
+      }).catch(function (e) {
+        setStatus($('msgStatus'), '删除失败：' + friendlyApiError(e), 'err');
       });
-      renderMessageBox();
-      setStatus($('msgStatus'), '已删除，点击“保存并发布”后生效。');
-    });
+   });
 
     $('msgPendingList').addEventListener('click', function (event) {
       var approveBtn = event.target.closest('button[data-approve-comment]');
