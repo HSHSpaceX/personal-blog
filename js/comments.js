@@ -38,6 +38,16 @@ window.SITE_COMMENTS = {
       "time": "2026-09-20",
       "content": "测试",
       "reply": ""
+    },
+    {
+      "id": "c1789908412756",
+      "slug": "post-20260918-2110",
+      "nick": "HSH",
+      "email": "",
+      "time": "2026-09-20",
+      "content": "测试",
+      "parentId": "c1789908330280",
+      "parentNick": "HSHSpaceX"
     }
   ]
 };
