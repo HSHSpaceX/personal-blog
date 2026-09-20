@@ -11,16 +11,5 @@ window.BLOG_POSTS = [
     featured: true,
     excerpt: "测试",
     content: `图片测试<div><img src="https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/posts/img-20260918-2111-m1wi.png" alt="插图"></div><div>Latex</div><div>$$t$$</div><pre>print("hello!world")</pre>`
-  },
-  {
-    slug: "post-20260920-1240",
-    title: "测试2",
-    category: "测试",
-    tags: [],
-    date: "2026-09-20",
-    readingTime: 5,
-    cover: "assets/covers/cover-20260918-2111-kmxf.png",
-    excerpt: "",
-    content: `<p></p>`
   }
 ];
