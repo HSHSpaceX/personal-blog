@@ -29,5 +29,15 @@ window.SITE_COMMENTS = {
       "parentNick": "moya"
     }
   ],
-  "moment-m20260914-204633-fp3i": []
+  "moment-m20260914-204633-fp3i": [],
+  "post-20260918-2110": [
+    {
+      "id": "c1789908330280",
+      "nick": "HSHSpaceX",
+      "email": "hsh0730@126.com",
+      "time": "2026-09-20",
+      "content": "测试",
+      "reply": ""
+    }
+  ]
 };
