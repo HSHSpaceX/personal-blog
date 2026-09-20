@@ -30,16 +30,5 @@ window.SITE_COMMENTS = {
     }
   ],
   "moment-m20260914-204633-fp3i": [],
-  "post-20260918-2110": [
-    {
-      "id": "c1789908412756",
-      "slug": "post-20260918-2110",
-      "nick": "HSH",
-      "email": "",
-      "time": "2026-09-20",
-      "content": "测试",
-      "parentId": "c1789908330280",
-      "parentNick": "HSHSpaceX"
-    }
-  ]
+  "post-20260918-2110": []
 };
