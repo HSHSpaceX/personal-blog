@@ -31,14 +31,5 @@ window.SITE_COMMENTS = {
   ],
   "moment-m20260914-204633-fp3i": [],
   "post-20260918-2110": [],
-  "moment-m20260919-201800-zbue": [
-    {
-      "id": "c1790075180945",
-      "slug": "moment-m20260919-201800-zbue",
-      "nick": "HSH",
-      "email": "",
-      "time": "2026-09-22",
-      "content": "CESHI"
-    }
-  ]
+  "moment-m20260919-201800-zbue": []
 };
