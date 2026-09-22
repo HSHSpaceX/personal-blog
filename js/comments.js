@@ -1,4 +1,4 @@
-/* 评论数据:在后台“消息”栏目中管理。 */
+/* 评论数据：在后台“消息”栏目中管理。 */
 window.SITE_COMMENTS = {
   "post-20260906-1212": [],
   "about": [
@@ -74,14 +74,6 @@ window.SITE_COMMENTS = {
     },
     {
       "id": "c1790075322736",
-      "slug": "moment-m20260919-201800-zbue",
-      "nick": "HSH",
-      "email": "",
-      "time": "2026-09-22",
-      "content": "4"
-    },
-    {
-      "id": "c1790075332184",
       "slug": "moment-m20260919-201800-zbue",
       "nick": "HSH",
       "email": "",
