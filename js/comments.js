@@ -55,14 +55,6 @@ window.SITE_COMMENTS = {
       "email": "",
       "time": "2026-09-22",
       "content": "2"
-    },
-    {
-      "id": "c1790075286168",
-      "slug": "moment-m20260919-201800-zbue",
-      "nick": "HSH",
-      "email": "",
-      "time": "2026-09-22",
-      "content": "3"
     }
   ]
 };
