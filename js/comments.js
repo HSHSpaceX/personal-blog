@@ -71,14 +71,6 @@ window.SITE_COMMENTS = {
       "email": "",
       "time": "2026-09-22",
       "content": "4"
-    },
-    {
-      "id": "c1790075322736",
-      "slug": "moment-m20260919-201800-zbue",
-      "nick": "HSH",
-      "email": "",
-      "time": "2026-09-22",
-      "content": "4"
     }
   ]
 };
