@@ -3,7 +3,7 @@ window.SITE_ALBUMS = [
   {
     "id": "almu42r9g0alb6",
     "title": "朱雀2E",
-    "visibility": "private",
+    "visibility": "public",
     "photos": [
       {
         "src": "https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/gallery/almu42r9g0alb6/almu42st2izl5t.jpg",
