@@ -49,14 +49,33 @@
         if (isOwner ? c.nick === 'HSH(站长)' : (acc && c.nick === acc.name)) commentCount++;
       });
     });
-    $('profileComments').textContent = commentCount;
-
     var moments = window.BLOG_MOMENTS || [];
     var likeCount = moments.filter(function (m) {
       if (isOwner) return true;
       return acc && acc.likes.indexOf('moment-' + m.id) !== -1;
     }).length;
-    $('profileLikes').textContent = likeCount;
+    var posts = window.BLOG_POSTS || [];
+
+    var cardsEl = $('profileCards');
+    if (cardsEl) {
+      cardsEl.innerHTML = '';
+      function addCard(icon, num, label, href) {
+        var a = document.createElement('a');
+        a.className = 'profile-stat-card glass-card';
+        a.href = href;
+        a.innerHTML = '<div class="profile-stat-icon">' + icon + '</div><div class="profile-stat-body"><strong>' + num + '</strong><span>' + label + '</span></div>';
+        cardsEl.appendChild(a);
+      }
+      if (isOwner) {
+        addCard('📝', posts.length, '篇文章', 'archive.html');
+        addCard('💬', commentCount, '条评论', 'admin.html#messages');
+        addCard('❤️', likeCount, '条动态', 'moments.html');
+      } else {
+        addCard('📝', posts.length, '篇文章', 'archive.html');
+        addCard('💬', commentCount, '条评论', '#');
+        addCard('❤️', likeCount, '个赞', '#');
+      }
+    }
 
     $('profileFollowState').textContent = (acc && acc.following) ? '已关注' : '未关注';
 

@@ -182,15 +182,19 @@
 
   function renderArchiveRow(post) {
     return '' +
-      '<article class="archive-row">' +
+      '<article class="archive-row glass-card">' +
         '<a class="archive-thumb" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
           '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy">' +
         '</a>' +
         '<div class="archive-row-main">' +
+          categoryChip(post) +
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           '<p>' + escapeHtml(post.excerpt) + '</p>' +
         '</div>' +
         '<div class="archive-row-side">' +
+          (post.tags || []).slice(0, 3).map(function (tag) {
+            return '<a class="archive-tag-link" href="archive.html?tag=' + encodeURIComponent(tag) + '">' + escapeHtml(tag) + '</a>';
+          }).join('') +
           '<span>' + formatDate(post.date) + '</span>' +
           '<span>' + post.readingTime + ' 分钟阅读</span>' +
         '</div>' +
@@ -294,6 +298,7 @@
     var catWrap = document.getElementById('archiveCategories');
     var params = new URLSearchParams(window.location.search);
     var activeCategory = params.get('category') || '';
+    var activeTag = params.get('tag') || '全部';
     if (!listEl) return;
 
     // 分类分组卡片(仅在未选分类时显示)
@@ -348,9 +353,48 @@
     if (listEl) {
       var archiveListSection = listEl.closest('.archive-list');
       if (archiveListSection) archiveListSection.style.display = '';
-      var filtered = posts.filter(function (p) { return p.category === activeCategory; });
-      listEl.innerHTML = '<div class="archive-filter-bar"><a class="text-link" href="archive.html">← 返回归档</a><span class="archive-filter-label">' + escapeHtml(activeCategory) + ' · 共 ' + filtered.length + ' 篇</span></div>' +
-        (filtered.length ? filtered.map(renderArchiveRow).join('') : '<p class="empty-state">没有找到匹配的文章。</p>');
+      var isGroup = ARCHIVE_GROUPS.some(function (g) { return g.title === activeCategory; });
+      var groupCats = [];
+      if (isGroup) {
+        groupCats = ARCHIVE_GROUPS.filter(function (g) { return g.title === activeCategory; })[0].cats.map(function (c) { return c.name; });
+      } else {
+        groupCats = [activeCategory];
+      }
+      function filterPosts() {
+        return posts.filter(function (p) {
+          var inCat = groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
+          var inTag = activeTag === '全部' || (p.tags || []).indexOf(activeTag) !== -1;
+          return inCat && inTag;
+        });
+      }
+      function renderFilterBar() {
+        var allTags = ['全部'];
+        posts.filter(function (p) {
+          return groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
+        }).forEach(function (p) {
+          (p.tags || []).forEach(function (t) { if (allTags.indexOf(t) === -1) allTags.push(t); });
+        });
+        var tagHtml = allTags.length > 1 ? '<div class="archive-tag-filter">' + allTags.map(function (t) {
+          return '<button class="filter-chip' + (t === activeTag ? ' active' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+        }).join('') + '</div>' : '';
+        return '<div class="archive-filter-bar"><a class="text-link" href="archive.html">← 返回归档</a><span class="archive-filter-label">' + escapeHtml(activeCategory) + '</span></div>' + tagHtml;
+      }
+      listEl.innerHTML = renderFilterBar() +
+        '<div id="archiveFilteredList" class="archive-list-inner">' +
+        filterPosts().map(renderArchiveRow).join('') +
+        '</div>';
+      var listContainer = document.getElementById('archiveFilteredList');
+      if (listContainer) {
+        listContainer.addEventListener('click', function (event) {
+          var chip = event.target.closest('[data-tag]');
+          if (!chip) return;
+          activeTag = chip.getAttribute('data-tag');
+          listEl.innerHTML = renderFilterBar() +
+            '<div id="archiveFilteredList" class="archive-list-inner">' +
+            filterPosts().map(renderArchiveRow).join('') +
+            '</div>';
+        });
+      }
     }
   }
 
@@ -1315,12 +1359,31 @@
   // 识别设备型号用于评论显示
   function getDeviceModel() {
     var ua = navigator.userAgent;
-    if (/iPhone/.test(ua)) return 'iPhone';
-    if (/iPad/.test(ua)) return 'iPad';
-    if (/Android.*Mobile/.test(ua)) return 'Android 手机';
-    if (/Android/.test(ua)) return 'Android 平板';
-    if (/Windows/.test(ua)) return 'Windows 电脑';
-    if (/Mac/.test(ua)) return 'Mac';
+    // iOS
+    if (/iPhone/.test(ua)) {
+      var match = ua.match(/iPhone OS (\d+)/);
+      return 'iPhone' + (match ? ' iOS ' + match[1] : '');
+    }
+    if (/iPad/.test(ua)) {
+      var match = ua.match(/CPU OS (\d+)/);
+      return 'iPad' + (match ? ' iPadOS ' + match[1] : '');
+    }
+    if (/Macintosh/.test(ua)) {
+      var match = ua.match(/Mac OS X (\d+)[._](\d+)/);
+      return match ? 'macOS ' + match[1] + '.' + match[2] : 'Mac';
+    }
+    // Android
+    if (/Android/.test(ua)) {
+      var match = ua.match(/Android (\d+(\.\d+)?)/);
+      var isMobile = /Mobile/.test(ua);
+      return (isMobile ? 'Android ' : 'Android 平板 ') + (match ? match[1] : '');
+    }
+    // Windows
+    if (/Windows NT (\d+\.\d+)/.test(ua)) {
+      var v = { '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7' };
+      return 'Windows ' + (v[ua.match(/Windows NT (\d+\.\d+)/)[1]] || '10/11');
+    }
+    if (/Windows/.test(ua)) return 'Windows';
     if (/Linux/.test(ua)) return 'Linux';
     return '未知设备';
   }
@@ -1381,8 +1444,11 @@
         tip.textContent = cell.getAttribute('data-tip');
         var rect = cell.getBoundingClientRect();
         var wrapRect = wrap.getBoundingClientRect();
-        tip.style.left = (rect.left - wrapRect.left + rect.width / 2 - 40) + 'px';
-        tip.style.top = (rect.top - wrapRect.top - 30) + 'px';
+        var tipX = rect.left - wrapRect.left + rect.width / 2;
+        var tipY = rect.top - wrapRect.top - 30;
+        // 防止溢出右边界
+        tip.style.left = Math.max(4, Math.min(tipX - 60, wrapRect.width - 70)) + 'px';
+        tip.style.top = Math.max(0, tipY) + 'px';
       });
       wrap.addEventListener('mouseleave', function () {
         if (tip) { tip.remove(); tip = null; }
