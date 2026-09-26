@@ -225,7 +225,10 @@
       return entry.parentId === item.id;
     });
     return '<div class="comment-item moment-comment-item">' +
-      '<div class="comment-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span></div>' +
+      '<div class="comment-head"><img class="comment-avatar" src="' + (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg') + '" alt="" onerror="this.style.display=\'none\'">' +
+      '<strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span>' +
+      (item.device ? '<span class="comment-device">' + escapeHtml(item.device) + '</span>' : '') +
+      '</div>' +
       (item.parentNick ? '<p class="comment-parent-hint">回复 @' + escapeHtml(item.parentNick) + '</p>' : '') +
       '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
       (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
@@ -252,6 +255,8 @@
         }).join('') : '<p class="empty-state">还没有评论。</p>') +
       '</div>' +
       '<form class="moment-comment-form" data-moment-form="' + escapeHtml(id) + '">' +
+        '<input type="hidden" name="readerAvatar" value="' + escapeHtml(readerAcc && readerAcc.avatar ? readerAcc.avatar : '') + '">' +
+        '<input type="hidden" name="readerName" value="' + escapeHtml(readerAcc && readerAcc.name ? readerAcc.name : '') + '">' +
         '<input type="text" name="nick" maxlength="30" placeholder="称呼(必填)" autocomplete="off">' +
         '<input type="email" name="email" maxlength="60" placeholder="邮箱(选填,回复会邮件通知)" autocomplete="off">' +
         '<textarea name="content" rows="2" maxlength="1000" placeholder="写下你的评论…"></textarea>' +
@@ -348,6 +353,7 @@
       time: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()),
       content: content
     };
+    if (window.getDeviceModel) item.device = window.getDeviceModel();
     if (replyTarget) {
       item.parentId = replyTarget.id;
       item.parentNick = replyTarget.nick;

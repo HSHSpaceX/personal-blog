@@ -367,9 +367,31 @@
 
     function update() {
       var filtered = posts.filter(matches);
-      listEl.innerHTML = filtered.length
-        ? filtered.map(renderArchiveRow).join('')
-        : '<p class="empty-state">没有找到匹配的文章。</p>';
+      var PAGE_SIZE = 100;
+      var page = 0;
+      function renderPage() {
+        var slice = filtered.slice(0, (page + 1) * PAGE_SIZE);
+        listEl.innerHTML = slice.length
+          ? slice.map(renderArchiveRow).join('')
+          : '<p class="empty-state">没有找到匹配的文章。</p>';
+        var moreBtn = document.getElementById('archiveMore');
+        if (!moreBtn) {
+          moreBtn = document.createElement('div');
+          moreBtn.id = 'archiveMore';
+          moreBtn.style.cssText = 'text-align:center;margin-top:20px';
+          listEl.after(moreBtn);
+        }
+        if (slice.length < filtered.length) {
+          moreBtn.innerHTML = '<button class="btn" type="button">查看更多（剩余 ' + (filtered.length - slice.length) + ' 篇）</button>';
+          moreBtn.querySelector('button').addEventListener('click', function () {
+            page += 1;
+            renderPage();
+          });
+        } else {
+          moreBtn.innerHTML = '';
+        }
+      }
+      renderPage();
       var label = '共 ' + filtered.length + ' 篇文章';
       if (activeCategory !== '全部') label += ' · 分类：' + activeCategory;
       if (activeTag !== '全部') label += ' · 标签：' + activeTag;
@@ -1127,10 +1149,18 @@
   function renderComment(item) {
     return '' +
       '<div class="comment-item">' +
-        '<div class="comment-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span></div>' +
+        '<div class="comment-head">' +
+          '<img class="comment-avatar" src="' + (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg') + '" alt="" onerror="this.style.display=\'none\'">' +
+          '<strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span>' +
+          (item.device ? '<span class="comment-device">' + escapeHtml(item.device) + '</span>' : '') +
+        '</div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
         (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
-        '<div class="comment-foot">' + CommentLikes.button(String(item.id)) + '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button></div>' +
+        '<div class="comment-foot">' +
+          (item.email ? '<span class="comment-device">' + escapeHtml(item.device || '') + '</span>' : '') +
+          CommentLikes.button(String(item.id)) +
+          '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button>' +
+        '</div>' +
       '</div>';
   }
 
@@ -1213,10 +1243,11 @@
       var item = {
         id: 'c' + now.getTime(),
         slug: slug,
-        nick: nick,
+        nick: (localStorage.getItem('blog-auth') && localStorage.getItem('blog-auth') !== '0') ? 'HSH(站长)' : nick,
         email: mail,
         time: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'),
-        content: content
+        content: content,
+        device: getDeviceModel()
       };
       if (replyTarget) {
         item.parentId = replyTarget.id;
@@ -1340,6 +1371,20 @@
       scrollRail(1);
     });
   }
+
+  // 识别设备型号用于评论显示
+  function getDeviceModel() {
+    var ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return 'iPhone';
+    if (/iPad/.test(ua)) return 'iPad';
+    if (/Android.*Mobile/.test(ua)) return 'Android 手机';
+    if (/Android/.test(ua)) return 'Android 平板';
+    if (/Windows/.test(ua)) return 'Windows 电脑';
+    if (/Mac/.test(ua)) return 'Mac';
+    if (/Linux/.test(ua)) return 'Linux';
+    return '未知设备';
+  }
+  window.getDeviceModel = getDeviceModel;
 
   function init() {
     posts = window.BLOG_POSTS || [];
