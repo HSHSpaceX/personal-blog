@@ -27,6 +27,14 @@ window.SITE_COMMENTS = {
       "content": "一万六😄",
       "parentId": "c1789820778853",
       "parentNick": "moya"
+    },
+    {
+      "id": "c1790412677228",
+      "nick": "hello",
+      "email": "",
+      "time": "2026-09-26",
+      "content": "vxcf",
+      "reply": ""
     }
   ],
   "moment-m20260914-204633-fp3i": [],
