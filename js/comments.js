@@ -37,14 +37,5 @@ window.SITE_COMMENTS = {
   "moment-m20260914-204633-fp3i": [],
   "post-20260918-2110": [],
   "moment-m20260919-201800-zbue": [],
-  "post-austria-history": [
-    {
-      "id": "c1790425530731",
-      "nick": "你",
-      "email": "",
-      "time": "2026-09-26",
-      "content": "测试",
-      "reply": ""
-    }
-  ]
+  "post-austria-history": []
 };
