@@ -11,14 +11,6 @@ window.SITE_COMMENTS = {
       "content": "大家可以在这里发表评论，我会回复"
     },
     {
-      "id": "c1789820778853",
-      "nick": "moya",
-      "email": "",
-      "time": "2026-09-19",
-      "content": "春秋本经多少字",
-      "reply": ""
-    },
-    {
       "id": "c1789822115197",
       "slug": "about",
       "nick": "HSH",
