@@ -16,12 +16,19 @@
 
   function applyAuthUi() {
     var authed = isAuthed();
+    var reader = window.ReaderAccount ? window.ReaderAccount.load() : null;
     document.querySelectorAll('.btn-login').forEach(function (el) {
       el.hidden = authed;
     });
     document.querySelectorAll('.user-menu-wrap').forEach(function (el) {
       el.hidden = !authed;
     });
+    // 读者已登录时头像换成自己的
+    if (!authed && reader && reader.name && reader.avatar) {
+      document.querySelectorAll('.user-avatar img').forEach(function (img) {
+        img.src = reader.avatar;
+      });
+    }
     if (!authed) closeUserMenus();
   }
 
