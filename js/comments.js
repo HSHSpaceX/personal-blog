@@ -3,15 +3,6 @@ window.SITE_COMMENTS = {
   "post-20260906-1212": [],
   "about": [
     {
-      "id": "c1790414842733",
-      "slug": "about",
-      "nick": "HSH(站长)",
-      "email": "",
-      "time": "2026-09-26",
-      "content": "测试",
-      "device": "Mac"
-    },
-    {
       "id": "c1790415099760",
       "slug": "about",
       "nick": "HSH(站长)",
