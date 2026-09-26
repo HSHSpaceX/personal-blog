@@ -297,13 +297,13 @@
     var searchInput = document.getElementById('searchInput');
     if (!listEl) return;
 
-    // 5大分类框,9小类归入其中,点开进入对应筛选
-    var CATEGORY_GROUPS = [
-      { key: '火箭', icon: '🚀', subs: ['火箭部件', '飞控制作'] },
-      { key: '开发', icon: '💻', subs: ['软件设计', '嵌入式'] },
-      { key: '科技', icon: '🔬', subs: ['AI', '3D打印'] },
-      { key: '文艺', icon: '📚', subs: ['人文历史', '艺术创作'] },
-      { key: '新闻时报', icon: '📰', subs: [] }
+    // 科创网风格归档:4大分类,9小类,图标后续替换为真实文件
+    var ARCHIVE_GROUPS = [
+      { title: '火箭', cats: [{ name: '火箭部件', icon: 'assets/cats/部件.png' }, { name: '飞控制作', icon: 'assets/cats/飞控.png' }] },
+      { title: '开发', cats: [{ name: '软件设计', icon: 'assets/cats/软件.png' }, { name: '嵌入式', icon: 'assets/cats/嵌入式.png' }] },
+      { title: '科技', cats: [{ name: 'AI', icon: 'assets/cats/Al.png' }, { name: '3D打印', icon: 'assets/cats/3D打印.png' }] },
+      { title: '文艺', cats: [{ name: '人文历史', icon: 'assets/cats/历史.png' }, { name: '艺术创作', icon: 'assets/cats/艺术.png' }] },
+      { title: '新闻时报', cats: [{ name: '新闻时报', icon: 'assets/cats/新闻.png' }] }
     ];
     var catWrap = document.getElementById('archiveCategories');
     if (catWrap) {
@@ -317,36 +317,39 @@
         var cs = allComments2[p.slug] || [];
         commentCounts2[p.category] = (commentCounts2[p.category] || 0) + cs.length;
       });
-      catWrap.innerHTML = '<div class="cat-group-grid">' + CATEGORY_GROUPS.map(function (group) {
-        var subs = group.subs || [];
-        var allCats = subs.concat([group.key]);
-        var total = allCats.reduce(function (sum, c) { return sum + (counts2[c] || 0); }, 0);
-        var newReplies = allCats.reduce(function (sum, c) { return sum + (commentCounts2[c] || 0); }, 0);
-        var subsHtml = subs.map(function (sub) {
-          return '<button class="cat-sub-link" type="button" data-cat="' + escapeHtml(sub) + '">' + escapeHtml(sub) + '</button>';
-        }).join('');
-        return '<div class="cat-group-card" data-cat-group="' + escapeHtml(group.key) + '">' +
-          '<div class="cat-group-head">' +
-            '<span class="cat-group-icon">' + group.icon + '</span>' +
-            '<div>' +
-              '<strong>' + escapeHtml(group.key) + '</strong>' +
-              '<span class="cat-group-total">' + total + ' 篇</span>' +
-            '</div>' +
-            (newReplies > 0 ? '<span class="cat-card-new">' + newReplies + ' 条新评论</span>' : '') +
-          '</div>' +
-          (subsHtml ? '<div class="cat-group-subs">' + subsHtml + '</div>' : '') +
+      // 每个分类的最新 3 篇文章
+      function latestPosts(cat, n) {
+        return posts.filter(function (p) { return p.category === cat; }).slice(0, n);
+      }
+      var html = '';
+      ARCHIVE_GROUPS.forEach(function (group) {
+        var groupCats = group.cats.map(function (c) { return c.name; });
+        var total = groupCats.reduce(function (sum, c) { return sum + (counts2[c] || 0); }, 0);
+        var newReplies = groupCats.reduce(function (sum, c) { return sum + (commentCounts2[c] || 0); }, 0);
+        var hasContent = total > 0;
+        html += '<div class="archive-group">' +
+          '<h2 class="archive-group-title">' + escapeHtml(group.title) + '</h2>' +
+          (hasContent
+            ? group.cats.map(function (cat) {
+                var catName = cat.name;
+                var latest = latestPosts(catName, 3);
+                var count = counts2[catName] || 0;
+                var newR = commentCounts2[catName] || 0;
+                var postsHtml = latest.map(function (p) {
+                  return '<a class="archive-latest-item" href="' + postUrl(p.slug) + '"><span class="archive-latest-title">' + escapeHtml(p.title) + '</span><span class="archive-latest-date">' + formatDate(p.date) + '</span></a>';
+                }).join('');
+                return '<a class="archive-cat-row" href="archive.html?category=' + encodeURIComponent(catName) + '">' +
+                  '<div class="archive-cat-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(catName) + '"></div>' +
+                  '<div class="archive-cat-info">' +
+                    '<div class="archive-cat-head"><strong>' + escapeHtml(catName) + '</strong><span class="archive-cat-count">(' + count + ')</span>' + (newR > 0 ? '<span class="archive-cat-new">' + newR + ' 条新评论</span>' : '') + '</div>' +
+                    (latest.length ? '<div class="archive-latest">' + postsHtml + '</div>' : '<p class="archive-empty">暂无文章</p>') +
+                  '</div>' +
+                '</a>';
+              }).join('')
+            : '<p class="archive-empty">暂无内容</p>') +
         '</div>';
-      }).join('') + '</div>';
-      catWrap.addEventListener('click', function (event) {
-        var btn = event.target.closest('[data-cat]');
-        if (btn) {
-          window.location.href = 'archive.html?category=' + encodeURIComponent(btn.getAttribute('data-cat'));
-          return;
-        }
-        var card = event.target.closest('[data-cat-group]');
-        if (!card) return;
-        window.location.href = 'archive.html?category=' + encodeURIComponent(card.getAttribute('data-cat-group'));
       });
+      catWrap.innerHTML = html;
     }
 
     var params = new URLSearchParams(window.location.search);

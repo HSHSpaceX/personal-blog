@@ -3185,62 +3185,73 @@ a.tag-chip:hover {
   margin-left: auto;
 }
 
-/* Archive 5大分类框 */
-.archive-categories {
-  margin-bottom: 28px;
+/* Archive 科创网风格 */
+.archive-group {
+  margin-bottom: 32px;
 }
 
-.cat-group-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
+.archive-group-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
 }
 
-.cat-group-card {
-  padding: 18px;
-  border: 1px solid var(--glass-border);
-  border-radius: 18px;
-  background: var(--glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  cursor: pointer;
-  color: inherit;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.cat-group-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-}
-
-.cat-group-head {
+.archive-cat-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 14px;
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s ease;
 }
 
-.cat-group-icon {
-  font-size: 24px;
-  line-height: 1;
+.archive-cat-row:hover {
+  background: var(--surface);
+}
+
+.archive-cat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
   flex-shrink: 0;
+  background: var(--surface-2);
 }
 
-.cat-group-head strong {
-  display: block;
-  font-size: 15px;
+.archive-cat-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.archive-cat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.archive-cat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.archive-cat-head strong {
+  font-size: 16px;
   font-weight: 700;
 }
 
-.cat-group-total {
-  display: block;
-  font-size: 12px;
+.archive-cat-count {
+  font-size: 13px;
   color: var(--muted);
 }
 
-.cat-card-new {
-  display: inline-block;
+.archive-cat-new {
   padding: 2px 8px;
   border-radius: 980px;
   background: rgba(255, 45, 85, 0.12);
@@ -3249,38 +3260,41 @@ a.tag-chip:hover {
   font-weight: 600;
 }
 
-.cat-group-subs {
+.archive-latest {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.cat-sub-link {
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 980px;
-  font-size: 12px;
+.archive-latest-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
   color: var(--muted);
-  background: transparent;
-  cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
 }
 
-.cat-sub-link:hover {
+.archive-latest-item:hover {
   color: var(--accent);
-  border-color: var(--accent);
 }
 
-@media (max-width: 860px) {
-  .cat-group-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.archive-latest-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
 
-@media (max-width: 560px) {
-  .cat-group-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.archive-latest-date {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.archive-empty {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
 }
 
 /* Moment edit area */
