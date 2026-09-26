@@ -1,17 +1,16 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>时间线 - 拾光手记</title>
-  <meta name="description" content="按时间浏览拾光手记的全部文章。">
+  <title>搜索 - 拾光手记</title>
+  <meta name="description" content="搜索文章、动态和评论。">
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
   <link rel="stylesheet" href="css/style.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
-
   <header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="拾光手记首页">
@@ -21,12 +20,17 @@
       <nav class="site-nav" id="siteNav" aria-label="主导航">
         <a class="nav-link" href="index.html">首页</a>
         <a class="nav-link" href="archive.html">归档</a>
-        <a class="nav-link active" href="timeline.html">时间线</a>
+        <a class="nav-link" href="timeline.html">时间线</a>
         <a class="nav-link" href="gallery.html">画廊</a>
         <a class="nav-link" href="moments.html">动态</a>
         <a class="nav-link" href="about.html">关于</a>
       </nav>
       <div class="header-actions">
+        <a class="icon-btn" href="search.html" aria-label="搜索" title="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></a>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
         <a class="btn-login" href="login.html">登录</a>
         <span class="user-menu-wrap" hidden>
           <button class="user-avatar" type="button" aria-label="账号菜单" aria-haspopup="true" aria-expanded="false">
@@ -39,11 +43,6 @@
             <button class="user-menu-item" type="button" data-logout>退出登录</button>
           </div>
         </span>
-        <a class="icon-btn" href="search.html" aria-label="搜索" title="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></a>
-        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
         <button class="icon-btn menu-btn" id="menuToggle" type="button" aria-label="打开菜单" title="菜单" aria-expanded="false" aria-controls="siteNav">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
@@ -54,15 +53,17 @@
   <main id="main">
     <section class="page-head band">
       <div class="container">
-        <p class="eyebrow">TIMELINE</p>
-        <h1>时间线</h1>
-        <p class="intro-text">按年份和月份浏览全部文章。</p>
+        <p class="eyebrow">SEARCH</p>
+        <h1>搜索</h1>
       </div>
     </section>
 
-    <section class="band timeline-band">
-      <div class="container">
-        <div id="timelineList" class="timeline-list"></div>
+    <section class="band">
+      <div class="container" style="max-width:720px">
+        <div class="search-bar-wrap">
+          <input id="searchInput" type="search" placeholder="搜索文章、动态、评论…" autocomplete="off" autofocus>
+        </div>
+        <div id="searchResults" class="search-results"></div>
       </div>
     </section>
   </main>
@@ -71,12 +72,12 @@
     <div class="container footer-inner">
       <p>© <span id="year"></span> 拾光手记</p>
       <p>保留所有权利</p>
-      <div class="footer-links">友情链接：<a href="https://www.kechuang.org/" target="_blank" rel="noopener">科创</a><span class="footer-sep"> | </span><a href="https://vanyu0710.github.io/aicad/" target="_blank" rel="noopener">Varen CAD</a></div>
       <a class="footer-link" href="login.html">管理</a>
     </div>
   </footer>
 
   <script src="js/boot.js?v=2"></script>
   <script src="js/site.js?v=2"></script>
+  <script src="js/search.js?v=2"></script>
 </body>
 </html>

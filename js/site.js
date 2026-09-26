@@ -290,6 +290,50 @@
     var searchInput = document.getElementById('searchInput');
     if (!listEl) return;
 
+    // 9大分类卡片
+    var CATEGORY_CARDS = [
+      { key: '火箭', icon: 'assets/cats/rocket.jpg', subs: ['火箭部件', '飞控制作'] },
+      { key: '开发', icon: 'assets/cats/dev.jpg', subs: ['软件设计', '嵌入式'] },
+      { key: '科技', icon: 'assets/cats/tech.jpg', subs: ['AI', '3D打印'] },
+      { key: '文艺', icon: 'assets/cats/art.jpg', subs: ['人文历史', '艺术创作'] },
+      { key: '新闻时报', icon: 'assets/cats/news.jpg', subs: [] }
+    ];
+    var catWrap = document.getElementById('archiveCategories');
+    if (catWrap) {
+      var counts = {};
+      posts.forEach(function (p) {
+        counts[p.category] = (counts[p.category] || 0) + 1;
+      });
+      var commentCounts = {};
+      var allComments2 = window.SITE_COMMENTS || {};
+      posts.forEach(function (p) {
+        var cs = allComments2[p.slug] || [];
+        commentCounts[p.category] = (commentCounts[p.category] || 0) + cs.length;
+      });
+      catWrap.innerHTML = '<div class="cat-grid">' + CATEGORY_CARDS.map(function (cat) {
+        var total = (cat.subs || []).reduce(function (sum, sub) { return sum + (counts[sub] || 0); }, 0) + (counts[cat.key] || 0);
+        var newReplies = (cat.subs || []).concat([cat.key]).reduce(function (sum, sub) { return sum + (commentCounts[sub] || 0); }, 0);
+        var subsHtml = (cat.subs || []).map(function (sub) {
+          return '<span class="cat-sub">' + escapeHtml(sub) + '</span>';
+        }).join('');
+        return '<button class="cat-card" type="button" data-cat="' + escapeHtml(cat.key) + '">' +
+          '<div class="cat-card-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(cat.key) + '" onerror="this.parentNode.innerHTML=\'<span class=cat-default-icon>📁</span>\'"></div>' +
+          '<div class="cat-card-info">' +
+            '<strong>' + escapeHtml(cat.key) + '</strong>' +
+            '<span class="cat-card-count">' + total + ' 篇</span>' +
+            (newReplies > 0 ? '<span class="cat-card-new">' + newReplies + ' 条新评论</span>' : '') +
+          '</div>' +
+          (subsHtml ? '<div class="cat-card-subs">' + subsHtml + '</div>' : '') +
+        '</button>';
+      }).join('') + '</div>';
+      catWrap.addEventListener('click', function (event) {
+        var card = event.target.closest('[data-cat]');
+        if (!card) return;
+        var cat = card.getAttribute('data-cat');
+        window.location.href = 'archive.html?category=' + encodeURIComponent(cat);
+      });
+    }
+
     var params = new URLSearchParams(window.location.search);
     var activeCategory = params.get('category') || '全部';
     var activeTag = params.get('tag') || '全部';
@@ -1320,55 +1364,87 @@
     buildContribChart();
   }
 
-  // GitHub 贡献热力图:悬停色块显示当天提交次数,不跳转
+  // 本站仓库的 GitHub 提交热力图:悬停显示当天提交次数,不跳转
+  var ContribChart = (function () {
+    function level(count) {
+      if (count === 0) return 0;
+      if (count <= 2) return 1;
+      if (count <= 4) return 2;
+      if (count <= 6) return 3;
+      return 4;
+    }
+
+    function render(wrap, weeks) {
+      wrap.innerHTML = weeks.map(function (wk) {
+        return '<div class="contrib-week">' + wk.map(function (d) {
+          var label = d.date + '：' + d.count + ' 次提交';
+          return '<div class="contrib-day" data-level="' + level(d.count) + '" data-tip="' + label + '"></div>';
+        }).join('') + '</div>';
+      }).join('');
+      var tip = null;
+      wrap.addEventListener('mouseover', function (event) {
+        var cell = event.target.closest('.contrib-day[data-tip]');
+        if (!cell) {
+          if (tip) { tip.remove(); tip = null; }
+          return;
+        }
+        if (!tip) {
+          tip = document.createElement('div');
+          tip.className = 'contrib-tip';
+          wrap.appendChild(tip);
+        }
+        tip.textContent = cell.getAttribute('data-tip');
+        var rect = cell.getBoundingClientRect();
+        var wrapRect = wrap.getBoundingClientRect();
+        tip.style.left = (rect.left - wrapRect.left + rect.width / 2 - 40) + 'px';
+        tip.style.top = (rect.top - wrapRect.top - 30) + 'px';
+      });
+      wrap.addEventListener('mouseleave', function () {
+        if (tip) { tip.remove(); tip = null; }
+      });
+    }
+
+    function build(wrap) {
+      // 按日期聚合本站仓库的提交
+      fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/commits?per_page=100&since=' + new Date(Date.now() - 365 * 86400000).toISOString())
+        .then(function (res) { return res.json(); })
+        .then(function (commits) {
+          if (!Array.isArray(commits) || !commits.length) return;
+          var byDate = {};
+          commits.forEach(function (c) {
+            var d = c.commit.committer.date.slice(0, 10);
+            byDate[d] = (byDate[d] || 0) + 1;
+          });
+          var days = [];
+          var today = new Date();
+          for (var i = 364; i >= 0; i--) {
+            var dt = new Date(today.getTime() - i * 86400000);
+            var ds = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+            days.push({ date: ds, count: byDate[ds] || 0 });
+          }
+          var weeks = [];
+          var wk = [];
+          days.forEach(function (d, i) {
+            wk.push(d);
+            if (wk.length === 7 || i === days.length - 1) {
+              weeks.push(wk);
+              wk = [];
+            }
+          });
+          render(wrap, weeks);
+        })
+        .catch(function () {
+          wrap.innerHTML = '<p style="padding:8px;color:var(--muted);font-size:13px">暂时无法加载。</p>';
+        });
+    }
+
+    return { build: build };
+  })();
+
   function buildContribChart() {
     var wrap = document.getElementById('contribCells');
     if (!wrap) return;
-    fetch('https://github-contributions-api.jogruber.de/v4/HSHSpaceX?y=last')
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (!data || !data.contributions) return;
-        var days = data.contributions;
-        var weeks = [];
-        var week = [];
-        days.forEach(function (day, i) {
-          week.push(day);
-          if (week.length === 7 || i === days.length - 1) {
-            weeks.push(week);
-            week = [];
-          }
-        });
-        wrap.innerHTML = weeks.map(function (wk) {
-          return '<div class="contrib-week">' + wk.map(function (d) {
-            var label = d.date + '：' + d.count + ' 次提交';
-            return '<div class="contrib-day" data-level="' + Math.min(d.level, 4) + '" data-tip="' + label + '" title="' + label + '"></div>';
-          }).join('') + '</div>';
-        }).join('');
-        var tip = null;
-        wrap.addEventListener('mouseover', function (event) {
-          var cell = event.target.closest('.contrib-day[data-tip]');
-          if (!cell) {
-            if (tip) { tip.remove(); tip = null; }
-            return;
-          }
-          if (!tip) {
-            tip = document.createElement('div');
-            tip.className = 'contrib-tip';
-            wrap.appendChild(tip);
-          }
-          tip.textContent = cell.getAttribute('data-tip');
-          var rect = cell.getBoundingClientRect();
-          var wrapRect = wrap.getBoundingClientRect();
-          tip.style.left = (rect.left - wrapRect.left + rect.width / 2 - 40) + 'px';
-          tip.style.top = (rect.top - wrapRect.top - 30) + 'px';
-        });
-        wrap.addEventListener('mouseleave', function () {
-          if (tip) { tip.remove(); tip = null; }
-        });
-      })
-      .catch(function () {
-        wrap.innerHTML = '<p style="padding:8px;color:var(--muted);font-size:13px">暂时无法加载贡献数据。</p>';
-      });
+    ContribChart.build(wrap);
   }
 
   if (window.BLOG_POSTS) {

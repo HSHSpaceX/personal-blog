@@ -539,6 +539,9 @@
             (authed ? '<button class="moment-delete" type="button" data-delete="' + escapeHtml(item.id) + '" aria-label="删除这条动态" title="删除">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
               '</button>' : '') +
+            (authed ? '<button class="moment-delete moment-edit-btn" type="button" data-edit="' + escapeHtml(item.id) + '" aria-label="编辑这条动态" title="编辑">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
+              '</button>' : '') +
           '</div>' +
           (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +
           (item.media && item.media.length
@@ -674,6 +677,42 @@
     });
   }
 
+  function editMoment(id) {
+    var item = null;
+    moments.forEach(function (m) { if (m.id === id) item = m; });
+    if (!item) return;
+    var card = document.getElementById('moment-' + id);
+    if (!card) return;
+    var body = card.querySelector('.moment-body');
+    var originalHtml = body.innerHTML;
+    body.innerHTML =
+      '<div class="moment-edit-area">' +
+        '<div class="field"><textarea class="moment-edit-text" rows="3" maxlength="2000">' + escapeHtml(item.text) + '</textarea></div>' +
+        '<div class="admin-row" style="display:flex;gap:10px;flex-wrap:wrap">' +
+          '<button class="btn primary moment-edit-save" type="button" data-save="' + escapeHtml(id) + '">保存</button>' +
+          '<button class="btn moment-edit-cancel" type="button" data-cancel="' + escapeHtml(id) + '">取消</button>' +
+        '</div>' +
+      '</div>';
+    body.querySelector('textarea').focus();
+
+    card.querySelector('[data-cancel]').addEventListener('click', function () {
+      body.innerHTML = originalHtml;
+      if (window.CommentLikes) window.CommentLikes.decorate(card);
+    });
+
+    card.querySelector('[data-save]').addEventListener('click', function () {
+      var newText = card.querySelector('.moment-edit-text').value.trim();
+      item.text = newText;
+      saveMoments('编辑动态').then(function () {
+        renderFeed();
+      }).catch(function (err) {
+        item.text = item.text;
+        body.innerHTML = originalHtml;
+        setStatus($('momentStatus'), '保存失败:' + err.message, 'err');
+      });
+    });
+  }
+
   function connect() {
     var input = $('momentTokenInput');
     var statusEl = $('momentConnectStatus');
@@ -754,6 +793,10 @@
       }
       var btn = event.target.closest('[data-delete]');
       if (btn) deleteMoment(btn.getAttribute('data-delete'));
+    });
+    $('momentList').addEventListener('click', function (event) {
+      var editBtn = event.target.closest('[data-edit]');
+      if (editBtn) editMoment(editBtn.getAttribute('data-edit'));
     });
     $('momentList').addEventListener('submit', function (event) {
       var form = event.target.closest('[data-moment-form]');
