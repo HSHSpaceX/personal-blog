@@ -32,6 +32,14 @@ window.SITE_COMMENTS = {
       "device": "Android 手机",
       "parentId": "c1790415099760",
       "parentNick": "HSH(站长)"
+    },
+    {
+      "id": "c1790420655002",
+      "nick": "HSH(站长)",
+      "email": "",
+      "time": "2026-09-26",
+      "content": "测试",
+      "reply": ""
     }
   ],
   "moment-m20260914-204633-fp3i": [],
