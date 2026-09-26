@@ -10,6 +10,17 @@ window.SITE_COMMENTS = {
       "time": "2026-09-26",
       "content": "测试",
       "device": "Mac"
+    },
+    {
+      "id": "c1790415099760",
+      "slug": "about",
+      "nick": "HSH(站长)",
+      "email": "",
+      "time": "2026-09-26",
+      "content": "测试",
+      "device": "Windows 电脑",
+      "parentId": "c1790414842733",
+      "parentNick": "HSH(站长)"
     }
   ],
   "moment-m20260914-204633-fp3i": [],
