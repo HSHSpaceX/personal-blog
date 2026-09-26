@@ -297,47 +297,55 @@
     var searchInput = document.getElementById('searchInput');
     if (!listEl) return;
 
-    // 9大分类卡片
-    var CATEGORY_CARDS = [
-      { key: '火箭', icon: 'assets/cats/rocket.jpg', subs: ['火箭部件', '飞控制作'] },
-      { key: '开发', icon: 'assets/cats/dev.jpg', subs: ['软件设计', '嵌入式'] },
-      { key: '科技', icon: 'assets/cats/tech.jpg', subs: ['AI', '3D打印'] },
-      { key: '文艺', icon: 'assets/cats/art.jpg', subs: ['人文历史', '艺术创作'] },
-      { key: '新闻时报', icon: 'assets/cats/news.jpg', subs: [] }
+    // 5大分类框,9小类归入其中,点开进入对应筛选
+    var CATEGORY_GROUPS = [
+      { key: '火箭', icon: '🚀', subs: ['火箭部件', '飞控制作'] },
+      { key: '开发', icon: '💻', subs: ['软件设计', '嵌入式'] },
+      { key: '科技', icon: '🔬', subs: ['AI', '3D打印'] },
+      { key: '文艺', icon: '📚', subs: ['人文历史', '艺术创作'] },
+      { key: '新闻时报', icon: '📰', subs: [] }
     ];
     var catWrap = document.getElementById('archiveCategories');
     if (catWrap) {
-      var counts = {};
+      var counts2 = {};
       posts.forEach(function (p) {
-        counts[p.category] = (counts[p.category] || 0) + 1;
+        counts2[p.category] = (counts2[p.category] || 0) + 1;
       });
-      var commentCounts = {};
+      var commentCounts2 = {};
       var allComments2 = window.SITE_COMMENTS || {};
       posts.forEach(function (p) {
         var cs = allComments2[p.slug] || [];
-        commentCounts[p.category] = (commentCounts[p.category] || 0) + cs.length;
+        commentCounts2[p.category] = (commentCounts2[p.category] || 0) + cs.length;
       });
-      catWrap.innerHTML = '<div class="cat-grid">' + CATEGORY_CARDS.map(function (cat) {
-        var total = (cat.subs || []).reduce(function (sum, sub) { return sum + (counts[sub] || 0); }, 0) + (counts[cat.key] || 0);
-        var newReplies = (cat.subs || []).concat([cat.key]).reduce(function (sum, sub) { return sum + (commentCounts[sub] || 0); }, 0);
-        var subsHtml = (cat.subs || []).map(function (sub) {
-          return '<span class="cat-sub">' + escapeHtml(sub) + '</span>';
+      catWrap.innerHTML = '<div class="cat-group-grid">' + CATEGORY_GROUPS.map(function (group) {
+        var subs = group.subs || [];
+        var allCats = subs.concat([group.key]);
+        var total = allCats.reduce(function (sum, c) { return sum + (counts2[c] || 0); }, 0);
+        var newReplies = allCats.reduce(function (sum, c) { return sum + (commentCounts2[c] || 0); }, 0);
+        var subsHtml = subs.map(function (sub) {
+          return '<button class="cat-sub-link" type="button" data-cat="' + escapeHtml(sub) + '">' + escapeHtml(sub) + '</button>';
         }).join('');
-        return '<button class="cat-card" type="button" data-cat="' + escapeHtml(cat.key) + '">' +
-          '<div class="cat-card-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(cat.key) + '" onerror="this.parentNode.innerHTML=\'<span class=cat-default-icon>📁</span>\'"></div>' +
-          '<div class="cat-card-info">' +
-            '<strong>' + escapeHtml(cat.key) + '</strong>' +
-            '<span class="cat-card-count">' + total + ' 篇</span>' +
+        return '<div class="cat-group-card" data-cat-group="' + escapeHtml(group.key) + '">' +
+          '<div class="cat-group-head">' +
+            '<span class="cat-group-icon">' + group.icon + '</span>' +
+            '<div>' +
+              '<strong>' + escapeHtml(group.key) + '</strong>' +
+              '<span class="cat-group-total">' + total + ' 篇</span>' +
+            '</div>' +
             (newReplies > 0 ? '<span class="cat-card-new">' + newReplies + ' 条新评论</span>' : '') +
           '</div>' +
-          (subsHtml ? '<div class="cat-card-subs">' + subsHtml + '</div>' : '') +
-        '</button>';
+          (subsHtml ? '<div class="cat-group-subs">' + subsHtml + '</div>' : '') +
+        '</div>';
       }).join('') + '</div>';
       catWrap.addEventListener('click', function (event) {
-        var card = event.target.closest('[data-cat]');
+        var btn = event.target.closest('[data-cat]');
+        if (btn) {
+          window.location.href = 'archive.html?category=' + encodeURIComponent(btn.getAttribute('data-cat'));
+          return;
+        }
+        var card = event.target.closest('[data-cat-group]');
         if (!card) return;
-        var cat = card.getAttribute('data-cat');
-        window.location.href = 'archive.html?category=' + encodeURIComponent(cat);
+        window.location.href = 'archive.html?category=' + encodeURIComponent(card.getAttribute('data-cat-group'));
       });
     }
 
@@ -374,6 +382,13 @@
 
     function update() {
       var filtered = posts.filter(matches);
+
+      // 未选择分类时隐藏搜索/筛选工具区,只显示分类卡片
+      var archiveTools = document.querySelector('.archive-tools');
+      if (archiveTools) {
+        archiveTools.style.display = activeCategory === '全部' && activeTag === '全部' ? 'none' : '';
+      }
+
       var PAGE_SIZE = 100;
       var page = 0;
       function renderPage() {
