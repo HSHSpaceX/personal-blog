@@ -5,7 +5,16 @@ window.BLOG_MOMENTS = [
     "time": "2026-09-19 20:18",
     "text": "今日纪念一下，网站正式搭建初步完成\n———2026.9.19",
     "image": "",
-    "media": []
+    "media": [
+      {
+        "type": "image/jpeg",
+        "src": "assets/moments/m-20260926-183558-god9.jpeg"
+      },
+      {
+        "type": "image/jpeg",
+        "src": "assets/moments/m-20260926-183558-8k1w.jpg"
+      }
+    ]
   },
   {
     "id": "m20260914-204633-fp3i",
