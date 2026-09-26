@@ -40,6 +40,15 @@ window.SITE_COMMENTS = {
       "time": "2026-09-26",
       "content": "测试",
       "reply": ""
+    },
+    {
+      "id": "c1790420778642",
+      "slug": "about",
+      "nick": "HSH(站长)",
+      "email": "",
+      "time": "2026-09-26",
+      "content": "你",
+      "device": "macOS 10.15"
     }
   ],
   "moment-m20260914-204633-fp3i": [],
