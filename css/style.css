@@ -3297,6 +3297,20 @@ a.tag-chip:hover {
   margin: 0;
 }
 
+.archive-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.archive-filter-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
 /* Moment edit area */
 .moment-edit-area textarea {
   width: 100%;

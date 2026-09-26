@@ -291,13 +291,12 @@
 
   function renderArchive() {
     var listEl = document.getElementById('archiveList');
-    var countEl = document.getElementById('resultCount');
-    var chipsEl = document.getElementById('filterChips');
-    var tagChipsEl = document.getElementById('tagChips');
-    var searchInput = document.getElementById('searchInput');
+    var catWrap = document.getElementById('archiveCategories');
+    var params = new URLSearchParams(window.location.search);
+    var activeCategory = params.get('category') || '';
     if (!listEl) return;
 
-    // 科创网风格归档:4大分类,9小类,图标后续替换为真实文件
+    // 分类分组卡片(仅在未选分类时显示)
     var ARCHIVE_GROUPS = [
       { title: '火箭', cats: [{ name: '火箭部件', icon: 'assets/cats/部件.png' }, { name: '飞控制作', icon: 'assets/cats/飞控.png' }] },
       { title: '开发', cats: [{ name: '软件设计', icon: 'assets/cats/软件.png' }, { name: '嵌入式', icon: 'assets/cats/嵌入式.png' }] },
@@ -305,7 +304,6 @@
       { title: '文艺', cats: [{ name: '人文历史', icon: 'assets/cats/历史.png' }, { name: '艺术创作', icon: 'assets/cats/艺术.png' }] },
       { title: '新闻时报', cats: [{ name: '新闻时报', icon: 'assets/cats/新闻.png' }] }
     ];
-    var catWrap = document.getElementById('archiveCategories');
     if (catWrap) {
       var counts2 = {};
       posts.forEach(function (p) {
@@ -317,140 +315,43 @@
         var cs = allComments2[p.slug] || [];
         commentCounts2[p.category] = (commentCounts2[p.category] || 0) + cs.length;
       });
-      // 每个分类的最新 3 篇文章
-      function latestPosts(cat, n) {
-        return posts.filter(function (p) { return p.category === cat; }).slice(0, n);
-      }
-      var html = '';
-      ARCHIVE_GROUPS.forEach(function (group) {
-        var groupCats = group.cats.map(function (c) { return c.name; });
-        var total = groupCats.reduce(function (sum, c) { return sum + (counts2[c] || 0); }, 0);
-        var newReplies = groupCats.reduce(function (sum, c) { return sum + (commentCounts2[c] || 0); }, 0);
-        var hasContent = total > 0;
-        html += '<div class="archive-group">' +
+      catWrap.innerHTML = ARCHIVE_GROUPS.map(function (group) {
+        var rows = group.cats.map(function (cat) {
+          var latest = posts.filter(function (p) { return p.category === cat.name; }).slice(0, 3);
+          var count = counts2[cat.name] || 0;
+          var newR = commentCounts2[cat.name] || 0;
+          var latestHtml = latest.map(function (p) {
+            return '<a class="archive-latest-item" href="' + postUrl(p.slug) + '"><span class="archive-latest-title">' + escapeHtml(p.title) + '</span><span class="archive-latest-date">' + formatDate(p.date) + '</span></a>';
+          }).join('');
+          return '<a class="archive-cat-row" href="archive.html?category=' + encodeURIComponent(cat.name) + '">' +
+            '<div class="archive-cat-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(cat.name) + '"></div>' +
+            '<div class="archive-cat-info">' +
+              '<div class="archive-cat-head"><strong>' + escapeHtml(cat.name) + '</strong><span class="archive-cat-count">(' + count + ')</span>' + (newR > 0 ? '<span class="archive-cat-new">' + newR + ' 条新评论</span>' : '') + '</div>' +
+              (latest.length ? '<div class="archive-latest">' + latestHtml + '</div>' : '<p class="archive-empty">暂无文章</p>') +
+            '</div>' +
+          '</a>';
+        }).join('');
+        return '<div class="archive-group">' +
           '<h2 class="archive-group-title">' + escapeHtml(group.title) + '</h2>' +
-          (hasContent
-            ? group.cats.map(function (cat) {
-                var catName = cat.name;
-                var latest = latestPosts(catName, 3);
-                var count = counts2[catName] || 0;
-                var newR = commentCounts2[catName] || 0;
-                var postsHtml = latest.map(function (p) {
-                  return '<a class="archive-latest-item" href="' + postUrl(p.slug) + '"><span class="archive-latest-title">' + escapeHtml(p.title) + '</span><span class="archive-latest-date">' + formatDate(p.date) + '</span></a>';
-                }).join('');
-                return '<a class="archive-cat-row" href="archive.html?category=' + encodeURIComponent(catName) + '">' +
-                  '<div class="archive-cat-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(catName) + '"></div>' +
-                  '<div class="archive-cat-info">' +
-                    '<div class="archive-cat-head"><strong>' + escapeHtml(catName) + '</strong><span class="archive-cat-count">(' + count + ')</span>' + (newR > 0 ? '<span class="archive-cat-new">' + newR + ' 条新评论</span>' : '') + '</div>' +
-                    (latest.length ? '<div class="archive-latest">' + postsHtml + '</div>' : '<p class="archive-empty">暂无文章</p>') +
-                  '</div>' +
-                '</a>';
-              }).join('')
-            : '<p class="archive-empty">暂无内容</p>') +
+          rows +
         '</div>';
-      });
-      catWrap.innerHTML = html;
-    }
-
-    var params = new URLSearchParams(window.location.search);
-    var activeCategory = params.get('category') || '全部';
-    var activeTag = params.get('tag') || '全部';
-    var query = '';
-
-    var categories = ['全部'];
-    var tags = ['全部'];
-    posts.forEach(function (post) {
-      if (categories.indexOf(post.category) === -1) categories.push(post.category);
-      (post.tags || []).forEach(function (tag) {
-        if (tags.indexOf(tag) === -1) tags.push(tag);
-      });
-    });
-
-    chipsEl.innerHTML = categories.map(function (category) {
-      return '<button type="button" class="filter-chip' + (category === activeCategory ? ' active' : '') + '" data-category="' + escapeHtml(category) + '">' + escapeHtml(category) + '</button>';
-    }).join('');
-
-    if (tagChipsEl) {
-      tagChipsEl.innerHTML = tags.map(function (tag) {
-        return '<button type="button" class="filter-chip' + (tag === activeTag ? ' active' : '') + '" data-tag="' + escapeHtml(tag) + '">' + escapeHtml(tag) + '</button>';
       }).join('');
     }
 
-    function matches(post) {
-      var inCategory = activeCategory === '全部' || post.category === activeCategory;
-      var inTag = activeTag === '全部' || (post.tags || []).indexOf(activeTag) !== -1;
-      var haystack = (post.title + ' ' + post.excerpt + ' ' + post.category + ' ' + post.tags.join(' ')).toLowerCase();
-      return inCategory && inTag && haystack.indexOf(query) !== -1;
+    // 选中分类后显示对应文章列表
+    if (!activeCategory) {
+      if (listEl) listEl.innerHTML = '';
+      var archiveListSection = listEl ? listEl.closest('.archive-list') : null;
+      if (archiveListSection) archiveListSection.style.display = 'none';
+      return;
     }
-
-    function update() {
-      var filtered = posts.filter(matches);
-
-      // 未选择分类时隐藏搜索/筛选工具区,只显示分类卡片
-      var archiveTools = document.querySelector('.archive-tools');
-      if (archiveTools) {
-        archiveTools.style.display = activeCategory === '全部' && activeTag === '全部' ? 'none' : '';
-      }
-
-      var PAGE_SIZE = 100;
-      var page = 0;
-      function renderPage() {
-        var slice = filtered.slice(0, (page + 1) * PAGE_SIZE);
-        listEl.innerHTML = slice.length
-          ? slice.map(renderArchiveRow).join('')
-          : '<p class="empty-state">没有找到匹配的文章。</p>';
-        var moreBtn = document.getElementById('archiveMore');
-        if (!moreBtn) {
-          moreBtn = document.createElement('div');
-          moreBtn.id = 'archiveMore';
-          moreBtn.style.cssText = 'text-align:center;margin-top:20px';
-          listEl.after(moreBtn);
-        }
-        if (slice.length < filtered.length) {
-          moreBtn.innerHTML = '<button class="btn" type="button">查看更多（剩余 ' + (filtered.length - slice.length) + ' 篇）</button>';
-          moreBtn.querySelector('button').addEventListener('click', function () {
-            page += 1;
-            renderPage();
-          });
-        } else {
-          moreBtn.innerHTML = '';
-        }
-      }
-      renderPage();
-      var label = '共 ' + filtered.length + ' 篇文章';
-      if (activeCategory !== '全部') label += ' · 分类：' + activeCategory;
-      if (activeTag !== '全部') label += ' · 标签：' + activeTag;
-      countEl.textContent = label;
+    if (listEl) {
+      var archiveListSection = listEl.closest('.archive-list');
+      if (archiveListSection) archiveListSection.style.display = '';
+      var filtered = posts.filter(function (p) { return p.category === activeCategory; });
+      listEl.innerHTML = '<div class="archive-filter-bar"><a class="text-link" href="archive.html">← 返回归档</a><span class="archive-filter-label">' + escapeHtml(activeCategory) + ' · 共 ' + filtered.length + ' 篇</span></div>' +
+        (filtered.length ? filtered.map(renderArchiveRow).join('') : '<p class="empty-state">没有找到匹配的文章。</p>');
     }
-
-    chipsEl.addEventListener('click', function (event) {
-      var chip = event.target.closest('.filter-chip');
-      if (!chip) return;
-      activeCategory = chip.dataset.category;
-      chipsEl.querySelectorAll('.filter-chip').forEach(function (el) {
-        el.classList.toggle('active', el === chip);
-      });
-      update();
-    });
-
-    if (tagChipsEl) {
-      tagChipsEl.addEventListener('click', function (event) {
-        var chip = event.target.closest('.filter-chip');
-        if (!chip) return;
-        activeTag = chip.dataset.tag;
-        tagChipsEl.querySelectorAll('.filter-chip').forEach(function (el) {
-          el.classList.toggle('active', el === chip);
-        });
-        update();
-      });
-    }
-
-    searchInput.addEventListener('input', function () {
-      query = searchInput.value.trim().toLowerCase();
-      update();
-    });
-
-    update();
   }
 
   function renderTimeline() {
