@@ -1506,6 +1506,9 @@ a.tag-chip:hover {
 
 .comment-foot {
   margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .comment-reply-btn {
@@ -1516,6 +1519,10 @@ a.tag-chip:hover {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.comment-foot .comment-like-btn {
+  margin-left: auto;
 }
 
 .comment-reply-btn:hover {
@@ -1529,6 +1536,22 @@ a.tag-chip:hover {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.comment-collapse-toggle {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--link);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.comment-collapse-toggle:hover {
+  text-decoration: underline;
 }
 
 .comment-replies .comment-item {
@@ -3215,18 +3238,20 @@ a.tag-chip:hover {
 }
 
 .archive-cat-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-2);
+  border: 1px solid var(--glass-border);
 }
 
 .archive-cat-icon img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 4px;
 }
 
 .archive-cat-info {
@@ -3327,6 +3352,48 @@ a.tag-chip:hover {
 .moment-edit-area textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.moment-edit-media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.moment-edit-media-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.moment-edit-media-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.moment-edit-media-item button {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.moment-edit-upload {
+  margin-top: 8px;
 }
 
 /* Comment device tag */

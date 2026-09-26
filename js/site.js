@@ -1094,9 +1094,11 @@
     var replies = all.filter(function (c) { return c.parentId === item.id; });
     var html = renderComment(item);
     if (replies.length) {
-      html += '<div class="comment-replies">' + replies.map(function (reply) {
+      var repliesHtml = replies.map(function (reply) {
         return renderCommentTree(reply, all);
-      }).join('') + '</div>';
+      }).join('');
+      html += '<button type="button" class="comment-collapse-toggle" data-collapsed="true">展开 ' + replies.length + ' 条回复</button>' +
+        '<div class="comment-replies" hidden>' + repliesHtml + '</div>';
     }
     return html;
   }
@@ -1139,6 +1141,18 @@
     }
 
     listEl.addEventListener('click', function (event) {
+      var toggleBtn = event.target.closest('.comment-collapse-toggle');
+      if (toggleBtn) {
+        var repliesDiv = toggleBtn.nextElementSibling;
+        if (repliesDiv && repliesDiv.classList.contains('comment-replies')) {
+          var collapsed = toggleBtn.getAttribute('data-collapsed') === 'true';
+          repliesDiv.hidden = !collapsed;
+          toggleBtn.setAttribute('data-collapsed', String(!collapsed));
+          var count = repliesDiv.querySelectorAll('.comment-item').length;
+          toggleBtn.textContent = collapsed ? '收起回复' : '展开 ' + count + ' 条回复';
+        }
+        return;
+      }
       var btn = event.target.closest('.comment-reply-btn');
       if (!btn) return;
       replyTarget = { id: btn.dataset.replyId, nick: btn.dataset.replyNick };

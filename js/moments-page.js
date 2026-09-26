@@ -235,7 +235,7 @@
       '<div class="comment-foot">' + (window.CommentLikes ? window.CommentLikes.button(String(item.id)) : '') +
         '<button type="button" class="comment-reply-btn" data-mcreply="' + escapeHtml(item.id) + '" data-mcnick="' + escapeHtml(item.nick) + '">回复</button>' +
       '</div>' +
-      (replies.length ? '<div class="comment-replies">' + replies.map(function (reply) {
+      (replies.length ? '<button type="button" class="comment-collapse-toggle" data-collapsed="true">展开 ' + replies.length + ' 条回复</button><div class="comment-replies" hidden>' + replies.map(function (reply) {
         return commentItemHtml(reply, all);
       }).join('') + '</div>' : '') +
     '</div>';
@@ -691,15 +691,56 @@
     if (!card) return;
     var body = card.querySelector('.moment-body');
     var originalHtml = body.innerHTML;
+    var editMedia = item.media ? item.media.map(function (m) { return Object.assign({}, m); }) : [];
     body.innerHTML =
       '<div class="moment-edit-area">' +
         '<div class="field"><textarea class="moment-edit-text" rows="3" maxlength="2000">' + escapeHtml(item.text) + '</textarea></div>' +
+        (editMedia.length ? '<div class="moment-edit-media">' + editMedia.map(function (m, i) {
+          return '<div class="moment-edit-media-item"><img src="' + escapeHtml(m.src) + '" alt=""><button type="button" data-del-media="' + i + '" aria-label="删除">×</button></div>';
+        }).join('') + '</div>' : '') +
+        '<div class="moment-edit-upload"><input type="file" accept="image/*,video/*" multiple class="moment-edit-file" hidden><button class="btn" type="button" data-add-media>添加图片/视频</button></div>' +
         '<div class="admin-row" style="display:flex;gap:10px;flex-wrap:wrap">' +
           '<button class="btn primary moment-edit-save" type="button" data-save="' + escapeHtml(id) + '">保存</button>' +
           '<button class="btn moment-edit-cancel" type="button" data-cancel="' + escapeHtml(id) + '">取消</button>' +
         '</div>' +
       '</div>';
     body.querySelector('textarea').focus();
+
+    // 删除媒体
+    body.querySelectorAll('[data-del-media]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        editMedia.splice(Number(btn.getAttribute('data-del-media')), 1);
+        btn.closest('.moment-edit-media-item').remove();
+      });
+    });
+
+    // 添加媒体
+    body.querySelector('[data-add-media]').addEventListener('click', function () {
+      body.querySelector('.moment-edit-file').click();
+    });
+    body.querySelector('.moment-edit-file').addEventListener('change', function (event) {
+      var files = Array.prototype.slice.call(event.target.files || []);
+      var mediaWrap = body.querySelector('.moment-edit-media') || (function () {
+        var div = document.createElement('div');
+        div.className = 'moment-edit-media';
+        body.querySelector('.moment-edit-upload').before(div);
+        return div;
+      })();
+      files.forEach(function (file) {
+        processFile(file).then(function (result) {
+          editMedia.push(result);
+          var idx = editMedia.length - 1;
+          var div = document.createElement('div');
+          div.className = 'moment-edit-media-item';
+          div.innerHTML = '<img src="' + (result.type.indexOf('video/') === 0 ? '' : 'data:' + result.type + ';base64,' + result.base64) + '" alt=""><button type="button" data-del-media="' + idx + '" aria-label="删除">×</button>';
+          div.querySelector('button').addEventListener('click', function () {
+            editMedia.splice(idx, 1);
+            div.remove();
+          });
+          mediaWrap.appendChild(div);
+        });
+      });
+    });
 
     card.querySelector('[data-cancel]').addEventListener('click', function () {
       body.innerHTML = originalHtml;
@@ -709,6 +750,34 @@
     card.querySelector('[data-save]').addEventListener('click', function () {
       var newText = card.querySelector('.moment-edit-text').value.trim();
       item.text = newText;
+      if (editMedia.length) {
+        // 新上传的媒体需要上传后再保存
+        var uploads = editMedia.filter(function (m) { return m.base64; });
+        var done = 0;
+        if (!uploads.length) {
+          item.media = editMedia.map(function (m) { return { type: m.type, src: m.src }; });
+          finish();
+        } else {
+          uploads.forEach(function (m, i) {
+            var ext = m.ext || String(m.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+            var path = 'assets/moments/' + uid('m-') + '.' + ext;
+            putFile(path, m.base64, '上传动态附件').then(function () {
+              editMedia[i].src = path;
+              editMedia[i].base64 = null;
+              done++;
+              if (done === uploads.length) {
+                item.media = editMedia.map(function (mm) { return { type: mm.type, src: mm.src }; });
+                finish();
+              }
+            }).catch(function (err) {
+              setStatus($('momentStatus'), '上传失败:' + err.message, 'err');
+            });
+          });
+        }
+      } else {
+        finish();
+      }
+      function finish() {
       saveMoments('编辑动态').then(function () {
         renderFeed();
       }).catch(function (err) {
@@ -716,6 +785,7 @@
         body.innerHTML = originalHtml;
         setStatus($('momentStatus'), '保存失败:' + err.message, 'err');
       });
+      }
     });
   }
 
@@ -799,6 +869,17 @@
       }
       var btn = event.target.closest('[data-delete]');
       if (btn) deleteMoment(btn.getAttribute('data-delete'));
+    });
+    $('momentList').addEventListener('click', function (event) {
+      var toggleBtn = event.target.closest('.comment-collapse-toggle');
+      if (!toggleBtn) return;
+      var repliesDiv = toggleBtn.nextElementSibling;
+      if (!repliesDiv || !repliesDiv.classList.contains('comment-replies')) return;
+      var collapsed = toggleBtn.getAttribute('data-collapsed') === 'true';
+      repliesDiv.hidden = !collapsed;
+      toggleBtn.setAttribute('data-collapsed', String(!collapsed));
+      var count = repliesDiv.querySelectorAll('.comment-item').length;
+      toggleBtn.textContent = collapsed ? '收起回复' : '展开 ' + count + ' 条回复';
     });
     $('momentList').addEventListener('click', function (event) {
       var editBtn = event.target.closest('[data-edit]');
