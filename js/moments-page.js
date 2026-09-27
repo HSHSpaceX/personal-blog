@@ -255,8 +255,6 @@
         }).join('') : '<p class="empty-state">还没有评论。</p>') +
       '</div>' +
       '<form class="moment-comment-form" data-moment-form="' + escapeHtml(id) + '">' +
-        '<input type="hidden" name="readerAvatar" value="' + escapeHtml(readerAcc && readerAcc.avatar ? readerAcc.avatar : '') + '">' +
-        '<input type="hidden" name="readerName" value="' + escapeHtml(readerAcc && readerAcc.name ? readerAcc.name : '') + '">' +
         '<input type="text" name="nick" maxlength="30" placeholder="称呼(必填)" autocomplete="off">' +
         '<input type="email" name="email" maxlength="60" placeholder="邮箱(选填,回复会邮件通知)" autocomplete="off">' +
         '<textarea name="content" rows="2" maxlength="1000" placeholder="写下你的评论…"></textarea>' +
@@ -330,9 +328,9 @@
 
   function submitMomentComment(form) {
     var id = form.getAttribute('data-moment-form');
-    var nick = form.nick.value.trim();
-    var mail = form.email.value.trim();
-    var content = form.content.value.trim();
+    var nick = form.querySelector('[name="nick"]').value.trim();
+    var mail = form.querySelector('[name="email"]').value.trim();
+    var content = form.querySelector('[name="content"]').value.trim();
     var status = form.querySelector('.status-line');
     var submitBtn = form.querySelector('button[type="submit"]');
     var replyTarget = form._replyTarget || null;
@@ -365,7 +363,7 @@
       setStatus(status, '已登录:正在直接发布…');
       putCommentDirect(item).then(function () {
         submitBtn.disabled = false;
-        form.content.value = '';
+        form.querySelector('[name="content"]').value = '';
         form._replyTarget = null;
         clearReplyBanner(form);
         setStatus(status, '已发布。', 'ok');
@@ -385,7 +383,7 @@
     setStatus(status, '正在提交…');
     window.PendingComments.add(item).then(function () {
       submitBtn.disabled = false;
-      form.content.value = '';
+      form.querySelector('[name="content"]').value = '';
       form._replyTarget = null;
       clearReplyBanner(form);
       setStatus(status, '已提交,博主审核通过后就会显示。', 'ok');

@@ -177,6 +177,7 @@
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="rail-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="rail-card-meta">' +
+            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt=""><span>HSH(站长)</span></a>' +
             '<span>' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -329,14 +330,11 @@
           var latest = posts.filter(function (p) { return p.category === cat.name; }).slice(0, 3);
           var count = counts2[cat.name] || 0;
           var newR = commentCounts2[cat.name] || 0;
-          var latestHtml = latest.map(function (p) {
-            return '<a class="archive-latest-item" href="' + postUrl(p.slug) + '"><span class="archive-latest-title">' + escapeHtml(p.title) + '</span><span class="archive-latest-date">' + formatDate(p.date) + '</span></a>';
-          }).join('');
           return '<a class="archive-cat-row" href="archive.html?category=' + encodeURIComponent(cat.name) + '">' +
             '<div class="archive-cat-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(cat.name) + '"></div>' +
             '<div class="archive-cat-info">' +
               '<div class="archive-cat-head"><strong>' + escapeHtml(cat.name) + '</strong><span class="archive-cat-count">(' + count + ')</span>' + (newR > 0 ? '<span class="archive-cat-new">' + newR + ' 条新评论</span>' : '') + '</div>' +
-              (latest.length ? '<div class="archive-latest">' + latestHtml + '</div>' : '<p class="archive-empty">暂无文章</p>') +
+              (count > 0 ? '<p class="cat-card-count">' + count + ' 篇文章</p>' : '<p class="archive-empty">暂无文章</p>') +
             '</div>' +
           '</a>';
         }).join('');
