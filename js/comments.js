@@ -9,6 +9,17 @@ window.SITE_COMMENTS = {
       "time": "2026-09-27",
       "content": "你",
       "reply": ""
+    },
+    {
+      "id": "c1790487297533",
+      "slug": "about",
+      "nick": "HSH(站长)",
+      "email": "",
+      "time": "2026-09-27",
+      "content": "你",
+      "device": "macOS 10.15",
+      "parentId": "c1790482422559",
+      "parentNick": "不"
     }
   ],
   "moment-m20260914-204633-fp3i": [],
