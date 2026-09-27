@@ -3,7 +3,7 @@ window.BLOG_POSTS = [
   {
     slug: "post-austria-history",
     title: "奥匈帝国的兴衰：一个多民族帝国的百年孤独",
-    category: "3D打印",
+    category: "人文历史",
     tags: ["历史","欧洲"],
     date: "2026-09-20",
     readingTime: 8,
