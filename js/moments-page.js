@@ -348,11 +348,13 @@
     var item = {
       id: 'c' + now.getTime(),
       slug: commentSlug(id),
-      nick: isAuthed() ? 'HSH(站长)' : nick,
+      nick: nick,
       email: mail,
       time: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()),
       content: content
     };
+    item.device = window.getDeviceModel ? window.getDeviceModel() : '';
+    if (isAuthed()) item.author = 'HSH(站长)';
     if (window.getDeviceModel) item.device = window.getDeviceModel();
     if (replyTarget) {
       item.parentId = replyTarget.id;
@@ -536,11 +538,12 @@
     list.innerHTML = sorted.map(function (item) {
       var liked = getLiked(item.id);
       var count = getCachedCount(item.id);
+      var displayName = isAuthed() ? 'HSH(站长)' : (item.author || '访客');
       return '<article class="moment-card" id="moment-' + escapeHtml(item.id) + '">' +
         '<img class="moment-avatar" src="assets/icon.jpg" alt="">' +
         '<div class="moment-body">' +
           '<div class="moment-head">' +
-            '<span class="moment-name">' + escapeHtml(siteName()) + '</span>' +
+            '<span class="moment-name">' + escapeHtml(displayName) + '</span>' +
             '<span class="moment-time" title="' + escapeHtml(item.time || '') + '">' + escapeHtml(timeAgo(item.time)) + '</span>' +
           '</div>' +
           (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +
@@ -861,6 +864,17 @@
         toggleComments(commentBtn.getAttribute('data-comments'));
         return;
       }
+      var toggleBtn = event.target.closest('.comment-collapse-toggle');
+      if (toggleBtn) {
+        var repliesDiv = toggleBtn.nextElementSibling;
+        if (!repliesDiv || !repliesDiv.classList.contains('comment-replies')) return;
+        var collapsed = toggleBtn.getAttribute('data-collapsed') === 'true';
+        repliesDiv.hidden = !collapsed;
+        toggleBtn.setAttribute('data-collapsed', String(!collapsed));
+        var count = repliesDiv.querySelectorAll('.comment-item').length;
+        toggleBtn.textContent = collapsed ? '收起回复' : '展开 ' + count + ' 条回复';
+        return;
+      }
       var replyBtn = event.target.closest('[data-mcreply]');
       if (replyBtn) {
         var momentId = replyBtn.closest('.moment-comments').id.replace('comments-', '');
@@ -871,17 +885,6 @@
       }
       var btn = event.target.closest('[data-delete]');
       if (btn) deleteMoment(btn.getAttribute('data-delete'));
-    });
-    $('momentList').addEventListener('click', function (event) {
-      var toggleBtn = event.target.closest('.comment-collapse-toggle');
-      if (!toggleBtn) return;
-      var repliesDiv = toggleBtn.nextElementSibling;
-      if (!repliesDiv || !repliesDiv.classList.contains('comment-replies')) return;
-      var collapsed = toggleBtn.getAttribute('data-collapsed') === 'true';
-      repliesDiv.hidden = !collapsed;
-      toggleBtn.setAttribute('data-collapsed', String(!collapsed));
-      var count = repliesDiv.querySelectorAll('.comment-item').length;
-      toggleBtn.textContent = collapsed ? '收起回复' : '展开 ' + count + ' 条回复';
     });
     $('momentList').addEventListener('click', function (event) {
       var editBtn = event.target.closest('[data-edit]');

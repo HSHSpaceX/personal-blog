@@ -59,6 +59,7 @@
     var existing = document.getElementById('rm-overlay');
     if (existing) existing.remove();
 
+    var token = getToken();
     var overlay = document.createElement('div');
     overlay.id = 'rm-overlay';
     overlay.className = 'rm-overlay';
@@ -68,6 +69,7 @@
           '<h2>资源管理</h2>' +
           '<button class="rm-close" type="button" aria-label="关闭">×</button>' +
         '</div>' +
+        (token ? '<div class="rm-upload-bar"><input type="file" id="rmFileInput" multiple hidden><button class="btn" id="rmUploadBtn" type="button">上传文件</button></div>' : '') +
         '<div class="rm-body" id="rmBody"></div>' +
         '<div class="rm-foot">' +
           '<button class="btn primary" id="rmInsert" type="button" disabled>插入所选</button>' +
@@ -78,6 +80,27 @@
 
     var selected = null;
     var resources = collectAll();
+
+    if (token) {
+      var uploadBtn = overlay.querySelector('#rmUploadBtn');
+      var fileInput = overlay.querySelector('#rmFileInput');
+      uploadBtn.addEventListener('click', function () { fileInput.click(); });
+      fileInput.addEventListener('change', function (e) {
+        Array.prototype.forEach.call(e.target.files, function (file) {
+          if (file.size > 90 * 1024 * 1024) {
+            alert(file.name + ' 超过 90MB 限制');
+            return;
+          }
+          uploadFile(file).then(function (path) {
+            resources.push({ path: path, name: file.name, source: '手动上传', date: new Date().toISOString().slice(0, 10) });
+            renderList();
+          }).catch(function (err) {
+            alert('上传失败: ' + err.message);
+          });
+        });
+        fileInput.value = '';
+      });
+    }
 
     function renderList() {
       var body = document.getElementById('rmBody');
@@ -173,6 +196,34 @@
     });
 
     renderList();
+  }
+
+  function uploadFile(file) {
+    var folder = file.type.indexOf('image/') === 0 ? 'assets/posts'
+      : file.type.indexOf('video/') === 0 ? 'assets/videos'
+      : 'assets/files';
+    var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    var name = 'file-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6) + '.' + ext;
+    var path = folder + '/' + name;
+    return fileToBase64(file).then(function (base64) {
+      return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + path, {
+        method: 'PUT',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, apiHeaders()),
+        body: JSON.stringify({ message: '上传资源: ' + name, content: base64, branch: BRANCH })
+      });
+    }).then(function (res) {
+      if (!res.ok) throw new Error('GitHub ' + res.status);
+      return path;
+    });
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result).slice(String(reader.result).indexOf(',') + 1)); };
+      reader.onerror = function () { reject(new Error('读取文件失败')); };
+      reader.readAsDataURL(file);
+    });
   }
 
   function deleteResource(path) {

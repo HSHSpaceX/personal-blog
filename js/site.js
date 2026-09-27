@@ -347,62 +347,76 @@
       }).join('');
     }
 
-    // 选中分类后显示对应文章列表
+    // 分类独立页面
     if (!activeCategory) {
       if (listEl) listEl.innerHTML = '';
       var archiveListSection = listEl ? listEl.closest('.archive-list') : null;
       if (archiveListSection) archiveListSection.style.display = 'none';
       return;
     }
-    if (listEl) {
-      var archiveListSection = listEl.closest('.archive-list');
-      if (archiveListSection) archiveListSection.style.display = '';
-      var isGroup = ARCHIVE_GROUPS.some(function (g) { return g.title === activeCategory; });
-      var groupCats = [];
-      if (isGroup) {
-        groupCats = ARCHIVE_GROUPS.filter(function (g) { return g.title === activeCategory; })[0].cats.map(function (c) { return c.name; });
-      } else {
-        groupCats = [activeCategory];
-      }
+    if (!listEl) return;
+    var archiveListSection = listEl.closest('.archive-list');
+    if (archiveListSection) archiveListSection.style.display = '';
+
+    // 支持通过 ?tag=xx 直接筛选
+    if (params.get('tag')) {
+      activeTag = params.get('tag');
+    }
+
+    var isGroup = ARCHIVE_GROUPS.some(function (g) { return g.title === activeCategory; });
+    var groupCats = [];
+    if (isGroup) {
+      groupCats = ARCHIVE_GROUPS.filter(function (g) { return g.title === activeCategory; })[0].cats.map(function (c) { return c.name; });
+    } else {
+      groupCats = [activeCategory];
+    }
+
+    var catIcon = null;
+    ARCHIVE_GROUPS.forEach(function (g) {
+      g.cats.forEach(function (c) { if (c.name === activeCategory) catIcon = c.icon; });
+      if (g.title === activeCategory && g.cats[0]) catIcon = g.cats[0].icon;
+    });
+
+    // 收集该分类的所有标签
+    var allTags = ['全部'];
+    posts.filter(function (p) {
+      return groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
+    }).forEach(function (p) {
+      (p.tags || []).forEach(function (t) { if (allTags.indexOf(t) === -1) allTags.push(t); });
+    });
+
     function filterPosts() {
-        return posts.filter(function (p) {
+      return posts.filter(function (p) {
         var inCat = groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
         var inTag = activeTag === '全部' || (p.tags || []).indexOf(activeTag) !== -1;
         return inCat && inTag;
       });
     }
-    // 支持通过 ?tag=xx 直接筛选
-    if (params.get('tag')) {
-      activeTag = params.get('tag');
+
+    function renderFiltered() {
+      var filtered = filterPosts();
+      return (allTags.length > 1 ? '<div class="archive-tag-filter">' + allTags.map(function (t) {
+        return '<button class="filter-chip' + (t === activeTag ? ' active' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+      }).join('') + '</div>' : '') +
+      '<div class="archive-post-grid">' +
+      (filtered.length ? filtered.map(renderPostCard).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') +
+      '</div>';
     }
-      function renderFilterBar() {
-        var allTags = ['全部'];
-        posts.filter(function (p) {
-          return groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
-        }).forEach(function (p) {
-          (p.tags || []).forEach(function (t) { if (allTags.indexOf(t) === -1) allTags.push(t); });
-        });
-        var tagHtml = allTags.length > 1 ? '<div class="archive-tag-filter">' + allTags.map(function (t) {
-          return '<button class="filter-chip' + (t === activeTag ? ' active' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
-        }).join('') + '</div>' : '';
-        return '<div class="archive-filter-bar"><a class="text-link" href="archive.html">← 返回归档</a><span class="archive-filter-label">' + escapeHtml(activeCategory) + '</span></div>' + tagHtml;
-      }
-      listEl.innerHTML = renderFilterBar() +
-        '<div id="archiveFilteredList" class="archive-list-inner">' +
-        filterPosts().map(renderArchiveRow).join('') +
-        '</div>';
-      var listContainer = document.getElementById('archiveFilteredList');
-      if (listContainer) {
-        listContainer.addEventListener('click', function (event) {
-          var chip = event.target.closest('[data-tag]');
-          if (!chip) return;
-          activeTag = chip.getAttribute('data-tag');
-          listEl.innerHTML = renderFilterBar() +
-            '<div id="archiveFilteredList" class="archive-list-inner">' +
-            filterPosts().map(renderArchiveRow).join('') +
-            '</div>';
-        });
-      }
+
+    var catIconHtml = catIcon ? '<div class="cat-page-icon"><img src="' + catIcon + '" alt="' + escapeHtml(activeCategory) + '"></div>' : '';
+    listEl.innerHTML = '<div class="cat-page-header">' + catIconHtml +
+      '<div><h2 class="cat-page-title">' + escapeHtml(activeCategory) + '</h2>' +
+      '<a class="text-link" href="archive.html">← 返回归档</a></div></div>' +
+      '<div id="archiveFilteredList">' + renderFiltered() + '</div>';
+
+    var listContainer = document.getElementById('archiveFilteredList');
+    if (listContainer) {
+      listContainer.addEventListener('click', function (event) {
+        var chip = event.target.closest('[data-tag]');
+        if (!chip) return;
+        activeTag = chip.getAttribute('data-tag');
+        listContainer.innerHTML = renderFiltered();
+      });
     }
   }
 
@@ -1365,6 +1379,27 @@
 
   // 识别设备型号用于评论显示
   function getDeviceModel() {
+    // 优先使用 User-Agent Client Hints(更准确)
+    if (navigator.userAgentData) {
+      var brands = navigator.userAgentData.brands || [];
+      var brand = '';
+      for (var i = 0; i < brands.length; i++) {
+        if (brands[i].brand !== 'Not A(Brand' && brands[i].brand !== 'Not_A Brand') {
+          brand = brands[i].brand;
+          break;
+        }
+      }
+      var platform = navigator.userAgentData.platform || '';
+      var mobile = navigator.userAgentData.mobile;
+      if (/iPad/i.test(platform)) return 'iPad' + (brand ? ' · ' + brand : '');
+      if (/iPhone|iOS/.test(platform)) return 'iPhone' + (brand ? ' · ' + brand : '');
+      if (/Android/.test(platform)) return 'Android ' + (brand ? brand : '') + (mobile ? '' : ' 平板');
+      if (/macOS/.test(platform)) return 'Mac' + (brand ? ' · ' + brand : '');
+      if (/Windows/.test(platform)) return 'Windows' + (brand ? ' · ' + brand : '');
+      if (/Chrome OS/.test(platform)) return 'ChromeOS' + (brand ? ' · ' + brand : '');
+      if (/Linux/.test(platform)) return 'Linux' + (brand ? ' · ' + brand : '');
+    }
+    // Fallback: User-Agent
     var ua = navigator.userAgent;
     // iOS
     if (/iPhone/.test(ua)) {
