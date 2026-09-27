@@ -45,6 +45,8 @@
     document.querySelectorAll('.user-avatar').forEach(function (btn) {
       btn.addEventListener('click', function (event) {
         event.stopPropagation();
+        // 头像点击直接进主页
+        window.location.href = 'about.html';
         var menu = btn.parentElement.querySelector('.user-menu');
         if (!menu) return;
         var open = menu.hidden;
@@ -1122,12 +1124,11 @@
         '<div class="comment-head">' +
           '<img class="comment-avatar" src="' + (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg') + '" alt="" onerror="this.style.display=\'none\'">' +
           '<strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span>' +
-          (item.device ? '<span class="comment-device">' + escapeHtml(item.device) + '</span>' : '') +
         '</div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
         (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
         '<div class="comment-foot">' +
-          (item.email ? '<span class="comment-device">' + escapeHtml(item.device || '') + '</span>' : '') +
+          (item.device ? '<span class="comment-device-left">发布自 ' + escapeHtml(item.device) + '</span>' : '') +
           CommentLikes.button(String(item.id)) +
           '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button>' +
         '</div>' +
@@ -1364,7 +1365,7 @@
       var match = ua.match(/iPhone OS (\d+)/);
       return 'iPhone' + (match ? ' iOS ' + match[1] : '');
     }
-    if (/iPad/.test(ua)) {
+    if (/iPad/i.test(ua) || (/Macintosh/i.test(ua) && /Mobile/i.test(ua))) {
       var match = ua.match(/CPU OS (\d+)/);
       return 'iPad' + (match ? ' iPadOS ' + match[1] : '');
     }
