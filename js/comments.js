@@ -20,17 +20,6 @@ window.SITE_COMMENTS = {
       "device": "macOS 10.15",
       "parentId": "c1790482422559",
       "parentNick": "不"
-    },
-    {
-      "id": "c1790487359197",
-      "slug": "about",
-      "nick": "HSH(站长)",
-      "email": "",
-      "time": "2026-09-27",
-      "content": "1",
-      "device": "Android 10",
-      "parentId": "c1790487297533",
-      "parentNick": "HSH(站长)"
     }
   ],
   "moment-m20260914-204633-fp3i": [],
