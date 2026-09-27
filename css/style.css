@@ -3869,8 +3869,16 @@ a.tag-chip:hover {
 .cat-page-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 18px;
   margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.cat-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
 .cat-page-icon {
@@ -3893,6 +3901,10 @@ a.tag-chip:hover {
   font-size: 26px;
   font-weight: 700;
   margin: 0 0 4px;
+}
+
+.cat-page-back {
+  flex-shrink: 0;
 }
 
 /* Archive post grid (same as homepage) */

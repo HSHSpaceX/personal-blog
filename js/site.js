@@ -401,10 +401,14 @@
       '</div>';
     }
 
-    var catIconHtml = catIcon ? '<div class="cat-page-icon"><img src="' + catIcon + '" alt="' + escapeHtml(activeCategory) + '"></div>' : '';
-    listEl.innerHTML = '<div class="cat-page-header">' + catIconHtml +
-      '<div><h2 class="cat-page-title">' + escapeHtml(activeCategory) + '</h2>' +
-      '<a class="text-link" href="archive.html">← 返回归档</a></div></div>' +
+    var catIconImg = catIcon ? '<div class="cat-page-icon"><img src="' + catIcon + '" alt="' + escapeHtml(activeCategory) + '"></div>' : '';
+    listEl.innerHTML =
+      '<div class="cat-page-header">' +
+        '<div class="cat-page-title-row">' + catIconImg +
+          '<div><h2 class="cat-page-title">' + escapeHtml(activeCategory) + '</h2></div>' +
+        '</div>' +
+        '<a class="btn cat-page-back" href="archive.html">← 返回归档</a>' +
+      '</div>' +
       '<div id="archiveFilteredList">' + renderFiltered() + '</div>';
 
     var listContainer = document.getElementById('archiveFilteredList');

@@ -559,7 +559,9 @@
 
   function fillDatalists() {
     var categories = uniqueCategories();
-    $('categoryOptions').innerHTML = categories.map(function (category) {
+    var FIXED_CATEGORIES = ['火箭部件', '飞控制作', '软件设计', '嵌入式', 'AI', '3D打印', '人文历史', '艺术创作', '新闻时报'];
+    var merged = FIXED_CATEGORIES.concat(categories.filter(function (c) { return FIXED_CATEGORIES.indexOf(c) === -1; }));
+    $('categoryOptions').innerHTML = merged.map(function (category) {
       return '<option value="' + escapeHtml(category) + '"></option>';
     }).join('');
     var covers = [];
