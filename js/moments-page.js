@@ -542,12 +542,6 @@
           '<div class="moment-head">' +
             '<span class="moment-name">' + escapeHtml(siteName()) + '</span>' +
             '<span class="moment-time" title="' + escapeHtml(item.time || '') + '">' + escapeHtml(timeAgo(item.time)) + '</span>' +
-            (authed ? '<button class="moment-delete" type="button" data-delete="' + escapeHtml(item.id) + '" aria-label="删除这条动态" title="删除">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
-              '</button>' : '') +
-            (authed ? '<button class="moment-delete moment-edit-btn" type="button" data-edit="' + escapeHtml(item.id) + '" aria-label="编辑这条动态" title="编辑">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
-              '</button>' : '') +
           '</div>' +
           (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +
           (item.media && item.media.length
@@ -570,6 +564,12 @@
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>' +
               '<span class="moment-action-count moment-comment-count">' + commentCount(item.id) + '</span>' +
             '</button>' +
+            (authed ? '<button class="moment-delete" type="button" data-delete="' + escapeHtml(item.id) + '" aria-label="删除这条动态" title="删除">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+              '</button>' : '') +
+            (authed ? '<button class="moment-edit-btn" type="button" data-edit="' + escapeHtml(item.id) + '" aria-label="编辑这条动态" title="编辑">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
+              '</button>' : '') +
           '</div>' +
           '<div class="moment-comments" id="comments-' + escapeHtml(item.id) + '" hidden></div>' +
         '</div>' +
