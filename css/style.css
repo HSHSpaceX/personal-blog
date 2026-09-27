@@ -1399,6 +1399,121 @@ a.tag-chip:hover {
   margin-right: auto;
 }
 
+/* Resources */
+.resource-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+}
+
+.resource-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+
+.resource-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.resource-info strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-info span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.resource-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.resource-upload {
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.resource-upload h2 {
+  font-size: 18px;
+  margin: 0 0 14px;
+}
+
+.resource-drop {
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.resource-drop.dragover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.resource-drop svg {
+  width: 36px;
+  height: 36px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.resource-drop p {
+  margin: 2px 0;
+  color: var(--ink);
+}
+
+.resource-drop .hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.resource-upload-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resource-upload-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.resource-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .comment-avatar {
   width: 26px;
   height: 26px;

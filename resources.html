@@ -1,10 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>搜索 - 拾光手记</title>
-  <meta name="description" content="搜索文章、动态和评论。">
+  <title>资源中心 - 拾光手记</title>
+  <meta name="description" content="资源下载与分享">
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
   <link rel="stylesheet" href="css/style.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
@@ -23,7 +23,7 @@
         <a class="nav-link" href="timeline.html">时间线</a>
         <a class="nav-link" href="gallery.html">画廊</a>
         <a class="nav-link" href="moments.html">动态</a>
-        <a class="nav-link" href="resources.html">资源</a>
+        <a class="nav-link active" href="resources.html">资源</a>
         <a class="nav-link" href="about.html">关于</a>
       </nav>
       <div class="header-actions">
@@ -55,17 +55,36 @@
   <main id="main">
     <section class="page-head band">
       <div class="container">
-        <p class="eyebrow">SEARCH</p>
-        <h1>搜索</h1>
+        <p class="eyebrow">RESOURCES</p>
+        <h1>资源中心</h1>
+        <p class="intro-text">上传与分享文件,高速下载。</p>
       </div>
     </section>
 
     <section class="band">
-      <div class="container" style="max-width:720px">
-        <div class="search-bar-wrap">
-          <input id="searchInput" type="search" placeholder="搜索文章、动态、评论…" autocomplete="off" autofocus>
+      <div class="container" style="max-width:860px">
+        <div class="resource-upload glass-card" id="resourceUpload" hidden>
+          <h2>上传文件</h2>
+          <div class="resource-drop" id="resourceDrop">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+            <p>拖拽文件到这里,或点击选择</p>
+            <p class="hint">支持任意格式,单文件最大 200MB</p>
+            <input id="resourceFileInput" type="file" multiple hidden>
+          </div>
+          <div id="resourceUploadList" class="resource-upload-list"></div>
+          <div class="admin-row">
+            <button class="btn primary" id="resourceUploadBtn" type="button" disabled>开始上传</button>
+            <button class="btn" id="resourceCancelBtn" type="button">取消</button>
+          </div>
+          <p id="resourceUploadStatus" class="status-line"></p>
         </div>
-        <div id="searchResults" class="search-results"></div>
+
+        <div class="resource-toolbar">
+          <button class="btn primary" id="resourceAddBtn" type="button" hidden>上传资源</button>
+          <p id="resourceStatus" class="status-line"></p>
+        </div>
+
+        <div id="resourceList" class="resource-list"></div>
       </div>
     </section>
   </main>
@@ -82,6 +101,6 @@
   <script src="js/account.js?v=2"></script>
   <script src="js/boot.js?v=2"></script>
   <script src="js/site.js?v=2"></script>
-  <script src="js/search.js?v=2"></script>
+  <script src="js/resources.js?v=2"></script>
 </body>
 </html>
