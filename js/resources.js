@@ -8,7 +8,7 @@
     });
   }
 
-  var REPO_RAW = 'https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/assets/resources/';
+  var REPO_RAW = 'https://raw.githubusercontent.com/HSHSpaceX/personal-blog/main/';
 
   function formatSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -16,111 +16,113 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  function formatDate(iso) {
-    return iso ? iso.slice(0, 10) : '';
-  }
-
-  // 资源列表存在 localStorage,实际下载链接指向 raw.githubusercontent.com
-  function getResources() {
-    try {
-      return JSON.parse(localStorage.getItem('blog-resources') || '[]');
-    } catch (e) {
-      return [];
+  // 文章/动态/画廊里出现的所有资源
+  function collectResources() {
+    var list = [];
+    function add(path, name, source, date) {
+      if (!path || path.indexOf('http') === 0) return;
+      list.push({ path: path, name: name || path.split('/').pop(), source: source, date: date || '' });
     }
+
+    (window.BLOG_POSTS || []).forEach(function (p) {
+      if (p.cover) add(p.cover, p.title + ' (封面)', '文章封面', p.date);
+      var html = p.content || '';
+      var imgRe = /src="(assets\/[^"]+\.(jpg|jpeg|png|gif|webp))"/gi;
+      var m;
+      while ((m = imgRe.exec(html)) !== null) add(m[1], m[1].split('/').pop(), '文章: ' + p.title, p.date);
+      var vidRe = /src="(assets\/[^"]+\.(mp4|mov|webm))"/gi;
+      while ((m = vidRe.exec(html)) !== null) add(m[1], m[1].split('/').pop(), '文章视频: ' + p.title, p.date);
+    });
+
+    (window.BLOG_MOMENTS || []).forEach(function (mm) {
+      if (mm.image) add(mm.image, mm.image.split('/').pop(), '动态', (mm.time || '').slice(0, 10));
+      (mm.media || []).forEach(function (med) {
+        if (med && med.src) add(med.src, med.src.split('/').pop(), '动态', (mm.time || '').slice(0, 10));
+      });
+    });
+
+    (window.BLOG_ALBUMS || []).forEach(function (album) {
+      (album.photos || []).forEach(function (ph) {
+        if (ph && ph.src) add(ph.src, ph.src.split('/').pop(), '画廊: ' + album.title, album.created || '');
+      });
+    });
+
+    var seen = {};
+    return list.filter(function (r) {
+      if (seen[r.path]) return false;
+      seen[r.path] = true;
+      return true;
+    });
   }
 
-  function saveResources(list) {
-    try {
-      localStorage.setItem('blog-resources', JSON.stringify(list));
-    } catch (e) { /* 忽略 */ }
-  }
-
-  var pendingFiles = [];
-
-  function renderResources() {
-    var list = getResources();
-    var el = $('resourceList');
-    if (!el) return;
+  function render() {
+    var grid = $('resourceGrid');
+    if (!grid) return;
+    var list = collectResources();
     if (!list.length) {
-      el.innerHTML = '<p class="empty-state">还没有资源,点击上方"上传资源"分享文件。</p>';
+      grid.innerHTML = '<p class="empty-state">还没有上传过任何资源。在文章、动态和画廊中上传的文件会显示在这里。</p>';
       return;
     }
-    el.innerHTML = list.map(function (r, i) {
+    grid.innerHTML = list.map(function (r) {
+      var isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(r.path);
+      var isVideo = /\.(mp4|mov|webm)$/i.test(r.path);
+      var thumb;
+      if (isImage) {
+        thumb = '<img src="' + escapeHtml(r.path) + '" alt="' + escapeHtml(r.name) + '" loading="lazy">';
+      } else if (isVideo) {
+        thumb = '<video src="' + escapeHtml(r.path) + '" muted playsinline preload="metadata"></video>';
+      } else {
+        thumb = '<div class="resource-icon-big">📄</div>';
+      }
       return '<div class="resource-card glass-card">' +
-        '<div class="resource-icon">' + (r.type.indexOf('image/') === 0 ? '🖼' : r.type.indexOf('video/') === 0 ? '🎬' : r.type.indexOf('audio/') === 0 ? '🎵' : r.type.indexOf('pdf') !== -1 ? '📄' : '📁') + '</div>' +
+        '<div class="resource-thumb">' + thumb + '</div>' +
         '<div class="resource-info">' +
-          '<strong>' + escapeHtml(r.name) + '</strong>' +
-          '<span>' + formatSize(r.size) + ' · ' + formatDate(r.time) + '</span>' +
+          '<strong title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</strong>' +
+          '<span>' + escapeHtml(r.source) + '</span>' +
+          '<span class="resource-path">' + escapeHtml(r.path) + '</span>' +
         '</div>' +
         '<div class="resource-actions">' +
-          '<a class="btn" href="' + REPO_RAW + escapeHtml(r.path.split('/').pop()) + '" target="_blank" rel="noopener">预览</a>' +
-          '<a class="btn primary" href="' + REPO_RAW + escapeHtml(r.path.split('/').pop()) + '" download="' + escapeHtml(r.name) + '">下载</a>' +
-          (isOwner() ? '<button class="btn danger" data-del-resource="' + i + '" type="button">删除</button>' : '') +
+          '<button class="btn" type="button" data-copy="' + escapeHtml(r.path) + '">复制链接</button>' +
+          '<a class="btn" href="' + escapeHtml(r.path) + '" target="_blank" rel="noopener">打开</a>' +
+          '<a class="btn primary" href="' + escapeHtml(r.path) + '" download="' + escapeHtml(r.name) + '">下载</a>' +
         '</div>' +
       '</div>';
     }).join('');
-    el.querySelectorAll('[data-del-resource]').forEach(function (btn) {
+
+    grid.querySelectorAll('[data-copy]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var idx = Number(btn.getAttribute('data-del-resource'));
-        var list = getResources();
-        list.splice(idx, 1);
-        saveResources(list);
-        renderResources();
+        var full = REPO_RAW + btn.getAttribute('data-copy');
+        navigator.clipboard.writeText(full).then(function () {
+          btn.textContent = '已复制';
+          setTimeout(function () { btn.textContent = '复制链接'; }, 1500);
+        }).catch(function () {
+          window.prompt('复制链接:', full);
+        });
       });
     });
   }
 
-  function isOwner() {
-    try {
-      return Number(localStorage.getItem('blog-auth') || 0) > Date.now();
-    } catch (e) { return false; }
-  }
+  var pendingFiles = [];
 
-  function uploadAll() {
-    if (!pendingFiles.length) return;
-    var btn = $('resourceUploadBtn');
-    var statusEl = $('resourceUploadStatus');
-    btn.disabled = true;
-    statusEl.textContent = '上传中,请稍候…';
-    var uploaded = getResources();
-    var done = 0;
-    pendingFiles.forEach(function (file, i) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        // 这里上传到 GitHub,由于文件较大,提示需要用 R2 存储
-        uploaded.push({
-          name: file.name,
-          size: file.size,
-          type: file.type || 'application/octet-stream',
-          path: 'assets/resources/' + file.name,
-          time: new Date().toISOString().slice(0, 10)
-        });
-        done++;
-        if (done === pendingFiles.length) {
-          saveResources(uploaded);
-          statusEl.textContent = '已保存 ' + done + ' 个文件到资源列表。文件托管在 GitHub 仓库中,下载可能会经过 CDN 加速。';
-          statusEl.classList.add('ok');
-          pendingFiles = [];
-          $('resourceUploadList').innerHTML = '';
-          btn.disabled = false;
-          renderResources();
-        }
-      };
-      reader.onerror = function () {
-        statusEl.textContent = '读取 ' + file.name + ' 失败。';
-        statusEl.classList.add('err');
-      };
-      reader.readAsArrayBuffer(file);
+  function handleFiles(files) {
+    Array.prototype.forEach.call(files, function (file) {
+      if (file.size > 90 * 1024 * 1024) {
+        alert(file.name + ' 超过 90MB 限制');
+        return;
+      }
+      pendingFiles.push(file);
+      var item = document.createElement('div');
+      item.className = 'resource-upload-item';
+      item.innerHTML = '<span>' + escapeHtml(file.name) + '</span><span>' + formatSize(file.size) + '</span>';
+      $('resourceUploadList').appendChild(item);
     });
+    $('resourceDoUpload').disabled = pendingFiles.length === 0;
   }
 
   function setupDrop() {
     var drop = $('resourceDrop');
     drop.addEventListener('click', function () { $('resourceFileInput').click(); });
-    drop.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      drop.classList.add('dragover');
-    });
+    drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('dragover'); });
     drop.addEventListener('dragleave', function () { drop.classList.remove('dragover'); });
     drop.addEventListener('drop', function (e) {
       e.preventDefault();
@@ -130,38 +132,36 @@
     $('resourceFileInput').addEventListener('change', function (e) {
       handleFiles(e.target.files);
     });
-    function handleFiles(files) {
-      Array.prototype.forEach.call(files, function (file) {
-        pendingFiles.push(file);
-        var item = document.createElement('div');
-        item.className = 'resource-upload-item';
-        item.innerHTML = '<span>' + escapeHtml(file.name) + '</span><span>' + formatSize(file.size) + '</span>';
-        $('resourceUploadList').appendChild(item);
-      });
-      $('resourceUploadBtn').disabled = pendingFiles.length === 0;
-    }
+    $('resourceDoUpload').addEventListener('click', function () {
+      if (!pendingFiles.length) return;
+      $('resourceDoUpload').disabled = true;
+      $('resourceUploadStatus').textContent = '上传功能需要配置 GitHub Token 或 R2 存储。';
+      render();
+    });
   }
 
   function init() {
-    if (isOwner()) {
-      $('resourceAddBtn').hidden = false;
-      $('resourceUpload').hidden = false;
-    }
-    $('resourceAddBtn').addEventListener('click', function () {
-      $('resourceUpload').hidden = !$('resourceUpload').hidden;
+    $('resourceUploadBtn').addEventListener('click', function () {
+      $('resourceUploadModal').hidden = false;
     });
-    $('resourceCancelBtn').addEventListener('click', function () {
+    $('resourceUploadCancel').addEventListener('click', function () {
       pendingFiles = [];
       $('resourceUploadList').innerHTML = '';
       $('resourceUploadStatus').textContent = '';
-      $('resourceUploadBtn').disabled = true;
-      $('resourceUpload').hidden = true;
+      $('resourceDoUpload').disabled = true;
+      $('resourceUploadModal').hidden = true;
     });
-    $('resourceUploadBtn').addEventListener('click', uploadAll);
     setupDrop();
-    renderResources();
+    render();
+    var timer = setInterval(function () {
+      if (window.BLOG_POSTS && window.BLOG_MOMENTS) { render(); clearInterval(timer); }
+    }, 300);
   }
 
   document.getElementById('year').textContent = new Date().getFullYear();
-  init();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

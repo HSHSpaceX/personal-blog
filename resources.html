@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -57,34 +57,37 @@
       <div class="container">
         <p class="eyebrow">RESOURCES</p>
         <h1>资源中心</h1>
-        <p class="intro-text">上传与分享文件,高速下载。</p>
+        <p class="intro-text">管理所有上传过的图片、视频和文件。</p>
       </div>
     </section>
 
     <section class="band">
-      <div class="container" style="max-width:860px">
-        <div class="resource-upload glass-card" id="resourceUpload" hidden>
-          <h2>上传文件</h2>
-          <div class="resource-drop" id="resourceDrop">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
-            <p>拖拽文件到这里,或点击选择</p>
-            <p class="hint">支持任意格式,单文件最大 200MB</p>
-            <input id="resourceFileInput" type="file" multiple hidden>
-          </div>
-          <div id="resourceUploadList" class="resource-upload-list"></div>
-          <div class="admin-row">
-            <button class="btn primary" id="resourceUploadBtn" type="button" disabled>开始上传</button>
-            <button class="btn" id="resourceCancelBtn" type="button">取消</button>
-          </div>
-          <p id="resourceUploadStatus" class="status-line"></p>
+      <div class="container">
+        <div class="resource-header">
+          <p class="hint">登录后,你在文章、动态和画廊上传的所有文件都显示在这里,方便统一管理和再次使用。</p>
+          <button class="btn primary" id="resourceUploadBtn" type="button">上传文件</button>
+          <p class="status-line" id="resourceStatus"></p>
         </div>
 
-        <div class="resource-toolbar">
-          <button class="btn primary" id="resourceAddBtn" type="button" hidden>上传资源</button>
-          <p id="resourceStatus" class="status-line"></p>
-        </div>
+        <div class="resource-grid" id="resourceGrid"></div>
 
-        <div id="resourceList" class="resource-list"></div>
+        <div class="resource-upload-modal" id="resourceUploadModal" hidden>
+          <div class="resource-upload-card">
+            <h2>上传文件</h2>
+            <div class="resource-drop" id="resourceDrop">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+              <p>拖拽文件到这里,或点击选择</p>
+              <p class="hint">支持图片、视频、文档等任意格式,单文件最大 90MB</p>
+              <input id="resourceFileInput" type="file" multiple hidden>
+            </div>
+            <div id="resourceUploadList" class="resource-upload-list"></div>
+            <div class="admin-row">
+              <button class="btn primary" id="resourceDoUpload" type="button" disabled>开始上传</button>
+              <button class="btn" id="resourceUploadCancel" type="button">取消</button>
+            </div>
+            <p id="resourceUploadStatus" class="status-line"></p>
+          </div>
+        </div>
       </div>
     </section>
   </main>

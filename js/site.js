@@ -29,6 +29,9 @@
         img.src = reader.avatar;
       });
     }
+    document.querySelectorAll('.user-menu-wrap').forEach(function (el) {
+      el.hidden = !authed;
+    });
     if (!authed) closeUserMenus();
   }
 
@@ -45,8 +48,6 @@
     document.querySelectorAll('.user-avatar').forEach(function (btn) {
       btn.addEventListener('click', function (event) {
         event.stopPropagation();
-        // 头像点击直接进主页
-        window.location.href = 'about.html';
         var menu = btn.parentElement.querySelector('.user-menu');
         if (!menu) return;
         var open = menu.hidden;
