@@ -761,13 +761,35 @@
     var editor = $('richEditor');
     editor.focus();
     if (tool.cmd === 'insertLocalImage') {
-      $('insertImageFile').click();
+      if (window.ResourceManager) {
+        window.ResourceManager.open(function (r) {
+          insertMediaHtml('<img src="' + r.path + '" alt="插图">');
+        });
+      } else {
+        $('insertImageFile').click();
+      }
       return;
     } else if (tool.cmd === 'insertLocalVideo') {
-      $('insertVideoFile').click();
+      if (window.ResourceManager) {
+        window.ResourceManager.open(function (r) {
+          if (r.path.match(/\.(mp4|mov|webm)$/i)) {
+            insertMediaHtml('<figure><video controls playsinline preload="metadata" src="' + r.path + '" style="max-width:100%"></video></figure>');
+          } else {
+            insertMediaHtml('<img src="' + r.path + '" alt="插图">');
+          }
+        });
+      } else {
+        $('insertVideoFile').click();
+      }
       return;
     } else if (tool.cmd === 'insertLocalFile') {
-      $('insertAttachFile').click();
+      if (window.ResourceManager) {
+        window.ResourceManager.open(function (r) {
+          insertMediaHtml('<p><a class="file-link" href="' + r.path + '" download="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '（点击下载）</a></p>');
+        });
+      } else {
+        $('insertAttachFile').click();
+      }
       return;
     } else if (tool.cmd === 'insertFormula') {
       document.execCommand('insertText', false, tool.snippet);
@@ -1029,6 +1051,11 @@
     });
 
     $('messageBtn').addEventListener('click', openMessageBox);
+    $('resourceBtn').addEventListener('click', function () {
+      if (window.ResourceManager) {
+        window.ResourceManager.open();
+      }
+    });
     $('msgBackBtn').addEventListener('click', function () {
       showList();
     });

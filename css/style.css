@@ -1622,6 +1622,146 @@ a.tag-chip:hover {
   margin: 0 0 14px;
 }
 
+/* Resource Manager Modal */
+.rm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,0.5);
+  padding: 20px;
+}
+
+.rm-modal {
+  width: min(680px, 100%);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.rm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rm-head h2 {
+  font-size: 17px;
+  margin: 0;
+}
+
+.rm-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 22px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.rm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.rm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-bottom: 6px;
+}
+
+.rm-item:hover {
+  background: var(--surface);
+}
+
+.rm-item.selected {
+  background: rgba(0, 113, 227, 0.1);
+  outline: 2px solid var(--accent);
+}
+
+.rm-thumb {
+  width: 56px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+}
+
+.rm-thumb img,
+.rm-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rm-icon {
+  font-size: 20px;
+}
+
+.rm-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rm-info strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rm-info span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rm-path {
+  font-family: monospace;
+  color: var(--line);
+}
+
+.rm-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.rm-foot {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  justify-content: flex-end;
+}
+
 .comment-avatar {
   width: 26px;
   height: 26px;
@@ -3113,14 +3253,35 @@ a.tag-chip:hover {
   transition: color 0.2s ease, background 0.2s ease;
 }
 
+.moment-edit-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.moment-delete svg,
+.moment-edit-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
 .moment-delete:hover {
   color: #ff3b30;
   background: rgba(255, 59, 48, 0.12);
 }
 
-.moment-delete svg {
-  width: 16px;
-  height: 16px;
+.moment-edit-btn:hover {
+  color: var(--accent);
+  background: rgba(0, 113, 227, 0.12);
 }
 
 .moment-text {
@@ -3150,6 +3311,13 @@ a.tag-chip:hover {
 }
 
 .moment-actions .moment-delete {
+  margin-left: auto;
+}
+
+.moment-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
 }
 
@@ -3505,10 +3673,47 @@ a.tag-chip:hover {
   color: inherit;
   text-decoration: none;
   transition: background 0.15s ease;
+  border-radius: 14px;
+  margin-bottom: 6px;
 }
 
 .archive-cat-row:hover {
-  background: var(--surface);
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.archive-cat-head,
+.archive-latest,
+.archive-cat-info {
+  position: relative;
+  z-index: 2;
+}
+
+/* Post card author */
+.post-card-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+  margin-right: 10px;
+}
+
+.post-card-author:hover {
+  color: var(--accent);
+}
+
+.post-card-author-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+[data-theme="light"] .post-card-author-img {
+  filter: invert(1);
 }
 
 .archive-cat-icon {

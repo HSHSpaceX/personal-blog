@@ -145,7 +145,7 @@
 
   function renderPostCard(post) {
     return '' +
-      '<article class="post-card">' +
+      '<article class="post-card glass-card">' +
         '<a class="post-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
           '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="eager" decoding="async" fetchpriority="high">' +
         '</a>' +
@@ -154,6 +154,7 @@
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="post-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="post-card-meta">' +
+            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt=""><span>HSH(站长)</span></a>' +
             '<span class="post-date">' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -167,7 +168,7 @@
 
   function renderRailCard(post, index) {
     return '' +
-      '<article class="rail-card reveal" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
+      '<article class="rail-card reveal glass-card" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
         '<a class="rail-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
           '<img src="' + escapeHtml(post.cover) + '" alt="" loading="eager" decoding="async" fetchpriority="high">' +
         '</a>' +
@@ -363,13 +364,17 @@
       } else {
         groupCats = [activeCategory];
       }
-      function filterPosts() {
+    function filterPosts() {
         return posts.filter(function (p) {
-          var inCat = groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
-          var inTag = activeTag === '全部' || (p.tags || []).indexOf(activeTag) !== -1;
-          return inCat && inTag;
-        });
-      }
+        var inCat = groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
+        var inTag = activeTag === '全部' || (p.tags || []).indexOf(activeTag) !== -1;
+        return inCat && inTag;
+      });
+    }
+    // 支持通过 ?tag=xx 直接筛选
+    if (params.get('tag')) {
+      activeTag = params.get('tag');
+    }
       function renderFilterBar() {
         var allTags = ['全部'];
         posts.filter(function (p) {
