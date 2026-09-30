@@ -33,13 +33,14 @@
   <main id="main" class="admin-main container">
     <section id="authPanel" class="admin-card" hidden>
       <h1>连接 GitHub</h1>
-      <p class="hint">输入一个有本仓库写权限的 GitHub Token，即可在网页里编辑文章并发布。Token 只会保存在当前设备浏览器中。</p>
+      <p class="hint">输入一个有本仓库写权限的 GitHub Token，即可在网页里编辑文章并发布。Token 默认只在当前浏览器会话中保存，退出时清除；不会写入 localStorage。</p>
       <div class="field">
         <label for="tokenInput">GitHub Token</label>
         <input id="tokenInput" type="password" placeholder="github_pat_… 或 ghp_…" autocomplete="off">
       </div>
       <div class="admin-row">
         <button class="btn primary" id="connectBtn" type="button">连接</button>
+        <button class="btn" id="reviewWithoutPat" type="button">评论审核（无需 PAT）</button>
       </div>
       <details class="auth-details">
         <summary>如何创建 Token？</summary>
@@ -68,6 +69,7 @@
           <button class="btn" id="pageBtn" type="button">页面内容</button>
           <button class="btn" id="messageBtn" type="button">消息</button>
           <button class="btn" id="resourceBtn" type="button">资源管理</button>
+          <a class="btn" href="profile.html">我的资料</a>
           <button class="btn" id="logoutBtn" type="button">退出</button>
         </div>
       </div>
@@ -209,6 +211,10 @@
     </section>
   </main>
 
+  <script src="js/config.js?v=3"></script>
+  <script src="js/auth.js?v=3"></script>
+  <script src="js/blog-data.js?v=3"></script>
+  <script src="js/github-credentials.js?v=3"></script>
   <script src="js/boot.js?v=2"></script>
   <script src="js/resource-manager.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>

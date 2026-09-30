@@ -4,47 +4,22 @@
   var posts = window.BLOG_POSTS || [];
   var postUrl = window.BlogUrls.postUrl;
   var SITE_NAME = '拾光手记';
-  var AUTH_KEY = 'blog-auth';
-
-  function isAuthed() {
-    try {
-      var until = Number(localStorage.getItem(AUTH_KEY) || 0);
-      return until > Date.now();
-    } catch (e) {
-      return false;
-    }
-  }
-
+  function isAuthed() { return window.BlogAuth && window.BlogAuth.isAdmin(); }
   function applyAuthUi() {
-    var authed = isAuthed();
-    var reader = window.ReaderAccount ? window.ReaderAccount.load() : null;
-    document.querySelectorAll('.btn-login').forEach(function (el) {
-      el.hidden = authed;
-    });
-    document.querySelectorAll('.user-menu-wrap').forEach(function (el) {
-      el.hidden = !authed;
-    });
-    // 读者已登录时头像换成自己的
-    if (!authed && reader && reader.name && reader.avatar) {
-      document.querySelectorAll('.user-avatar img').forEach(function (img) {
-        img.src = reader.avatar;
-      });
-    }
-    document.querySelectorAll('.user-menu-wrap').forEach(function (el) {
-      el.hidden = !authed;
-    });
-    if (!authed) closeUserMenus();
+    var auth = window.BlogAuth;
+    var logged = !!auth.user();
+    document.querySelectorAll('.btn-login').forEach(function (el) { el.hidden = logged; });
+    document.querySelectorAll('.user-menu-wrap').forEach(function (el) { el.hidden = !logged; });
+    document.querySelectorAll('[data-admin]').forEach(function (el) { el.hidden = !auth.isAdmin(); });
+    if (!logged) closeUserMenus();
+    if (logged) window.BlogData.getProfile(auth.user().id).then(function (profile) {
+      if (profile && profile.avatar_url) document.querySelectorAll('.user-avatar img').forEach(function (img) { img.src = profile.avatar_url; });
+    }).catch(function () {});
   }
-
   function closeUserMenus() {
-    document.querySelectorAll('.user-menu').forEach(function (el) {
-      el.hidden = true;
-    });
-    document.querySelectorAll('.user-avatar').forEach(function (el) {
-      el.setAttribute('aria-expanded', 'false');
-    });
+    document.querySelectorAll('.user-menu').forEach(function (el) { el.hidden = true; });
+    document.querySelectorAll('.user-avatar').forEach(function (el) { el.setAttribute('aria-expanded', 'false'); });
   }
-
   function setupUserMenu() {
     document.querySelectorAll('.user-avatar').forEach(function (btn) {
       btn.addEventListener('click', function (event) {
@@ -52,26 +27,16 @@
         var menu = btn.parentElement.querySelector('.user-menu');
         if (!menu) return;
         var open = menu.hidden;
-        closeUserMenus();
-        menu.hidden = !open;
-        btn.setAttribute('aria-expanded', String(open));
+        closeUserMenus(); menu.hidden = !open; btn.setAttribute('aria-expanded', String(open));
       });
     });
     document.querySelectorAll('[data-logout]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        try {
-          localStorage.removeItem(AUTH_KEY);
-          localStorage.removeItem('blog-gh-token');
-          sessionStorage.removeItem('blog-auth');
-        } catch (e) {
-          /* 忽略 */
-        }
-        applyAuthUi();
+        window.BlogAuth.signOut().then(function () { window.GitHubCredentials.clear(); applyAuthUi(); });
       });
     });
-    document.addEventListener('click', function (event) {
-      if (!event.target.closest('.user-menu-wrap')) closeUserMenus();
-    });
+    document.addEventListener('click', function (event) { if (!event.target.closest('.user-menu-wrap')) closeUserMenus(); });
+    document.addEventListener('blog-auth-change', function () { applyAuthUi(); refreshPendingBadge(); });
   }
 
   function updateFavicon() {
@@ -728,268 +693,65 @@
     textarea.remove();
   }
 
+  function loginForAction() {
+    if (window.BlogAuth.user()) return true;
+    location.href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
+    return false;
+  }
   function initLikes(slug) {
     var btn = document.getElementById('likeBtn');
-    var countEl = document.getElementById('likeCount');
-    if (!btn || !countEl) return;
-    var key = 'blog-liked-' + slug;
-    var countKey = 'blog-like-count-' + slug;
-    var queueKey = 'blog-like-queue';
-    var liked = false;
-    var lastCount = null;
-    try {
-      liked = localStorage.getItem(key) === '1';
-      lastCount = Number(localStorage.getItem(countKey));
-      if (isNaN(lastCount)) lastCount = null;
-    } catch (e2) {
-      liked = false;
-      lastCount = null;
-    }
-
-    function persistCount(count) {
-      if (typeof count !== 'number' || isNaN(count)) return;
-      lastCount = count;
+    var count = document.getElementById('likeCount');
+    if (!btn || !count) return;
+    async function refresh() {
       try {
-        localStorage.setItem(countKey, String(count));
-      } catch (e3) {
-        /* 忽略 */
-      }
+        var row = (await window.BlogData.likes('post', [slug]))[slug] || { count: 0, liked: false };
+        count.textContent = String(row.count);
+        btn.classList.toggle('liked', row.liked);
+        btn.setAttribute('aria-label', row.liked ? '取消点赞' : '点赞这篇文章');
+      } catch (error) { count.textContent = '—'; }
     }
-
-    function render(count) {
-      persistCount(count);
-      countEl.textContent = lastCount === null ? '—' : String(lastCount);
-      btn.classList.toggle('liked', liked);
-      btn.disabled = false;
-      btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
-    }
-
-    function fetchLikeCount() {
-      return fetchLikeDiff(slug);
-    }
-
-    render(lastCount);
-    fetchLikeCount().then(function (count) {
-      if (count !== null) render(count);
-    });
-
-    btn.dataset.likeSlug = slug;
-    if (!likeHandlerBound) {
-      likeHandlerBound = true;
-      document.addEventListener('click', function (event) {
-        var target = event.target.closest('#likeBtn');
-        if (!target) return;
-        handleLikeToggle(target, target.dataset.likeSlug);
-      });
-    }
-
-    try {
-      var queue = JSON.parse(localStorage.getItem('blog-like-queue') || '[]');
-      if (queue.length) {
-        localStorage.setItem('blog-like-queue', '[]');
-        queue.forEach(function (job) {
-          fetch('https://abacus.jasoncameron.dev/hit/' + job.ns + '/' + encodeURIComponent(job.slug + LIKE_KEY_SUFFIX)).catch(function () {
-            /* 补发失败则放弃 */
-          });
-        });
-      }
-    } catch (e6) {
-      /* 忽略 */
-    }
+    btn.onclick = async function () {
+      if (!loginForAction()) return;
+      btn.disabled = true;
+      try { await window.BlogData.toggleLike('post', slug); await refresh(); }
+      catch (error) { alert(error.message); }
+      finally { btn.disabled = false; }
+    };
+    refresh();
+    document.addEventListener('blog-auth-change', refresh);
   }
-
-  var likeHandlerBound = false;
-
-  // 计数键版本号:旧键上的历史计数无法清零,换版本即全部归零
-  var LIKE_KEY_SUFFIX = '-v2';
-
-  function fetchLikeDiff(slug) {
-    function getCounter(ns) {
-      return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug + LIKE_KEY_SUFFIX))
-        .then(function (res) {
-          // 计数器从未创建过时接口返回 404,按 0 处理
-          return res.ok ? res.json() : { value: 0 };
-        })
-        .then(function (data) {
-          return (data && (data.count || data.value)) || 0;
-        })
-        .catch(function () {
-          return null;
-        });
-    }
-    return Promise.all([getCounter('shiguang-likes'), getCounter('shiguang-unlikes')]).then(function (results) {
-      if (results[0] === null || results[1] === null) return null;
-      return Math.max(0, results[0] - results[1]);
-    });
-  }
-
-  function handleLikeToggle(btn, slug) {
-    var likeKey = 'blog-liked-' + slug;
-    var countKey = 'blog-like-count-' + slug;
-    var queueKey = 'blog-like-queue';
-    var liked = false;
-    var current = 0;
-    try {
-      liked = localStorage.getItem(likeKey) === '1';
-      current = Number(localStorage.getItem(countKey)) || 0;
-    } catch (e) {
-      liked = false;
-      current = 0;
-    }
-    liked = !liked;
-    try {
-      if (liked) localStorage.setItem(likeKey, '1');
-      else localStorage.removeItem(likeKey);
-    } catch (e2) {
-      /* 忽略 */
-    }
-    var optimistic = Math.max(0, current + (liked ? 1 : -1));
-    try {
-      localStorage.setItem(countKey, String(optimistic));
-    } catch (e3) {
-      /* 忽略 */
-    }
-    btn.classList.toggle('liked', liked);
-    btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
-    var countEl = document.getElementById('likeCount');
-    if (countEl) countEl.textContent = String(optimistic);
-    var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
-    fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(slug + LIKE_KEY_SUFFIX))
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        // 接口只返回单侧计数器的值,必须重新拉两侧求差,否则取消后再点赞会显示成 +2
-        fetchLikeDiff(slug).then(function (value) {
-          var finalValue = value === null ? optimistic : value;
-          if (countEl) countEl.textContent = String(finalValue);
-          try {
-            localStorage.setItem(countKey, String(finalValue));
-          } catch (e4) {
-            /* 忽略 */
-          }
-        });
-      })
-      .catch(function () {
-        try {
-          var queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
-          queue.push({ ns: ns, slug: slug });
-          localStorage.setItem(queueKey, JSON.stringify(queue));
-        } catch (e5) {
-          /* 忽略 */
-        }
-      });
-  }
-
-  // 评论点赞:每条评论用 comment-<id> 计数键,双计数器求差,每个设备只能点一次
   var CommentLikes = (function () {
-    function counterKey(id) {
-      return 'comment-' + id;
-    }
-    function likedKey(id) {
-      return 'blog-liked-comment-' + id;
-    }
-    function cacheKey(id) {
-      return 'blog-comment-like-count-' + id;
-    }
-    function isLiked(id) {
-      try {
-        return localStorage.getItem(likedKey(id)) === '1';
-      } catch (e) {
-        return false;
-      }
-    }
-    function cachedCount(id) {
-      try {
-        return Number(localStorage.getItem(cacheKey(id))) || 0;
-      } catch (e) {
-        return 0;
-      }
-    }
-    function setCached(id, value) {
-      try {
-        localStorage.setItem(cacheKey(id), String(value));
-      } catch (e) {
-        /* 忽略 */
-      }
-    }
-    function fetchDiff(id) {
-      function get(ns) {
-        return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(counterKey(id)))
-          .then(function (res) {
-            return res.ok ? res.json() : { value: 0 };
-          })
-          .then(function (data) {
-            return (data && (data.count || data.value)) || 0;
-          })
-          .catch(function () {
-            return null;
-          });
-      }
-      return Promise.all([get('shiguang-likes'), get('shiguang-unlikes')]).then(function (results) {
-        if (results[0] === null || results[1] === null) return null;
-        return Math.max(0, results[0] - results[1]);
-      });
-    }
-    function updateUI(id, liked, count) {
-      document.querySelectorAll('[data-clike="' + id + '"]').forEach(function (btn) {
-        btn.classList.toggle('liked', liked);
-        btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这条评论');
-        var num = btn.querySelector('.comment-like-count');
-        if (num) num.textContent = String(count);
-      });
-    }
-    function toggle(id) {
-      var liked = !isLiked(id);
-      try {
-        if (liked) localStorage.setItem(likedKey(id), '1');
-        else localStorage.removeItem(likedKey(id));
-      } catch (e) {
-        /* 忽略 */
-      }
-      var optimistic = Math.max(0, cachedCount(id) + (liked ? 1 : -1));
-      setCached(id, optimistic);
-      updateUI(id, liked, optimistic);
-      var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
-      fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(counterKey(id)))
-        .then(function () {
-          return fetchDiff(id);
-        })
-        .then(function (value) {
-          if (value === null) return;
-          setCached(id, value);
-          updateUI(id, isLiked(id), value);
-        })
-        .catch(function () {
-          /* 离线时保留乐观值 */
-        });
-    }
     var bound = false;
-    function bind() {
-      if (bound) return;
-      bound = true;
-      document.addEventListener('click', function (event) {
-        var btn = event.target.closest('[data-clike]');
-        if (btn) toggle(btn.getAttribute('data-clike'));
-      });
-    }
-    function decorate(container) {
-      bind();
-      (container || document).querySelectorAll('[data-clike]').forEach(function (btn) {
-        var id = btn.getAttribute('data-clike');
-        updateUI(id, isLiked(id), cachedCount(id));
-        fetchDiff(id).then(function (value) {
-          if (value === null) return;
-          setCached(id, value);
-          updateUI(id, isLiked(id), value);
-        });
-      });
-    }
     function button(id) {
-      return '<button class="comment-like-btn" type="button" data-clike="' + id + '" aria-label="点赞这条评论">' +
+      return '<button class="comment-like-btn" type="button" data-clike="' + escapeHtml(id) + '" aria-label="点赞这条评论">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.6-4.9-10-9.4C.4 8.5 2.5 4.9 6 4.9c2 0 3.4 1.1 4.2 2.4h3.6c.8-1.3 2.2-2.4 4.2-2.4 3.5 0 5.6 3.6 4 6.7C19.6 16.1 12 21 12 21z"/></svg>' +
-        '<span class="comment-like-count">0</span>' +
-      '</button>';
+        '<span class="comment-like-count">0</span></button>';
     }
-    return { decorate: decorate, button: button };
+    async function decorate(container) {
+      if (!bound) {
+        bound = true;
+        document.addEventListener('click', async function (event) {
+          var btn = event.target.closest('[data-clike]');
+          if (!btn) return;
+          if (!loginForAction()) return;
+          btn.disabled = true;
+          try { await window.BlogData.toggleLike('comment', btn.dataset.clike); await decorate(document); }
+          catch (error) { alert(error.message); }
+          finally { btn.disabled = false; }
+        });
+      }
+      var buttons = Array.from((container || document).querySelectorAll('[data-clike]'));
+      var ids = buttons.map(function (btn) { return btn.dataset.clike; });
+      try {
+        var rows = await window.BlogData.likes('comment', ids);
+        buttons.forEach(function (btn) {
+          var row = rows[btn.dataset.clike] || { count: 0, liked: false };
+          btn.classList.toggle('liked', row.liked);
+          btn.querySelector('.comment-like-count').textContent = String(row.count);
+        });
+      } catch (error) { /* read-only fallback */ }
+    }
+    return { button: button, decorate: decorate };
   })();
   window.CommentLikes = CommentLikes;
 
@@ -1080,14 +842,13 @@
     return '' +
       '<div class="comment-item">' +
         '<div class="comment-head">' +
-          '<img class="comment-avatar" src="' + (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg') + '" alt="" onerror="this.style.display=\'none\'">' +
+          '<img class="comment-avatar" src="' + escapeHtml(item.avatar && /^https:\/\//.test(item.avatar) ? item.avatar : (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg')) + '" alt="">' +
           '<strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span>' +
+          (item.status === 'pending' ? '<span>待审核</span>' : '') +
         '</div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
-        (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
         '<div class="comment-foot">' +
-          (item.device ? '<span class="comment-device-left">发布自 ' + escapeHtml(item.device) + '</span>' : '') +
-          CommentLikes.button(String(item.id)) +
+          (item.status === 'approved' && !item.legacy ? CommentLikes.button(String(item.id)) : '') +
           '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button>' +
         '</div>' +
       '</div>';
@@ -1117,161 +878,54 @@
     var section = document.getElementById('commentsSection');
     if (!section) return;
     var slug = section.dataset.slug;
-    if (!slug) {
-      section.hidden = true;
-      return;
-    }
+    if (!slug) { section.hidden = true; return; }
     var listEl = document.getElementById('commentList');
-    var data = (window.SITE_COMMENTS || {})[slug] || [];
-    listEl.innerHTML = data.length
-      ? data.filter(function (item) { return !item.parentId; }).map(function (item) {
-          return renderCommentTree(item, data);
-        }).join('')
-      : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
-    CommentLikes.decorate(listEl);
-
     var form = document.getElementById('commentForm');
     var replyTarget = null;
     var replyBanner = document.createElement('div');
-    replyBanner.className = 'comment-reply-banner';
-    replyBanner.hidden = true;
+    replyBanner.className = 'comment-reply-banner'; replyBanner.hidden = true;
     form.insertBefore(replyBanner, form.firstChild);
-
-    function clearReplyTarget() {
-      replyTarget = null;
-      replyBanner.hidden = true;
-      replyBanner.textContent = '';
+    function clearReply() { replyTarget = null; replyBanner.hidden = true; replyBanner.textContent = ''; }
+    async function refresh() {
+      try {
+        var all = await window.BlogData.listComments(slug);
+        listEl.innerHTML = all.length ? all.filter(function (item) { return !item.parentId; }).map(function (item) {
+          return renderCommentTree(item, all);
+        }).join('') : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
+        CommentLikes.decorate(listEl);
+      } catch (error) { listEl.textContent = '评论加载失败：' + error.message; }
     }
-
     listEl.addEventListener('click', function (event) {
-      var toggleBtn = event.target.closest('.comment-collapse-toggle');
-      if (toggleBtn) {
-        var repliesDiv = toggleBtn.nextElementSibling;
-        if (repliesDiv && repliesDiv.classList.contains('comment-replies')) {
-          var collapsed = toggleBtn.getAttribute('data-collapsed') === 'true';
-          repliesDiv.hidden = !collapsed;
-          toggleBtn.setAttribute('data-collapsed', String(!collapsed));
-          var count = repliesDiv.querySelectorAll('.comment-item').length;
-          toggleBtn.textContent = collapsed ? '收起回复' : '展开 ' + count + ' 条回复';
-        }
+      var toggle = event.target.closest('.comment-collapse-toggle');
+      if (toggle) {
+        var replies = toggle.nextElementSibling;
+        replies.hidden = !replies.hidden;
+        toggle.textContent = replies.hidden ? '展开回复' : '收起回复';
         return;
       }
       var btn = event.target.closest('.comment-reply-btn');
       if (!btn) return;
       replyTarget = { id: btn.dataset.replyId, nick: btn.dataset.replyNick };
       replyBanner.innerHTML = '回复 @' + escapeHtml(replyTarget.nick) + ' <button type="button" class="comment-reply-cancel" aria-label="取消回复">×</button>';
-      replyBanner.hidden = false;
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      replyBanner.hidden = false; form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-
-    replyBanner.addEventListener('click', function (event) {
-      if (event.target.closest('.comment-reply-cancel')) clearReplyTarget();
-    });
-
-    form.addEventListener('submit', function (event) {
+    replyBanner.addEventListener('click', function (event) { if (event.target.closest('.comment-reply-cancel')) clearReply(); });
+    form.addEventListener('submit', async function (event) {
       event.preventDefault();
-      var nick = document.getElementById('commentNick').value.trim();
-      var mail = document.getElementById('commentEmail').value.trim();
-      var content = document.getElementById('commentContent').value.trim();
       var status = document.getElementById('commentStatus');
-      if (!nick) {
-        setStatus(status, '请填写称呼。', 'err');
-        return;
-      }
-      if (!content) {
-        setStatus(status, '请填写评论内容。', 'err');
-        return;
-      }
-      var now = new Date();
-      var item = {
-        id: 'c' + now.getTime(),
-        slug: slug,
-        nick: (localStorage.getItem('blog-auth') && localStorage.getItem('blog-auth') !== '0') ? 'HSH(站长)' : nick,
-        email: mail,
-        time: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'),
-        content: content,
-        device: getDeviceModel()
-      };
-      if (replyTarget) {
-        item.parentId = replyTarget.id;
-        item.parentNick = replyTarget.nick;
-      }
-      var ownerToken = '';
+      var content = document.getElementById('commentContent').value.trim();
+      if (!content) { setStatus(status, '请输入评论内容。', 'err'); return; }
+      if (!loginForAction()) return;
       try {
-        ownerToken = localStorage.getItem('blog-gh-token') || '';
-      } catch (e2) {
-        ownerToken = '';
-      }
-      if (isAuthed() && ownerToken) {
-        setStatus(status, '已登录：正在直接发布…', 'ok');
-        githubCommentPut(slug, item).then(function () {
-          var data = (window.SITE_COMMENTS || {})[slug] || [];
-          var listEl = document.getElementById('commentList');
-          if (listEl) listEl.innerHTML = data.filter(function (c) { return !c.parentId; }).map(function (c) {
-            return renderCommentTree(c, data);
-          }).join('');
-          if (listEl) CommentLikes.decorate(listEl);
-          setStatus(status, '已发布。', 'ok');
-          clearReplyTarget();
-        }).catch(function (e3) {
-          var msg = String(e3.message || '').indexOf('409') !== -1 ? '保存冲突，请再点一次提交。' : e3.message;
-          setStatus(status, '发布失败：' + msg, 'err');
-        });
-        return;
-      }
-      if (!window.PendingComments) {
-        setStatus(status, '提交通道暂不可用，请稍后再试。', 'err');
-        return;
-      }
-      setStatus(status, '正在提交…');
-      window.PendingComments.add(item).then(function () {
-        setStatus(status, '已提交，博主审核通过后就会显示。', 'ok');
-        clearReplyTarget();
-        document.getElementById('commentNick').value = '';
-        document.getElementById('commentEmail').value = '';
+        setStatus(status, '正在提交…');
+        await window.BlogData.addComment(slug, content, replyTarget && replyTarget.id);
         document.getElementById('commentContent').value = '';
-      }).catch(function () {
-        setStatus(status, '提交失败，请稍后再试。', 'err');
-      });
+        clearReply(); await refresh();
+        setStatus(status, '评论已提交，审核通过后公开可见。', 'ok');
+      } catch (error) { setStatus(status, '提交失败：' + error.message, 'err'); }
     });
-  }
-
-  async function githubCommentPut(slug, comment) {
-    var ownerToken = localStorage.getItem('blog-gh-token') || '';
-    var headers = {
-      Authorization: 'Bearer ' + ownerToken,
-      Accept: 'application/vnd.github+json'
-    };
-    var data = window.SITE_COMMENTS || {};
-    if (!data[slug]) data[slug] = [];
-    data[slug].push(comment);
-    var text = '/* 评论数据：在后台“消息”栏目中管理。 */\nwindow.SITE_COMMENTS = ' + JSON.stringify(data, null, 2) + ';\n';
-    var content = btoa(unescape(encodeURIComponent(text)));
-    var lastError = null;
-    for (var attempt = 0; attempt < 3; attempt++) {
-      try {
-        var metaRes = await fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js?ref=main', { headers: headers });
-        if (!metaRes.ok) throw new Error('GitHub ' + metaRes.status);
-        var meta = await metaRes.json();
-        var putRes = await fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js', {
-          method: 'PUT',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-          body: JSON.stringify({
-            message: '新增评论：' + comment.nick,
-            content: content,
-            branch: 'main',
-            sha: meta.sha
-          })
-        });
-        if (!putRes.ok) throw new Error('GitHub ' + putRes.status);
-        window.SITE_COMMENTS = data;
-        return;
-      } catch (e) {
-        lastError = e;
-        if (String(e.message).indexOf('409') === -1 && String(e.message).indexOf('422') === -1) throw e;
-      }
-    }
-    throw lastError;
+    refresh();
+    document.addEventListener('blog-auth-change', refresh);
   }
 
   function updatePendingBadge(count) {
@@ -1286,12 +940,10 @@
   }
 
   function refreshPendingBadge() {
-    if (!isAuthed() || !window.PendingComments) return;
-    window.PendingComments.list().then(function (pending) {
-      updatePendingBadge(pending.length);
-    }).catch(function () {
-      /* 忽略 */
-    });
+    if (!isAuthed()) { updatePendingBadge(0); return; }
+    window.BlogData.listModeration().then(function (rows) {
+      updatePendingBadge(rows.filter(function (row) { return row.status === 'pending'; }).length);
+    }).catch(function () { updatePendingBadge(0); });
   }
 
   function setupRail() {
@@ -1314,60 +966,6 @@
       scrollRail(1);
     });
   }
-
-  // 识别设备型号用于评论显示
-  function getDeviceModel() {
-    // 优先使用 User-Agent Client Hints(更准确)
-    if (navigator.userAgentData) {
-      var brands = navigator.userAgentData.brands || [];
-      var brand = '';
-      for (var i = 0; i < brands.length; i++) {
-        if (brands[i].brand !== 'Not A(Brand' && brands[i].brand !== 'Not_A Brand') {
-          brand = brands[i].brand;
-          break;
-        }
-      }
-      var platform = navigator.userAgentData.platform || '';
-      var mobile = navigator.userAgentData.mobile;
-      if (/iPad/i.test(platform)) return 'iPad' + (brand ? ' · ' + brand : '');
-      if (/iPhone|iOS/.test(platform)) return 'iPhone' + (brand ? ' · ' + brand : '');
-      if (/Android/.test(platform)) return 'Android ' + (brand ? brand : '') + (mobile ? '' : ' 平板');
-      if (/macOS/.test(platform)) return 'Mac' + (brand ? ' · ' + brand : '');
-      if (/Windows/.test(platform)) return 'Windows' + (brand ? ' · ' + brand : '');
-      if (/Chrome OS/.test(platform)) return 'ChromeOS' + (brand ? ' · ' + brand : '');
-      if (/Linux/.test(platform)) return 'Linux' + (brand ? ' · ' + brand : '');
-    }
-    // Fallback: User-Agent
-    var ua = navigator.userAgent;
-    // iOS
-    if (/iPhone/.test(ua)) {
-      var match = ua.match(/iPhone OS (\d+)/);
-      return 'iPhone' + (match ? ' iOS ' + match[1] : '');
-    }
-    if (/iPad/i.test(ua) || (/Macintosh/i.test(ua) && /Mobile/i.test(ua))) {
-      var match = ua.match(/CPU OS (\d+)/);
-      return 'iPad' + (match ? ' iPadOS ' + match[1] : '');
-    }
-    if (/Macintosh/.test(ua)) {
-      var match = ua.match(/Mac OS X (\d+)[._](\d+)/);
-      return match ? 'macOS ' + match[1] + '.' + match[2] : 'Mac';
-    }
-    // Android
-    if (/Android/.test(ua)) {
-      var match = ua.match(/Android (\d+(\.\d+)?)/);
-      var isMobile = /Mobile/.test(ua);
-      return (isMobile ? 'Android ' : 'Android 平板 ') + (match ? match[1] : '');
-    }
-    // Windows
-    if (/Windows NT (\d+\.\d+)/.test(ua)) {
-      var v = { '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7' };
-      return 'Windows ' + (v[ua.match(/Windows NT (\d+\.\d+)/)[1]] || '10/11');
-    }
-    if (/Windows/.test(ua)) return 'Windows';
-    if (/Linux/.test(ua)) return 'Linux';
-    return '未知设备';
-  }
-  window.getDeviceModel = getDeviceModel;
 
   function init() {
     posts = window.BLOG_POSTS || [];

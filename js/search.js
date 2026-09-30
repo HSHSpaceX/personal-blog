@@ -67,9 +67,23 @@
         '</a>';
     }).join('');
   }
-  function initialize() {
+  async function initialize() {
     if (ready) return;
-    index = core.createIndex(window.BLOG_POSTS || [], window.BLOG_MOMENTS || [], window.SITE_COMMENTS || {});
+    var comments = window.SITE_COMMENTS || {};
+    try {
+      await window.BlogAuth.ready();
+      if (window.BlogAuth.configured()) {
+        comments = {};
+        var result = await window.BlogAuth.client().from('comments')
+          .select('id,post_slug,legacy_author_name,content,created_at').eq('status', 'approved').order('created_at', { ascending: false });
+        if (result.error) throw result.error;
+        result.data.forEach(function (row) {
+          if (!comments[row.post_slug]) comments[row.post_slug] = [];
+          comments[row.post_slug].push({ id: row.id, nick: row.legacy_author_name || '读者', content: row.content, time: row.created_at.slice(0, 10) });
+        });
+      }
+    } catch (error) { comments = {}; }
+    index = core.createIndex(window.BLOG_POSTS || [], window.BLOG_MOMENTS || [], comments);
     ready = true;
     render();
   }

@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  var OWNER = 'HSHSpaceX';
-  var REPO = 'personal-blog';
+  var OWNER = window.BlogConfig.GITHUB_OWNER;
+  var REPO = window.BlogConfig.GITHUB_REPO;
   var BRANCH = 'main';
   var ALBUMS_PATH = 'js/albums.js';
 
@@ -27,21 +27,8 @@
     });
   }
 
-  function isAuthed() {
-    try {
-      return Number(localStorage.getItem('blog-auth') || 0) > Date.now();
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function getToken() {
-    try {
-      return localStorage.getItem('blog-gh-token') || '';
-    } catch (e) {
-      return '';
-    }
-  }
+  function isAuthed() { return window.BlogAuth.isAdmin(); }
+  function getToken() { return window.GitHubCredentials.get(); }
 
   function rawUrl(path) {
     return 'https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/main/' + path;
@@ -70,6 +57,7 @@
   }
 
   function saveAlbums(message) {
+    window.BlogAuth.requireAdmin();
     var token = getToken();
     if (!token) throw new Error('需要先在后台连接 GitHub Token');
     var headers = {
@@ -102,6 +90,7 @@
   }
 
   function putFile(path, base64, message) {
+    window.BlogAuth.requireAdmin();
     var headers = {
       Authorization: 'Bearer ' + getToken(),
       Accept: 'application/vnd.github+json'
@@ -378,6 +367,7 @@
     if (yearEl) yearEl.textContent = new Date().getFullYear();
     refreshPlusVisibility();
     render();
+    document.addEventListener('blog-auth-change', function () { refreshPlusVisibility(); render(); });
 
     $('galleryPlus').addEventListener('click', function () {
       if (!isAuthed()) {
