@@ -31,11 +31,12 @@
 
   <main id="main" class="admin-main container">
     <section class="admin-card">
-      <h1>登录</h1>
-      <p class="hint">输入账号和密码进入管理后台。</p>
-      <div class="field">
-        <label for="username">账号</label>
-        <input id="username" type="text" autocomplete="username">
+      <h1 id="loginHeading">登录</h1>
+      <p class="hint">本站采用邀请制，目前不开放公开注册</p>
+      <p class="hint">账号由站长邀请创建。<a id="joinRequest" hidden>申请加入</a></p>
+      <div class="field" id="emailField">
+        <label for="email">邮箱</label>
+        <input id="email" type="email" autocomplete="username">
       </div>
       <div class="field">
         <label for="password">密码</label>
@@ -43,11 +44,16 @@
       </div>
       <div class="admin-row">
         <button class="btn primary" id="loginBtn" type="button">登录</button>
+        <button class="btn" id="forgotBtn" type="button">忘记密码</button>
       </div>
       <p id="loginStatus" class="status-line"></p>
     </section>
   </main>
 
+  <script src="js/config.js?v=3"></script>
+  <script src="js/auth.js?v=3"></script>
+  <script src="js/blog-data.js?v=3"></script>
+  <script src="js/github-credentials.js?v=3"></script>
   <script src="js/login.js?v=2"></script>
 </body>
 </html>

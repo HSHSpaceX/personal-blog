@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { SITE_BASE_URL } from '../site.config.mjs';
+import { SITE_BASE_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, JOIN_REQUEST_URL, GITHUB_OWNER, GITHUB_REPO } from '../site.config.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const base = new URL(SITE_BASE_URL);
@@ -12,6 +12,7 @@ if (base.protocol !== 'https:' || base.search || base.hash || !SITE_BASE_URL.end
 }
 const read = (name) => readFile(path.join(root, name), 'utf8');
 const write = (name, value) => writeFile(path.join(root, name), value, 'utf8');
+await write('js/config.js', `// Generated from site.config.mjs. Public values only.\nwindow.BlogConfig = Object.freeze(${JSON.stringify({ SITE_BASE_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, JOIN_REQUEST_URL, GITHUB_OWNER, GITHUB_REPO }, null, 2)});\n`);
 const url = (name = '') => new URL(name, base).href;
 const html = (value) => String(value).replace(/[&<>"']/g, (char) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

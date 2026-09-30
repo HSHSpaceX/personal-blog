@@ -1,167 +1,76 @@
 (function () {
   'use strict';
-
-  function $(id) { return document.getElementById(id); }
-
-  function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, function (char) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
-    });
-  }
-
-  function compressImage(file, maxSize) {
-    return new Promise(function (resolve) {
-      var url = URL.createObjectURL(file);
-      var img = new Image();
-      img.onload = function () {
-        URL.revokeObjectURL(url);
-        var canvas = document.createElement('canvas');
-        var scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.onerror = function () {
-        URL.revokeObjectURL(url);
-        resolve(null);
-      };
-      img.src = url;
-    });
-  }
-
-  var pendingAvatar = null;
-
-  function render() {
-    var acc = window.ReaderAccount ? window.ReaderAccount.load() : null;
-    var isOwner = window.ReaderAccount ? window.ReaderAccount.isOwner() : false;
-
-    $('profileName').textContent = (isOwner ? 'HSH(站长)' : (acc && acc.name) || '访客');
-    $('profileAvatar').src = (isOwner ? 'assets/icon.jpg' : (acc && acc.avatar) || 'assets/avatar-default.jpg');
-    $('profileBio').textContent = (isOwner ? '博主' : (acc && acc.bio) || '还没有介绍。');
-    $('profileBio').style.display = 'block';
-
-    // 统计
-    var comments = window.SITE_COMMENTS || {};
-    var commentCount = 0;
-    Object.keys(comments).forEach(function (slug) {
-      (comments[slug] || []).forEach(function (c) {
-        if (isOwner ? c.nick === 'HSH(站长)' : (acc && c.nick === acc.name)) commentCount++;
-      });
-    });
-    var moments = window.BLOG_MOMENTS || [];
-    var likeCount = moments.filter(function (m) {
-      if (isOwner) return true;
-      return acc && acc.likes.indexOf('moment-' + m.id) !== -1;
-    }).length;
-    var posts = window.BLOG_POSTS || [];
-
-    var cardsEl = $('profileCards');
-    if (cardsEl) {
-      cardsEl.innerHTML = '';
-      function addCard(icon, num, label, href) {
-        var a = document.createElement('a');
-        a.className = 'profile-stat-card glass-card';
-        a.href = href;
-        a.innerHTML = '<div class="profile-stat-icon">' + icon + '</div><div class="profile-stat-body"><strong>' + num + '</strong><span>' + label + '</span></div>';
-        cardsEl.appendChild(a);
+  var auth = window.BlogAuth, data = window.BlogData;
+  var $ = function (id) { return document.getElementById(id); };
+  var target = null;
+  function status(text, kind) { $('profileStatus').textContent = text; $('profileStatus').className = 'status-line' + (kind ? ' ' + kind : ''); }
+  async function load() {
+    try {
+      await auth.ready();
+      if (!auth.configured()) { status('用户资料暂不可用：Supabase 尚未配置。', 'err'); return; }
+      var params = new URLSearchParams(location.search);
+      var id = params.get('id');
+      if (!id && params.get('username')) {
+        var result = await auth.client().from('profiles').select('id').eq('username', params.get('username')).maybeSingle();
+        if (result.error) throw result.error;
+        id = result.data && result.data.id;
       }
-      if (isOwner) {
-        addCard('📝', posts.length, '篇文章', 'archive.html');
-        addCard('💬', commentCount, '条评论', 'admin.html#messages');
-        addCard('❤️', likeCount, '条动态', 'moments.html');
+      if (!id && auth.user()) id = auth.user().id;
+      if (!id) { location.replace('login.html?next=profile.html'); return; }
+      target = await data.getProfile(id);
+      if (!target) { status('找不到该用户资料。', 'err'); return; }
+      var own = !!auth.user() && auth.user().id === target.id;
+      $('profileHeading').textContent = own ? '我的资料' : '用户资料';
+      $('profileName').textContent = target.display_name || target.username;
+      $('profileUsername').textContent = '@' + target.username;
+      $('profileBio').textContent = target.bio || '还没有简介。';
+      if (target.avatar_url) $('profileAvatar').src = target.avatar_url;
+      $('profileEditor').hidden = !own;
+      $('profileLogout').hidden = !own;
+      $('adminLink').hidden = !own || !auth.isAdmin();
+      if (own) {
+        $('profileUsernameInput').value = target.username;
+        $('profileDisplayInput').value = target.display_name;
+        $('profileBioInput').value = target.bio;
       } else {
-        addCard('📝', posts.length, '篇文章', 'archive.html');
-        addCard('💬', commentCount, '条评论', '#');
-        addCard('❤️', likeCount, '个赞', '#');
+        $('followBtn').hidden = false;
+        var following = await data.following(id);
+        $('followBtn').textContent = following ? '取消关注' : '关注';
       }
-    }
-
-    $('profileFollowState').textContent = (acc && acc.following) ? '已关注' : '未关注';
-
-    // 按钮
-    var actions = $('profileActions');
-    actions.innerHTML = '';
-    if (isOwner) {
-      actions.innerHTML = '<a class="btn primary" href="admin.html">管理后台</a><a class="btn" href="moments.html">我的动态</a>';
-    } else if (!acc || !acc.name) {
-      actions.innerHTML = '<a class="btn primary" href="login.html">登录后编辑资料</a>';
-    } else {
-      var edit = document.createElement('button');
-      edit.className = 'btn';
-      edit.textContent = '编辑资料';
-      edit.addEventListener('click', function () {
-        $('profileEdit').hidden = false;
-        actions.hidden = true;
-        $('profileNameInput').value = acc.name || '';
-        $('profileBioInput').value = acc.bio || '';
-        $('avatarPreview').src = acc.avatar || 'assets/avatar-default.jpg';
-      });
-      actions.appendChild(edit);
-
-      var followBtn = document.createElement('button');
-      followBtn.className = acc.following ? 'btn' : 'btn primary';
-      followBtn.textContent = acc.following ? '取消关注' : '关注博主';
-      followBtn.addEventListener('click', function () {
-        var now = window.ReaderAccount.toggleFollow();
-        followBtn.className = now ? 'btn' : 'btn primary';
-        followBtn.textContent = now ? '取消关注' : '关注博主';
-        $('profileFollowState').textContent = now ? '已关注' : '未关注';
-      });
-      actions.appendChild(followBtn);
-
-      var logout = document.createElement('button');
-      logout.className = 'btn danger';
-      logout.textContent = '退出登录';
-      logout.addEventListener('click', function () {
-        window.ReaderAccount.logout();
-        window.location.reload();
-      });
-      actions.appendChild(logout);
-    }
-
-    $('profileNameInput').value = (acc && acc.name) || '';
+      var counts = await Promise.all([
+        auth.client().from('follows').select('*', { count: 'exact', head: true }).eq('target_id', id),
+        auth.client().from('likes').select('*', { count: 'exact', head: true }).eq('user_id', id)
+      ]);
+      $('profileCounts').textContent = (counts[0].count || 0) + ' 位关注者 · ' + (counts[1].count || 0) + ' 个赞';
+    } catch (error) { status(error.message, 'err'); }
   }
-
-  $('profileSaveBtn').addEventListener('click', function () {
-    var name = $('profileNameInput').value.trim();
-    var bio = $('profileBioInput').value.trim();
-    if (!name) {
-      $('profileStatus').textContent = '请填写用户名。';
-      $('profileStatus').classList.add('err');
-      return;
-    }
-    var acc = window.ReaderAccount.load();
-    window.ReaderAccount.login(name, pendingAvatar || acc.avatar);
-    window.ReaderAccount.setBio(bio);
-    $('profileStatus').textContent = '已保存。';
-    $('profileStatus').classList.add('ok');
-    $('profileEdit').hidden = true;
-    $('profileActions').hidden = false;
-    render();
+  $('profileSave').addEventListener('click', async function () {
+    try {
+      var username = $('profileUsernameInput').value.trim();
+      if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) throw new Error('用户名须为 3–30 个英文、数字或下划线。');
+      $('profileSave').disabled = true;
+      await data.saveProfile({ username: username, display_name: $('profileDisplayInput').value.trim(), bio: $('profileBioInput').value.trim() });
+      var file = $('profileAvatarInput').files[0];
+      if (file) await data.uploadAvatar(file);
+      status('资料已保存。', 'ok');
+      await load();
+    } catch (error) { status(error.message, 'err'); }
+    finally { $('profileSave').disabled = false; }
   });
-
-  $('profileCancelBtn').addEventListener('click', function () {
-    $('profileEdit').hidden = true;
-    $('profileActions').hidden = false;
-    pendingAvatar = null;
+  $('followBtn').addEventListener('click', async function () {
+    try {
+      if (!auth.user()) { location.href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search); return; }
+      $('followBtn').disabled = true;
+      var now = await data.toggleFollow(target.id);
+      $('followBtn').textContent = now ? '取消关注' : '关注';
+      await load();
+    } catch (error) { status(error.message, 'err'); }
+    finally { $('followBtn').disabled = false; }
   });
-
-  $('avatarUploadBtn').addEventListener('click', function () {
-    $('avatarInput').click();
+  $('profileLogout').addEventListener('click', async function () { await auth.signOut(); location.replace('index.html'); });
+  $('themeToggle').addEventListener('click', function () {
+    var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next; localStorage.setItem('blog-theme', next);
   });
-
-  $('avatarInput').addEventListener('change', function (event) {
-    var file = event.target.files && event.target.files[0];
-    if (!file) return;
-    compressImage(file, 128).then(function (dataUrl) {
-      if (dataUrl) {
-        pendingAvatar = dataUrl;
-        $('avatarPreview').src = dataUrl;
-      }
-    });
-  });
-
-  document.getElementById('year').textContent = new Date().getFullYear();
-  render();
+  load();
 })();
