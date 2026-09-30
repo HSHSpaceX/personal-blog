@@ -67,14 +67,14 @@
       <div class="container">
         <div class="admin-card">
           <h2>连接 GitHub</h2>
-          <p class="hint">发布动态需要 GitHub 授权,连接一次即可。Token 只在当前浏览器会话中保存，退出时清除。</p>
+          <p class="hint">发布动态需要 GitHub 授权。Token 只在当前页面内存中保存，刷新或离开后需重新输入。</p>
           <div class="field">
             <label for="momentTokenInput">GitHub Token</label>
-            <input id="momentTokenInput" type="password" placeholder="ghp_… 或 github_pat_…" autocomplete="off">
+            <input id="momentTokenInput" type="password" placeholder="github_pat_…" autocomplete="off">
           </div>
           <div class="admin-row">
             <button class="btn primary" id="momentConnectBtn" type="button">连接</button>
-            <a class="btn" href="https://github.com/settings/tokens/new?scopes=public_repo&amp;description=blog-moments" target="_blank" rel="noopener">创建 Token</a>
+            <a class="btn" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">创建 Fine-grained PAT</a>
           </div>
           <p id="momentConnectStatus" class="status-line"></p>
         </div>

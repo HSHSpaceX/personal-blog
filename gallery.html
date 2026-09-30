@@ -78,6 +78,13 @@
 
     <section class="band gallery-band">
       <div class="container">
+        <div id="galleryConnect" class="admin-card" hidden>
+          <h2>连接 GitHub</h2>
+          <p class="hint">管理图册需输入 Fine-grained PAT；只在当前页面内存中保留。</p>
+          <div class="field"><label for="galleryTokenInput">GitHub PAT</label><input id="galleryTokenInput" type="password" placeholder="github_pat_…" autocomplete="off"></div>
+          <div class="admin-row"><button class="btn primary" id="galleryConnectBtn" type="button">连接</button></div>
+          <p id="galleryConnectStatus" class="status-line"></p>
+        </div>
         <div id="galleryGrid" class="album-grid"></div>
         <div id="albumView" class="album-view" hidden>
           <div class="album-view-head">

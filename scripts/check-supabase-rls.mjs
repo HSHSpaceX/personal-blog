@@ -27,6 +27,15 @@ const userId = user.user.id, otherId = other.user.id;
 const random = crypto.randomUUID();
 let commentId = null;
 try {
+  for (const table of ['likes', 'follows']) {
+    let visible = await request(`/rest/v1/${table}`, 'GET', null);
+    assert.ok(visible.status === 401 || visible.status === 403 ||
+      (visible.status === 200 && visible.data.length === 0), `anonymous identity enumeration in ${table}`);
+  }
+  let privateRows = await request(`/rest/v1/likes?user_id=eq.${otherId}`, 'GET', user.access_token);
+  assert.ok(privateRows.status === 403 || (privateRows.status === 200 && privateRows.data.length === 0), 'user read another liker identity');
+  privateRows = await request(`/rest/v1/follows?follower_id=eq.${otherId}`, 'GET', user.access_token);
+  assert.ok(privateRows.status === 403 || (privateRows.status === 200 && privateRows.data.length === 0), 'user read another follower identity');
   let result = await request('/rest/v1/comments', 'POST', null, { post_slug: 'about', user_id: userId, content: 'RLS test ' + random, status: 'pending' });
   assert.ok(result.status === 401 || result.status === 403, 'anonymous comment insert must fail');
   result = await request(`/rest/v1/profiles?id=eq.${otherId}`, 'PATCH', user.access_token, { bio: 'RLS test ' + random });
@@ -50,9 +59,19 @@ try {
   const like = { user_id: userId, target_type: 'post', target_id: 'rls-test-' + random };
   result = await request('/rest/v1/likes', 'POST', user.access_token, like);
   assert.equal(result.status, 201, 'first like failed');
+  result = await request('/rest/v1/rpc/like_counts', 'POST', null, { p_target_type: 'post', p_target_ids: [like.target_id] });
+  assert.equal(result.status, 200, 'anonymous count RPC failed');
+  assert.equal(Number(result.data[0].like_count), 1, 'public like count incorrect');
+  assert.deepEqual(Object.keys(result.data[0]).sort(), ['like_count', 'target_id'], 'count RPC exposed identities');
+  result = await request('/rest/v1/rpc/follower_count', 'POST', null, { p_target_id: otherId });
+  assert.equal(result.status, 200, 'anonymous follower count RPC failed');
+  assert.equal(typeof result.data, 'number', 'follower count RPC exposed identities');
+  result = await request('/rest/v1/rpc/user_like_count', 'POST', null, { p_user_id: userId });
+  assert.equal(result.status, 200, 'anonymous user like count RPC failed');
+  assert.ok(Number(result.data) >= 1, 'outgoing like count incorrect');
   result = await request('/rest/v1/likes', 'POST', user.access_token, like);
   assert.equal(result.status, 409, 'duplicate like was accepted');
-  console.log('Live RLS passed: anonymous write, profile/role/author isolation, moderation, visibility, duplicate like.');
+  console.log('Live RLS passed: reaction identity privacy/count RPCs, anonymous write, profile/role/author isolation, moderation, visibility, duplicate like.');
 } finally {
   if (commentId) await request(`/rest/v1/comments?id=eq.${commentId}`, 'DELETE', admin.access_token);
   await request(`/rest/v1/likes?user_id=eq.${userId}&target_id=eq.rls-test-${random}`, 'DELETE', user.access_token);

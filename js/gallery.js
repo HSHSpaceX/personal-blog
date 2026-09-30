@@ -29,6 +29,7 @@
 
   function isAuthed() { return window.BlogAuth.isAdmin(); }
   function getToken() { return window.GitHubCredentials.get(); }
+  function canEdit() { return isAuthed() && !!getToken(); }
 
   function rawUrl(path) {
     return 'https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/main/' + path;
@@ -59,7 +60,7 @@
   function saveAlbums(message) {
     window.BlogAuth.requireAdmin();
     var token = getToken();
-    if (!token) throw new Error('需要先在后台连接 GitHub Token');
+    if (!token) throw new Error('请先在本页连接 GitHub PAT');
     var headers = {
       Authorization: 'Bearer ' + token,
       Accept: 'application/vnd.github+json'
@@ -141,13 +142,13 @@
     var grid = $('galleryGrid');
     var list = visibleAlbums();
     if (list.length === 0) {
-      grid.innerHTML = '<p class="empty-state">还没有图册' + (isAuthed() ? '，点击右上角“+”创建一个。' : '。') + '</p>';
+      grid.innerHTML = '<p class="empty-state">还没有图册' + (canEdit() ? '，点击右上角“+”创建一个。' : '。') + '</p>';
       return;
     }
     grid.innerHTML = list.map(function (album) {
       var cover = album.photos[0] ? '<img src="' + escapeHtml(album.photos[0].src) + '" alt="" loading="lazy">' : '<div class="album-cover-empty">暂无照片</div>';
       var badge = album.visibility === 'private' ? '<span class="album-badge">仅我可见</span>' : '';
-      var menuBtn = isAuthed() ? '<button class="album-menu-btn" type="button" data-menu-album="' + escapeHtml(album.id) + '" aria-label="图册菜单" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>' : '';
+      var menuBtn = canEdit() ? '<button class="album-menu-btn" type="button" data-menu-album="' + escapeHtml(album.id) + '" aria-label="图册菜单" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>' : '';
       return '' +
         '<div class="album-card">' +
           '<a class="album-cover-link" href="gallery.html?album=' + encodeURIComponent(album.id) + '"><div class="album-cover">' + cover + '</div></a>' +
@@ -200,7 +201,8 @@
 
     var actions = $('albumActions');
     actions.innerHTML = '';
-    if (authed) {
+    actions.hidden = !canEdit();
+    if (canEdit()) {
       actions.appendChild(createActionButton('上传照片', function () { $('galleryFileInput').click(); }));
       actions.appendChild(createActionButton(album.visibility === 'private' ? '设为公开' : '设为仅我可见', function () {
         album.visibility = album.visibility === 'private' ? 'public' : 'private';
@@ -226,16 +228,12 @@
 
     var grid = $('photoGrid');
     grid.innerHTML = album.photos.map(function (photo, index) {
-      var del = authed ? '<button class="photo-del" type="button" data-del-photo="' + index + '" aria-label="删除这张照片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' : '';
+      var del = canEdit() ? '<button class="photo-del" type="button" data-del-photo="' + index + '" aria-label="删除这张照片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' : '';
       return '<figure class="photo-item">' +
         '<img src="' + escapeHtml(photo.src) + '" alt="" loading="lazy" data-photo-index="' + index + '">' +
         del +
       '</figure>';
     }).join('');
-    if (authed) {
-      var uploadBtn = createActionButton('上传照片', function () { $('galleryFileInput').click(); });
-      grid.before(uploadBtn);
-    }
   }
 
   function createActionButton(label, onClick, danger) {
@@ -248,7 +246,8 @@
   }
 
   function refreshPlusVisibility() {
-    if ($('galleryPlus')) $('galleryPlus').hidden = !isAuthed();
+    if ($('galleryPlus')) $('galleryPlus').hidden = !canEdit();
+    if ($('galleryConnect')) $('galleryConnect').hidden = !isAuthed() || !!getToken();
   }
 
   function render() {
@@ -321,10 +320,13 @@
     };
     albums.push(album);
     return saveAlbums('创建图册：' + title).then(function () {
-      window.location.href = 'gallery.html?album=' + encodeURIComponent(album.id);
+      currentAlbumId = album.id;
+      $('albumModal').hidden = true;
+      window.history.pushState({}, '', 'gallery.html?album=' + encodeURIComponent(album.id));
+      renderAlbumView(album.id);
     }).catch(function (e) {
       albums = albums.filter(function (item) { return item.id !== album.id; });
-      if (String(e.message).indexOf('Token') !== -1) setStatus('保存失败：尚未连接 GitHub Token，请在管理后台连接。', 'err');
+      if (String(e.message).indexOf('PAT') !== -1) setStatus('保存失败：请先在本页连接 GitHub PAT。', 'err');
       throw e;
     });
   }
@@ -334,7 +336,7 @@
     if (!album) return;
     var token = getToken();
     if (!token) {
-      setStatus('上传前需要先在管理后台连接 GitHub Token。', 'err');
+      setStatus('上传前请先在本页连接 GitHub PAT。', 'err');
       return;
     }
     for (var i = 0; i < files.length; i++) {
@@ -369,8 +371,21 @@
     render();
     document.addEventListener('blog-auth-change', function () { refreshPlusVisibility(); render(); });
 
+    $('galleryConnectBtn').addEventListener('click', async function () {
+      var input = $('galleryTokenInput');
+      var status = $('galleryConnectStatus');
+      try {
+        status.textContent = '正在验证…';
+        await window.GitHubCredentials.connect(input.value.trim());
+        input.value = '';
+        status.textContent = '已连接，仅在当前页面保留。';
+        refreshPlusVisibility();
+        render();
+      } catch (error) { status.textContent = error.message; }
+    });
+
     $('galleryPlus').addEventListener('click', function () {
-      if (!isAuthed()) {
+      if (!canEdit()) {
         window.location.href = 'login.html';
         return;
       }

@@ -6,12 +6,19 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
 const sql = read('supabase/migrations/202609300001_invite_auth.sql');
+const privacySql = read('supabase/migrations/202609300002_private_reactions.sql');
 
 function dataHarness(role = 'guest') {
   const actor = role === 'guest' ? null : { id: 'actor-uuid' };
   const calls = [];
   const likes = new Set();
-  const client = { from(table) {
+  const follows = new Set();
+  const client = { rpc(name, args) {
+    calls.push({ rpc: name, args });
+    if (name === 'like_counts') return Promise.resolve({ data: args.p_target_ids.filter((id) => likes.has(id)).map((id) => ({ target_id: id, like_count: 1 })), error: null });
+    if (name === 'user_like_count') return Promise.resolve({ data: likes.size, error: null });
+    return Promise.resolve({ data: 0, error: null });
+  }, from(table) {
     const query = { table, action: '', payload: null, filters: {},
       select() { if (!this.action) this.action = 'select'; return this; },
       eq(key, value) { this.filters[key] = value; return this; },
@@ -27,6 +34,9 @@ function dataHarness(role = 'guest') {
           likes.add(this.payload.target_id);
         }
         if (table === 'likes' && this.action === 'delete') likes.delete(this.filters.target_id);
+        if (table === 'follows' && this.action === 'select') return Promise.resolve(resolve({ data: follows.has(this.filters.target_id) ? [{ follower_id: actor.id }] : [], error: null }));
+        if (table === 'follows' && this.action === 'insert') follows.add(this.payload.target_id);
+        if (table === 'follows' && this.action === 'delete') follows.delete(this.filters.target_id);
         return Promise.resolve(resolve({ data: this.payload || [], error: null }));
       }
     };
@@ -38,7 +48,7 @@ function dataHarness(role = 'guest') {
   };
   const context = { window: { BlogAuth: auth } };
   vm.runInNewContext(read('js/blog-data.js'), context);
-  return { data: context.window.BlogData, calls, likes };
+  return { data: context.window.BlogData, calls, likes, follows };
 }
 
 test('all user tables have RLS and restricted mutation policies', () => {
@@ -54,6 +64,35 @@ test('all user tables have RLS and restricted mutation policies', () => {
   assert.match(sql, /primary key \(follower_id, target_id\)/);
   assert.match(sql, /avatars_own_insert[\s\S]*?storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
   assert.match(sql, /file_size_limit, allowed_mime_types/);
+  assert.doesNotMatch(sql, /moderator/);
+  assert.doesNotMatch(sql, /create policy (likes|follows)_read.*using \(true\)/);
+  assert.match(privacySql, /check \(role in \('user', 'admin'\)\)/);
+});
+
+test('raw likes and follows are private while public RPCs return counts only', async () => {
+  assert.match(privacySql, /drop policy if exists likes_read on public\.likes/);
+  assert.match(privacySql, /likes_read_own on public\.likes for select to authenticated\s+using \(user_id = \(select auth\.uid\(\)\)\)/);
+  assert.match(privacySql, /follows_read_own on public\.follows for select to authenticated\s+using \(follower_id = \(select auth\.uid\(\)\)\)/);
+  assert.doesNotMatch(privacySql, /(?:likes|follows)_read\w* on public\.(?:likes|follows) for select to anon/);
+  for (const signature of ['like_counts(text, text[])', 'follower_count(uuid)', 'user_like_count(uuid)']) {
+    assert.ok(privacySql.includes(`revoke all on function public.${signature} from public`));
+    assert.ok(privacySql.includes(`grant execute on function public.${signature} to anon, authenticated`));
+  }
+  assert.match(privacySql, /security definer set search_path = ''/);
+  const guest = dataHarness();
+  const counts = await guest.data.likes('post', ['one']);
+  assert.equal(counts.one.count, 0);
+  assert.deepEqual(guest.calls.map((call) => call.rpc), ['like_counts']);
+  assert.equal(await guest.data.followerCount('target'), 0);
+  assert.equal(await guest.data.userLikeCount('target'), 0);
+  assert.ok(guest.calls.every((call) => call.rpc), 'anonymous client must never query raw reaction rows');
+  const reader = dataHarness('user');
+  await reader.data.likes('post', ['one']);
+  const raw = reader.calls.find((call) => call.table === 'likes');
+  assert.equal(raw.filters.user_id, 'actor-uuid');
+  await reader.data.following('target');
+  const follow = reader.calls.find((call) => call.table === 'follows');
+  assert.equal(follow.filters.follower_id, 'actor-uuid');
 });
 
 test('guest cannot write and ordinary user cannot moderate', async () => {
@@ -76,6 +115,11 @@ test('comment and like writes carry authenticated ID; admin moderation works', a
   assert.equal(reader.calls[0].payload.status, 'pending');
   assert.equal(await reader.data.toggleLike('post', 'post'), true);
   assert.equal(reader.likes.size, 1);
+  assert.equal((await reader.data.likes('post', ['post'])).post.count, 1);
+  assert.equal(await reader.data.toggleFollow('owner'), true);
+  assert.equal(reader.follows.size, 1);
+  assert.equal(await reader.data.toggleFollow('owner'), false);
+  assert.equal(reader.follows.size, 0);
   assert.equal(await reader.data.toggleLike('post', 'post'), false);
   assert.equal(reader.likes.size, 0);
   assert.equal(reader.calls.find((call) => call.table === 'likes' && call.action === 'insert').payload.user_id, 'actor-uuid');
@@ -86,13 +130,14 @@ test('comment and like writes carry authenticated ID; admin moderation works', a
   assert.equal(admin.calls[1].action, 'delete');
 });
 
-test('PAT is validated against user and repository and never written to localStorage', async () => {
-  const localWrites = [], sessionWrites = [], urls = [];
+test('PAT stays in memory, is validated, and disappears after reload/logout', async () => {
+  const localWrites = [], sessionWrites = [], sessionReads = [], sessionRemovals = [], urls = [];
+  const listeners = [];
   const context = {
-    window: { BlogConfig: { GITHUB_OWNER: 'HSHSpaceX', GITHUB_REPO: 'personal-blog' }, BlogAuth: { requireAdmin() {} } },
+    window: { BlogConfig: { GITHUB_OWNER: 'HSHSpaceX', GITHUB_REPO: 'personal-blog' }, BlogAuth: { requireAdmin() {}, user: () => null } },
     localStorage: { removeItem() {}, setItem(...args) { localWrites.push(args); } },
-    sessionStorage: { getItem() { return ''; }, setItem(...args) { sessionWrites.push(args); }, removeItem() {} },
-    document: { addEventListener() {} },
+    sessionStorage: { getItem(...args) { sessionReads.push(args); return ''; }, setItem(...args) { sessionWrites.push(args); }, removeItem(...args) { sessionRemovals.push(args); } },
+    document: { addEventListener(name, listener) { listeners.push({ name, listener }); } },
     fetch: async (url) => { urls.push(url); return { ok: true, json: async () => url.endsWith('/user') ? { login: 'owner' } : { permissions: { push: true } } }; }
   };
   vm.runInNewContext(read('js/github-credentials.js'), context);
@@ -100,7 +145,14 @@ test('PAT is validated against user and repository and never written to localSto
   assert.deepEqual(urls, ['https://api.github.com/user', 'https://api.github.com/repos/HSHSpaceX/personal-blog']);
   assert.equal(context.window.GitHubCredentials.get(), 'test-token');
   assert.equal(localWrites.length, 0);
-  assert.equal(sessionWrites.length, 1);
+  assert.equal(sessionWrites.length, 0);
+  assert.equal(sessionReads.length, 0);
+  assert.equal(sessionRemovals.length, 1, 'old session PAT must be purged');
+  listeners.find((entry) => entry.name === 'blog-auth-change').listener();
+  assert.equal(context.window.GitHubCredentials.get(), '', 'logout clears memory');
+  await context.window.GitHubCredentials.connect('test-token');
+  vm.runInNewContext(read('js/github-credentials.js'), context);
+  assert.equal(context.window.GitHubCredentials.get(), '', 'reload does not restore PAT');
   context.window.GitHubCredentials.clear();
   assert.equal(context.window.GitHubCredentials.get(), '');
 });

@@ -46,14 +46,31 @@
   async function likes(type, ids) {
     await auth.ready();
     if (!auth.configured() || !ids.length) return {};
-    var rows = value(await db().from('likes').select('user_id,target_id').eq('target_type', type).in('target_id', ids));
+    if (!['post', 'comment', 'moment'].includes(type)) throw new Error('无效点赞类型。');
     var out = {};
-    rows.forEach(function (row) {
-      if (!out[row.target_id]) out[row.target_id] = { count: 0, liked: false };
-      out[row.target_id].count++;
-      if (auth.user() && row.user_id === auth.user().id) out[row.target_id].liked = true;
-    });
+    var uniqueIds = Array.from(new Set(ids.map(String)));
+    for (var start = 0; start < uniqueIds.length; start += 100) {
+      var batch = uniqueIds.slice(start, start + 100);
+      batch.forEach(function (id) { out[id] = { count: 0, liked: false }; });
+      var counts = value(await db().rpc('like_counts', { p_target_type: type, p_target_ids: batch }));
+      counts.forEach(function (row) { out[row.target_id].count = Number(row.like_count); });
+      if (auth.user()) {
+        var mine = value(await db().from('likes').select('target_id')
+          .eq('user_id', auth.user().id).eq('target_type', type).in('target_id', batch));
+        mine.forEach(function (row) { out[row.target_id].liked = true; });
+      }
+    }
     return out;
+  }
+  async function followerCount(targetId) {
+    await auth.ready();
+    if (!auth.configured()) return 0;
+    return Number(value(await db().rpc('follower_count', { p_target_id: targetId })));
+  }
+  async function userLikeCount(userId) {
+    await auth.ready();
+    if (!auth.configured()) return 0;
+    return Number(value(await db().rpc('user_like_count', { p_user_id: userId })));
   }
   async function toggleLike(type, id) {
     await auth.ready();
@@ -100,5 +117,6 @@
   }
   window.BlogData = { listComments: listComments, addComment: addComment, listModeration: listModeration,
     moderateComment: moderateComment, deleteComment: deleteComment, likes: likes, toggleLike: toggleLike,
+    followerCount: followerCount, userLikeCount: userLikeCount,
     getProfile: getProfile, saveProfile: saveProfile, uploadAvatar: uploadAvatar, following: following, toggleFollow: toggleFollow };
 })();

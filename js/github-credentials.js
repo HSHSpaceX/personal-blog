@@ -1,13 +1,11 @@
 (function () {
   'use strict';
-  var KEY = 'blog-gh-pat-session';
   var token = '';
-  try { token = sessionStorage.getItem(KEY) || ''; } catch (e) { /* memory only */ }
-  // Erase an old plaintext PAT left by earlier versions.
+  // Erase plaintext PATs left by earlier versions. New PATs stay in memory only.
   try { localStorage.removeItem('blog-gh-token'); } catch (e) { /* storage unavailable */ }
+  try { sessionStorage.removeItem('blog-gh-pat-session'); } catch (e) { /* storage unavailable */ }
   function clear() {
     token = '';
-    try { sessionStorage.removeItem(KEY); } catch (e) { /* memory only */ }
   }
   function get() { return token; }
   async function validate(value) {
@@ -22,13 +20,10 @@
     if (!info.permissions || !info.permissions.push) throw new Error('PAT 没有目标仓库的写入权限。');
     return who.json();
   }
-  async function connect(value, rememberSession) {
+  async function connect(value) {
     if (!value) throw new Error('请输入 PAT。');
     await validate(value);
     token = value;
-    if (rememberSession !== false) {
-      try { sessionStorage.setItem(KEY, value); } catch (e) { /* memory only */ }
-    }
   }
   document.addEventListener('blog-auth-change', function () { if (!window.BlogAuth.user()) clear(); });
   window.GitHubCredentials = { get: get, clear: clear, connect: connect, validate: validate };

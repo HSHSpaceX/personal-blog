@@ -32,7 +32,8 @@
     });
     document.querySelectorAll('[data-logout]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        window.BlogAuth.signOut().then(function () { window.GitHubCredentials.clear(); applyAuthUi(); });
+        window.GitHubCredentials.clear();
+        window.BlogAuth.signOut().then(applyAuthUi);
       });
     });
     document.addEventListener('click', function (event) { if (!event.target.closest('.user-menu-wrap')) closeUserMenus(); });

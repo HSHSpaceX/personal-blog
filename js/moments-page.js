@@ -609,7 +609,7 @@
       setStatus(statusEl, '验证中…');
       await window.GitHubCredentials.connect(input.value.trim());
       input.value = '';
-      setStatus(statusEl, '已连接，仅在本次浏览器会话保留。', 'ok');
+      setStatus(statusEl, '已连接，仅在当前页面保留。', 'ok');
       syncPanels();
     } catch (error) { setStatus(statusEl, error.message, 'err'); }
   }

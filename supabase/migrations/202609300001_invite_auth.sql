@@ -12,7 +12,7 @@ create table public.profiles (
 );
 create table public.user_roles (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  role text not null check (role in ('user', 'moderator', 'admin')) default 'user',
+  role text not null check (role in ('user', 'admin')) default 'user',
   created_at timestamptz not null default now()
 );
 
@@ -98,7 +98,6 @@ create table public.likes (
 );
 create index likes_target on public.likes(target_type, target_id);
 alter table public.likes enable row level security;
-create policy likes_read on public.likes for select to anon, authenticated using (true);
 create policy likes_insert_self on public.likes for insert to authenticated
   with check (user_id = (select auth.uid()) and (target_type <> 'comment' or exists (
     select 1 from public.comments c where c.id::text = target_id and c.status = 'approved')));
@@ -113,7 +112,6 @@ create table public.follows (
 );
 create index follows_target on public.follows(target_id);
 alter table public.follows enable row level security;
-create policy follows_read on public.follows for select to anon, authenticated using (true);
 create policy follows_insert_self on public.follows for insert to authenticated with check (follower_id = (select auth.uid()));
 create policy follows_delete_self on public.follows for delete to authenticated using (follower_id = (select auth.uid()));
 

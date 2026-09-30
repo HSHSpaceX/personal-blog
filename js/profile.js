@@ -38,10 +38,10 @@
         $('followBtn').textContent = following ? '取消关注' : '关注';
       }
       var counts = await Promise.all([
-        auth.client().from('follows').select('*', { count: 'exact', head: true }).eq('target_id', id),
-        auth.client().from('likes').select('*', { count: 'exact', head: true }).eq('user_id', id)
+        data.followerCount(id),
+        data.userLikeCount(id)
       ]);
-      $('profileCounts').textContent = (counts[0].count || 0) + ' 位关注者 · ' + (counts[1].count || 0) + ' 个赞';
+      $('profileCounts').textContent = counts[0] + ' 位关注者 · 已点赞 ' + counts[1] + ' 次';
     } catch (error) { status(error.message, 'err'); }
   }
   $('profileSave').addEventListener('click', async function () {
