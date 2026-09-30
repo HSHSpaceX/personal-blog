@@ -124,7 +124,7 @@
   }
 
   function postUrl(slug) {
-    return 'post.html?slug=' + encodeURIComponent(slug);
+    return 'posts/' + encodeURIComponent(slug) + '.html';
   }
 
   function categoryUrl(category) {
@@ -478,7 +478,9 @@
     if (!titleEl) return;
 
     var params = new URLSearchParams(window.location.search);
-    var slug = params.get('slug');
+    // Cloudflare Pages redirects .html URLs to extensionless routes.
+    var staticMatch = window.location.pathname.match(/\/posts\/([a-z0-9-]+)(?:\.html)?\/?$/);
+    var slug = staticMatch ? staticMatch[1] : params.get('slug');
     var post = posts.filter(function (item) { return item.slug === slug; })[0];
 
     if (!post) {
@@ -736,7 +738,7 @@
     heads.forEach(function (head, index) {
       var id = 'sec-' + index;
       head.id = id;
-      html += '<a class="toc-link toc-' + head.tagName.toLowerCase() + '" href="#' + id + '">' + escapeHtml(head.textContent) + '</a>';
+      html += '<a class="toc-link toc-' + head.tagName.toLowerCase() + '" href="' + window.location.pathname + window.location.search + '#' + id + '">' + escapeHtml(head.textContent) + '</a>';
     });
     toc.innerHTML = html;
   }

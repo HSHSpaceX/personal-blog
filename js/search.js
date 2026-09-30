@@ -44,7 +44,7 @@
           type: '文章',
           title: post.title,
           excerpt: post.excerpt || stripHtml(post.content).slice(0, 100),
-          url: 'post.html?slug=' + encodeURIComponent(post.slug),
+          url: 'posts/' + encodeURIComponent(post.slug) + '.html',
           date: post.date
         });
       }
@@ -69,7 +69,7 @@
             type: '评论',
             title: c.nick + '：' + c.content.slice(0, 60),
             excerpt: '',
-            url: slug === 'about' ? 'about.html#commentsSection' : 'post.html?slug=' + encodeURIComponent(slug) + '#commentsSection',
+            url: slug === 'about' ? 'about.html#commentsSection' : 'posts/' + encodeURIComponent(slug) + '.html#commentsSection',
             date: c.time || ''
           });
         }

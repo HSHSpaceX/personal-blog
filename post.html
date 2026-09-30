@@ -3,12 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
   <title>文章 - 拾光手记</title>
   <meta name="description" content="拾光手记的文章页面。">
   <meta property="og:type" content="article">
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
   <link rel="stylesheet" href="css/style.css?v=2">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script id="legacy-redirect">
+    var legacySlug = new URLSearchParams(location.search).get('slug');
+    if (legacySlug && /^[a-z0-9-]+$/.test(legacySlug)) {
+      var canonical = new URL('posts/' + encodeURIComponent(legacySlug) + '.html', location.href);
+      var link = document.createElement('link');
+      link.rel = 'canonical';
+      link.href = canonical.href;
+      document.head.appendChild(link);
+      location.replace(canonical.href + location.hash);
+    }
+  </script>
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
