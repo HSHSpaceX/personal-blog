@@ -44,6 +44,8 @@ node -e "const c=require('crypto');console.log(c.createHash('sha256').update('�
 
 正式站点地址只在 `site.config.mjs` 的 `SITE_BASE_URL` 中配置。新增或修改 `js/posts.js` 的文章后运行 `node scripts/generate-site.mjs`，生成静态文章、首页/归档/时间线的爬虫链接、sitemap、feed 和 robots 文件，再运行 `node scripts/check-seo.mjs` 检查。提交这些生成文件后部署。若在网站后台直接修改文章，`generate-site` GitHub Actions 工作流会自动提交这些文件；需要仓库允许 Actions 写入 `main`。旧的 `post.html?slug=...` 链接会跳转到静态文章页。
 
+搜索逻辑的轻量回归测试使用 Node 内置测试模块：`node tests/search.test.cjs`。
+
 部署完成后，可在 GitHub Actions 手动运行 `Submit IndexNow URLs`，或执行 `node scripts/submit-indexnow.mjs`。脚本先检查根目录公开 key 文件已上线，再提交 sitemap 中的 URL。IndexNow 失败不会影响网站部署，sitemap 仍需保持更新。
 
 直接双击 `index.html` 即可打开；也可以用任意静态服务器获得更完整的体验：

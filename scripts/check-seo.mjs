@@ -53,6 +53,15 @@ for (const post of posts) {
 for (const page of ['admin.html', 'login.html', 'search.html', 'post.html', '404.html']) {
   assert.match(await read(page), /<meta name="robots" content="noindex,follow">/, `Missing noindex: ${page}`);
 }
+for (const page of ['index.html', 'about.html', 'archive.html', 'timeline.html', 'gallery.html', 'moments.html', 'post.html', 'search.html', ...posts.map((post) => `posts/${post.slug}.html`)]) {
+  const contents = await read(page);
+  const helper = contents.indexOf('src="js/urls.js');
+  const site = contents.indexOf('src="js/site.js');
+  assert.ok(helper >= 0 && site > helper, `Shared static post URL helper must load before site.js: ${page}`);
+}
+for (const file of ['js/site.js', 'js/search.js']) {
+  assert.ok(!(await read(file)).includes('post.html?slug='), `New article links use the legacy URL in ${file}`);
+}
 const legacy = await read('post.html');
 assert.match(legacy, /location\.replace\(canonical\.href \+ location\.hash\)/, 'Legacy article URLs must redirect');
 const feed = await read('feed.xml');
