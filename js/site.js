@@ -162,10 +162,6 @@
       '</article>';
   }
 
-  function renderFeatured(post) {
-    return renderRailCard(post, 0);
-  }
-
   function renderRailCard(post, index) {
     return '' +
       '<article class="rail-card reveal glass-card" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
@@ -181,27 +177,6 @@
             '<span>' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
-        '</div>' +
-      '</article>';
-  }
-
-  function renderArchiveRow(post) {
-    return '' +
-      '<article class="archive-row glass-card">' +
-        '<a class="archive-thumb" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
-          '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy">' +
-        '</a>' +
-        '<div class="archive-row-main">' +
-          categoryChip(post) +
-          '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
-          '<p>' + escapeHtml(post.excerpt) + '</p>' +
-        '</div>' +
-        '<div class="archive-row-side">' +
-          (post.tags || []).slice(0, 3).map(function (tag) {
-            return '<a class="archive-tag-link" href="archive.html?tag=' + encodeURIComponent(tag) + '">' + escapeHtml(tag) + '</a>';
-          }).join('') +
-          '<span>' + formatDate(post.date) + '</span>' +
-          '<span>' + post.readingTime + ' 分钟阅读</span>' +
         '</div>' +
       '</article>';
   }
@@ -301,125 +276,87 @@
   function renderArchive() {
     var listEl = document.getElementById('archiveList');
     var catWrap = document.getElementById('archiveCategories');
+    var statsEl = document.getElementById('archiveStats');
+    var allTagsEl = document.getElementById('archiveAllTags');
+    if (!listEl || !catWrap) return;
+
     var params = new URLSearchParams(window.location.search);
     var activeCategory = params.get('category') || '';
-    var activeTag = params.get('tag') || '全部';
-    if (!listEl) return;
+    var activeTag = params.get('tag') || '';
+    var categoryNames = Array.from(new Set(posts.map(function (post) { return post.category; })));
+    var configured = window.BLOG_CATEGORY_GROUPS || [];
+    var knownNames = new Set(configured.flatMap(function (group) { return group.cats.map(function (cat) { return cat.name; }); }));
+    var unknown = categoryNames.filter(function (name) { return !knownNames.has(name); }).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
+    var groups = configured.slice();
+    if (unknown.length) groups.push({ title: '其他', cats: unknown.map(function (name) { return { name: name }; }) });
+    var counts = {};
+    var commentCounts = {};
+    var comments = window.SITE_COMMENTS || {};
+    posts.forEach(function (post) {
+      counts[post.category] = (counts[post.category] || 0) + 1;
+      commentCounts[post.category] = (commentCounts[post.category] || 0) + (comments[post.slug] || []).length;
+    });
+    var tags = Array.from(new Set(posts.flatMap(function (post) { return post.tags || []; }))).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
+    var latestDate = posts.map(function (post) { return post.date; }).sort().pop();
+    if (statsEl) statsEl.innerHTML = '<strong>' + posts.length + '</strong> 篇文章 · <strong>' + categoryNames.length + '</strong> 个分类' +
+      (latestDate ? ' · 最近更新 ' + formatDate(latestDate) : '');
 
-    // 分类分组卡片(仅在未选分类时显示)
-    var ARCHIVE_GROUPS = [
-      { title: '火箭', cats: [{ name: '火箭部件', icon: 'assets/cats/部件.png' }, { name: '飞控制作', icon: 'assets/cats/飞控.png' }] },
-      { title: '开发', cats: [{ name: '软件设计', icon: 'assets/cats/软件.png' }, { name: '嵌入式', icon: 'assets/cats/嵌入式.png' }] },
-      { title: '科技', cats: [{ name: 'AI', icon: 'assets/cats/Al.png' }, { name: '3D打印', icon: 'assets/cats/3D打印.png' }] },
-      { title: '文艺', cats: [{ name: '人文历史', icon: 'assets/cats/历史.png' }, { name: '艺术创作', icon: 'assets/cats/艺术.png' }] },
-      { title: '新闻时报', cats: [{ name: '新闻时报', icon: 'assets/cats/新闻.png' }] }
-    ];
-    if (catWrap) {
-      var counts2 = {};
-      posts.forEach(function (p) {
-        counts2[p.category] = (counts2[p.category] || 0) + 1;
-      });
-      var commentCounts2 = {};
-      var allComments2 = window.SITE_COMMENTS || {};
-      posts.forEach(function (p) {
-        var cs = allComments2[p.slug] || [];
-        commentCounts2[p.category] = (commentCounts2[p.category] || 0) + cs.length;
-      });
-      catWrap.innerHTML = ARCHIVE_GROUPS.map(function (group) {
-        var rows = group.cats.map(function (cat) {
-          var latest = posts.filter(function (p) { return p.category === cat.name; }).slice(0, 3);
-          var count = counts2[cat.name] || 0;
-          var newR = commentCounts2[cat.name] || 0;
-          return '<a class="archive-cat-row" href="archive.html?category=' + encodeURIComponent(cat.name) + '">' +
-            '<div class="archive-cat-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(cat.name) + '"></div>' +
-            '<div class="archive-cat-info">' +
-              '<div class="archive-cat-head"><strong>' + escapeHtml(cat.name) + '</strong><span class="archive-cat-count">(' + count + ')</span>' + (newR > 0 ? '<span class="archive-cat-new">' + newR + ' 条新评论</span>' : '') + '</div>' +
-              (count > 0 ? '<p class="cat-card-count">' + count + ' 篇文章</p>' : '<p class="archive-empty">暂无文章</p>') +
-            '</div>' +
-          '</a>';
-        }).join('');
-        return '<div class="archive-group">' +
-          '<h2 class="archive-group-title">' + escapeHtml(group.title) + '</h2>' +
-          rows +
-        '</div>';
-      }).join('');
+    if (allTagsEl) {
+      allTagsEl.innerHTML = tags.length ? '<h2>全部标签</h2><div class="archive-tag-filter">' + tags.map(function (tag) {
+        return '<a class="filter-chip" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
+      }).join('') + '</div>' : '';
+      allTagsEl.style.display = activeCategory || activeTag ? 'none' : '';
     }
+    catWrap.innerHTML = groups.map(function (group) {
+      return '<div class="archive-group"><h2 class="archive-group-title">' + escapeHtml(group.title) + '</h2>' +
+        group.cats.map(function (cat) {
+          var count = counts[cat.name] || 0;
+          var commentCount = commentCounts[cat.name] || 0;
+          return '<a class="archive-cat-row" href="' + categoryUrl(cat.name) + '">' +
+            (cat.icon ? '<div class="archive-cat-icon"><img src="' + escapeHtml(cat.icon) + '" alt=""></div>' : '') +
+            '<div class="archive-cat-info"><div class="archive-cat-head"><strong>' + escapeHtml(cat.name) + '</strong><span class="archive-cat-count">(' + count + ')</span>' +
+            (commentCount ? '<span class="archive-cat-new">' + commentCount + ' 条评论</span>' : '') + '</div>' +
+            (count ? '<p class="cat-card-count">' + count + ' 篇文章</p>' : '<p class="archive-empty">暂无文章</p>') +
+            '</div></a>';
+        }).join('') + '</div>';
+    }).join('');
 
-    // 分类独立页面
-    if (!activeCategory) {
-      if (listEl) listEl.innerHTML = '';
-      var archiveListSection = listEl ? listEl.closest('.archive-list') : null;
-      if (archiveListSection) archiveListSection.style.display = 'none';
+    var listSection = listEl.closest('.archive-list');
+    if (!activeCategory && !activeTag) {
+      listEl.innerHTML = '';
+      if (listSection) listSection.style.display = 'none';
       return;
     }
-    if (!listEl) return;
-    var archiveListSection = listEl.closest('.archive-list');
-    if (archiveListSection) archiveListSection.style.display = '';
+    catWrap.style.display = 'none';
+    if (statsEl) statsEl.style.display = 'none';
+    if (listSection) listSection.style.display = '';
 
-    // 支持通过 ?tag=xx 直接筛选
-    if (params.get('tag')) {
-      activeTag = params.get('tag');
+    var group = groups.find(function (item) { return item.title === activeCategory; });
+    var groupCats = group ? group.cats.map(function (cat) { return cat.name; }) : [activeCategory];
+    var categoryPosts = activeCategory ? posts.filter(function (post) { return groupCats.includes(post.category); }) : posts;
+    var availableTags = Array.from(new Set(categoryPosts.flatMap(function (post) { return post.tags || []; }))).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
+    var filtered = categoryPosts.filter(function (post) { return !activeTag || (post.tags || []).includes(activeTag); });
+    var icon = group && group.cats[0] ? group.cats[0].icon : '';
+    if (!group && activeCategory) {
+      groups.forEach(function (item) { item.cats.forEach(function (cat) { if (cat.name === activeCategory) icon = cat.icon; }); });
     }
-
-    var isGroup = ARCHIVE_GROUPS.some(function (g) { return g.title === activeCategory; });
-    var groupCats = [];
-    if (isGroup) {
-      groupCats = ARCHIVE_GROUPS.filter(function (g) { return g.title === activeCategory; })[0].cats.map(function (c) { return c.name; });
-    } else {
-      groupCats = [activeCategory];
+    var title = activeCategory || '标签：' + activeTag;
+    function filterUrl(tag) {
+      var query = new URLSearchParams();
+      if (activeCategory) query.set('category', activeCategory);
+      if (tag) query.set('tag', tag);
+      return 'archive.html' + (query.toString() ? '?' + query.toString() : '');
     }
-
-    var catIcon = null;
-    ARCHIVE_GROUPS.forEach(function (g) {
-      g.cats.forEach(function (c) { if (c.name === activeCategory) catIcon = c.icon; });
-      if (g.title === activeCategory && g.cats[0]) catIcon = g.cats[0].icon;
-    });
-
-    // 收集该分类的所有标签
-    var allTags = ['全部'];
-    posts.filter(function (p) {
-      return groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
-    }).forEach(function (p) {
-      (p.tags || []).forEach(function (t) { if (allTags.indexOf(t) === -1) allTags.push(t); });
-    });
-
-    function filterPosts() {
-      return posts.filter(function (p) {
-        var inCat = groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
-        var inTag = activeTag === '全部' || (p.tags || []).indexOf(activeTag) !== -1;
-        return inCat && inTag;
-      });
-    }
-
-    function renderFiltered() {
-      var filtered = filterPosts();
-      return (allTags.length > 1 ? '<div class="archive-tag-filter">' + allTags.map(function (t) {
-        return '<button class="filter-chip' + (t === activeTag ? ' active' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
-      }).join('') + '</div>' : '') +
+    listEl.innerHTML = '<div class="cat-page-header"><div class="cat-page-title-row">' +
+      (icon ? '<div class="cat-page-icon"><img src="' + escapeHtml(icon) + '" alt=""></div>' : '') +
+      '<div><h2 class="cat-page-title">' + escapeHtml(title) + '</h2><p class="archive-result-count">' + filtered.length + ' 篇文章</p></div></div>' +
+      '<a class="btn cat-page-back" href="archive.html">← 返回归档</a></div>' +
+      (availableTags.length ? '<div class="archive-tag-filter" aria-label="标签筛选">' +
+        [''].concat(availableTags).map(function (tag) {
+          return '<a class="filter-chip' + (activeTag === tag ? ' active' : '') + '" href="' + filterUrl(tag) + '">' + escapeHtml(tag || '全部') + '</a>';
+        }).join('') + '</div>' : '') +
       '<div class="archive-post-grid">' +
-      (filtered.length ? filtered.map(renderPostCard).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') +
-      '</div>';
-    }
-
-    var catIconImg = catIcon ? '<div class="cat-page-icon"><img src="' + catIcon + '" alt="' + escapeHtml(activeCategory) + '"></div>' : '';
-    listEl.innerHTML =
-      '<div class="cat-page-header">' +
-        '<div class="cat-page-title-row">' + catIconImg +
-          '<div><h2 class="cat-page-title">' + escapeHtml(activeCategory) + '</h2></div>' +
-        '</div>' +
-        '<a class="btn cat-page-back" href="archive.html">← 返回归档</a>' +
-      '</div>' +
-      '<div id="archiveFilteredList">' + renderFiltered() + '</div>';
-
-    var listContainer = document.getElementById('archiveFilteredList');
-    if (listContainer) {
-      listContainer.addEventListener('click', function (event) {
-        var chip = event.target.closest('[data-tag]');
-        if (!chip) return;
-        activeTag = chip.getAttribute('data-tag');
-        listContainer.innerHTML = renderFiltered();
-      });
-    }
+      (filtered.length ? filtered.map(renderPostCard).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') + '</div>';
   }
 
   function renderTimeline() {

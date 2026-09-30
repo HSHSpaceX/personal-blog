@@ -3658,6 +3658,37 @@ a.tag-chip:hover {
 }
 
 /* Archive 科创网风格 */
+.archive-stats {
+  margin: 12px 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.archive-stats strong {
+  color: var(--ink);
+}
+
+.archive-all-tags {
+  margin-bottom: 28px;
+}
+
+.archive-all-tags h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.archive-result-count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.archive-tag-filter .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 .archive-group {
   margin-bottom: 32px;
 }
