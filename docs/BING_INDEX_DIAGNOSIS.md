@@ -2,7 +2,7 @@
 
 ## 核查范围与正式站点选择
 
-检查的基线是 `f42ec9e`（`main` 的当前检出内容）。仓库没有 `CNAME`、Cloudflare Pages 配置或 GitHub Pages 部署工作流。两个站点在 2026-09-30 都返回了相同的旧首页，但**没有相互重定向**。原 `sitemap.xml` 使用 `https://hsh-personal-blog.pages.dev/`，而 README、feed 和旧 `js/sitemap.js` 使用 `https://hshspacex.github.io/personal-blog/`。本次修复选原 sitemap 声明的 Pages 域名作为 `SITE_BASE_URL`，作为一个明确、可修改的 canonical 决策；若站长实际以 GitHub Pages 为正式站点，发布前必须改配置并重新生成。
+检查的基线是 `f42ec9e`（`main` 的当前检出内容）。仓库没有 `CNAME`、Cloudflare Pages 配置或 GitHub Pages 部署工作流。两个站点在 2026-09-30 都返回了相同的旧首页，但**没有相互重定向**。原 `sitemap.xml` 使用 `https://hsh-personal-blog.pages.dev/`，而 README、feed 和旧 `js/sitemap.js` 使用 `https://hshspacex.github.io/personal-blog/`。站长已确认正式站点和 canonical 域名为 `https://hsh-personal-blog.pages.dev/`；`SITE_BASE_URL` 固定使用这个地址。GitHub Pages 的同内容副本仍需站长检查是否可以关闭或重定向，避免重复页面。
 
 首次请求在云环境出站代理 CONNECT 阶段被 403 拒绝；在环境草稿加入两个域名并重试后，使用浏览器 User-Agent 成功取得以下源站 GET 响应。状态与内容均为**修复部署前**的线上结果，不能代替部署后的复查。
 
@@ -55,4 +55,4 @@
 
 ## 发布后复查
 
-确认正式域名后，检查首页、`robots.txt`、`sitemap.xml`、`BingSiteAuth.xml`、`feed.xml`、`archive.html`、旧 `post.html?slug=post-austria-history` 和静态 `posts/post-austria-history.html` 以及最终无扩展名 URL 的状态码、重定向、Content-Type、title、description、canonical、robots/noindex 及原始正文。新增第二篇真实文章后做同样检查。随后在 Bing Webmaster Tools 分别检查首页、归档及至少两篇真实文章的 URL Inspection，并查看 Site Explorer、Sitemaps 和 URL Submission / IndexNow。记录每个 URL 的 discovered、crawled、indexed、Bing 选定 canonical、robots/noindex 与 warning 状态。
+正式域名已确认为 `https://hsh-personal-blog.pages.dev/`。部署后检查首页、`robots.txt`、`sitemap.xml`、`BingSiteAuth.xml`、`feed.xml`、`archive.html`、旧 `post.html?slug=post-austria-history` 和静态 `posts/post-austria-history.html` 以及最终无扩展名 URL 的状态码、重定向、Content-Type、title、description、canonical、robots/noindex 及原始正文。新增第二篇真实文章后做同样检查。随后在 Bing Webmaster Tools 分别检查首页、归档及至少两篇真实文章的 URL Inspection，并查看 Site Explorer、Sitemaps 和 URL Submission / IndexNow。记录每个 URL 的 discovered、crawled、indexed、Bing 选定 canonical、robots/noindex 与 warning 状态。
