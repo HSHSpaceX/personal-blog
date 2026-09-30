@@ -20,7 +20,6 @@
   var posts = [];
   var deletedSlugs = [];
   var postsSha = null;
-  var token = '';
   var editingIndex = -1;
   var isNewPost = false;
   var dirty = false;
@@ -91,7 +90,7 @@
 
   function apiHeaders() {
     return {
-      Authorization: 'Bearer ' + token,
+      Authorization: 'Bearer ' + readToken(),
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28'
     };
@@ -99,6 +98,7 @@
 
   async function api(path, options) {
     window.BlogAuth.requireAdmin();
+    if (!readToken()) throw new Error('请在当前页面重新连接 GitHub PAT。');
     options = options || {};
     var headers = Object.assign(apiHeaders(), options.headers || {});
     var init = { method: options.method || 'GET', headers: headers };
@@ -298,7 +298,7 @@
   }
 
   async function savePageContent() {
-    if (!token) {
+    if (!readToken()) {
       setStatus($('pageStatus'), '尚未连接 GitHub，无法保存。', 'err');
       return;
     }
@@ -500,7 +500,7 @@
   }
 
   async function savePost() {
-    if (!token) {
+    if (!readToken()) {
       setStatus($('editorStatus'), '尚未连接 GitHub，无法保存。', 'err');
       return;
     }
@@ -774,14 +774,13 @@
       setStatus($('authStatus'), '正在连接…');
       try {
         await window.GitHubCredentials.connect(input);
-        token = readToken();
         await fetchPostsMeta();
         $('tokenInput').value = '';
         showList();
       } catch (e) {
-        token = '';
+        clearToken();
         setStatus($('authStatus'), '连接失败：' + friendlyApiError(e), 'err');
-      }
+      } finally { $('tokenInput').value = ''; }
     });
 
     $('tokenInput').addEventListener('keydown', function (event) {
@@ -790,7 +789,6 @@
 
     $('logoutBtn').addEventListener('click', async function () {
       clearToken();
-      token = '';
       postsSha = null;
       try { await window.BlogAuth.signOut(); window.location.href = 'login.html'; }
       catch (error) { setStatus($('listStatus'), '退出失败：' + error.message, 'err'); }
@@ -850,7 +848,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能上传封面。', 'err');
         return;
       }
@@ -861,7 +859,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能插入图片。', 'err');
         return;
       }
@@ -872,7 +870,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能上传视频。', 'err');
         return;
       }
@@ -883,7 +881,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能上传资源。', 'err');
         return;
       }
@@ -952,17 +950,16 @@
       if (!isAuthed()) { window.location.replace(window.BlogAuth.user() ? 'profile.html' : 'login.html?next=admin.html'); return; }
       setupTheme(); setupToolbar(); setupEvents();
       if (previewMode) { enterApp(); return; }
-      token = readToken();
-      if (!token) {
+      if (!readToken()) {
         if (location.hash === '#messages') openMessageBox();
         else showAuth();
         return;
       }
-      await window.GitHubCredentials.validate(token);
+      await window.GitHubCredentials.validate(readToken());
       await fetchPostsMeta();
       enterApp();
     } catch (error) {
-      token = ''; clearToken();
+      clearToken();
       showAuth('连接已失效：' + error.message, 'err');
     }
   }
@@ -971,6 +968,10 @@
     posts = window.BLOG_POSTS || [];
     start();
   }
+
+  window.addEventListener('pageshow', function (event) {
+    if (event.persisted && isAuthed() && !readToken()) showAuth('页面已恢复，请重新连接 GitHub PAT。');
+  });
 
   if (window.BLOG_POSTS) {
     init();

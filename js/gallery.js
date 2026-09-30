@@ -382,6 +382,7 @@
         refreshPlusVisibility();
         render();
       } catch (error) { status.textContent = error.message; }
+      finally { input.value = ''; }
     });
 
     $('galleryPlus').addEventListener('click', function () {

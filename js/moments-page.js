@@ -612,6 +612,7 @@
       setStatus(statusEl, '已连接，仅在当前页面保留。', 'ok');
       syncPanels();
     } catch (error) { setStatus(statusEl, error.message, 'err'); }
+    finally { input.value = ''; }
   }
 
   function bindEvents() {

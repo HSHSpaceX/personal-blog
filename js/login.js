@@ -27,7 +27,7 @@
     try {
       if (password.value.length < 1) throw new Error('请输入密码。');
       message('正在验证…');
-      if (reset) { await auth.updatePassword(password.value); message('密码已更新，请重新登录。', 'ok'); location.replace('login.html'); }
+      if (reset) { await auth.updatePassword(password.value); password.value = ''; await auth.signOut(); message('密码已更新，请重新登录。', 'ok'); location.replace('login.html'); }
       else { if (!email.value.trim()) throw new Error('请输入邮箱。'); await auth.signIn(email.value.trim(), password.value); location.replace(returnUrl()); }
     } catch (error) { message(error.message, 'err'); }
   });

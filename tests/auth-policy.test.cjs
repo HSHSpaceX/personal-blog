@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
 const sql = read('supabase/migrations/202609300001_invite_auth.sql');
 const privacySql = read('supabase/migrations/202609300002_private_reactions.sql');
+const hardeningSql = read('supabase/migrations/202610010003_security_hardening.sql');
 
 function dataHarness(role = 'guest') {
   const actor = role === 'guest' ? null : { id: 'actor-uuid' };
@@ -133,11 +134,13 @@ test('comment and like writes carry authenticated ID; admin moderation works', a
 test('PAT stays in memory, is validated, and disappears after reload/logout', async () => {
   const localWrites = [], sessionWrites = [], sessionReads = [], sessionRemovals = [], urls = [];
   const listeners = [];
+  let admin = true;
+  const actor = { id: 'admin-id' };
   const context = {
-    window: { BlogConfig: { GITHUB_OWNER: 'HSHSpaceX', GITHUB_REPO: 'personal-blog' }, BlogAuth: { requireAdmin() {}, user: () => null } },
+    window: { BlogConfig: { GITHUB_OWNER: 'HSHSpaceX', GITHUB_REPO: 'personal-blog' }, BlogAuth: { requireAdmin() { if (!admin) throw new Error('admin required'); }, requireUser: () => actor, isAdmin: () => admin, user: () => admin ? actor : null }, addEventListener(name, listener) { listeners.push({ name, listener }); } },
     localStorage: { removeItem() {}, setItem(...args) { localWrites.push(args); } },
     sessionStorage: { getItem(...args) { sessionReads.push(args); return ''; }, setItem(...args) { sessionWrites.push(args); }, removeItem(...args) { sessionRemovals.push(args); } },
-    document: { addEventListener(name, listener) { listeners.push({ name, listener }); } },
+    document: { querySelectorAll: () => [], addEventListener(name, listener) { listeners.push({ name, listener }); } },
     fetch: async (url) => { urls.push(url); return { ok: true, json: async () => url.endsWith('/user') ? { login: 'owner' } : { permissions: { push: true } } }; }
   };
   vm.runInNewContext(read('js/github-credentials.js'), context);
@@ -148,8 +151,10 @@ test('PAT stays in memory, is validated, and disappears after reload/logout', as
   assert.equal(sessionWrites.length, 0);
   assert.equal(sessionReads.length, 0);
   assert.equal(sessionRemovals.length, 1, 'old session PAT must be purged');
+  admin = false;
   listeners.find((entry) => entry.name === 'blog-auth-change').listener();
   assert.equal(context.window.GitHubCredentials.get(), '', 'logout clears memory');
+  admin = true;
   await context.window.GitHubCredentials.connect('test-token');
   vm.runInNewContext(read('js/github-credentials.js'), context);
   assert.equal(context.window.GitHubCredentials.get(), '', 'reload does not restore PAT');
@@ -164,4 +169,108 @@ test('old local-only auth and comment write paths are gone', () => {
   assert.doesNotMatch(contents, /localStorage\.setItem\(['"]blog-gh-token/);
   assert.doesNotMatch(contents, /PendingComments/);
   assert.match(read('profile.html'), /<meta name="robots" content="noindex,follow">/);
+});
+
+test('explicit grants exclude TRUNCATE, immutable columns and internal trigger RPCs', () => {
+  assert.match(hardeningSql, /revoke all on table[\s\S]*?from public, anon, authenticated/);
+  assert.match(hardeningSql, /grant select on public\.user_roles, public\.likes, public\.follows to authenticated/);
+  assert.doesNotMatch(hardeningSql, /grant (?:all|truncate|references|trigger)/i);
+  assert.match(hardeningSql, /grant insert \(post_slug, user_id, parent_id, content, status\)/);
+  assert.match(hardeningSql, /revoke all on function public\.on_auth_user_created\(\), public\.touch_updated_at\(\),\s+public\.validate_comment_reply\(\) from public, anon, authenticated/);
+  assert.match(hardeningSql, /cardinality\(p_target_ids\) > 100/);
+  assert.match(hardeningSql, /array_ndims\(p_target_ids\)/);
+  assert.match(hardeningSql, /security definer set search_path = ''/);
+});
+
+function credentialsHarness() {
+  let actor = {id:'admin-one'}, admin = true, release;
+  const events = {}, inputs = [{value:'typed-pat'}];
+  const context = { window: { BlogConfig:{GITHUB_OWNER:'HSHSpaceX',GITHUB_REPO:'personal-blog'},
+    BlogAuth:{user:()=>actor, isAdmin:()=>!!actor && admin,
+      requireUser() { if (!actor) throw Error('user required'); return actor; },
+      requireAdmin() { if (!actor || !admin) throw Error('admin required'); }},
+    addEventListener(name, fn) { events[name] = fn; } },
+    localStorage:{removeItem(){}}, sessionStorage:{removeItem(){}},
+    document:{querySelectorAll:()=>inputs,addEventListener(name,fn){events[name]=fn;}},
+    fetch:async (url)=> {
+      if (url.endsWith('/user')) await new Promise((resolve)=>{release=resolve;});
+      return {ok:true,json:async()=>({permissions:{push:true}})};
+    }
+  };
+  vm.runInNewContext(read('js/github-credentials.js'), context);
+  return {credentials:context.window.GitHubCredentials, inputs, events,
+    release:()=>release(), change:(next, isAdmin = true)=>{actor=next;admin=isAdmin;events['blog-auth-change']();}};
+}
+
+test('logout/clear during PAT validation cannot restore token; demotion/account change/pagehide purge memory and inputs', async () => {
+  for (const change of [(h)=>h.change(null), (h)=>h.credentials.clear(), (h)=>h.change({id:'admin-one'},false)]) {
+    const h = credentialsHarness();
+    const pending = h.credentials.connect('test-token');
+    change(h); h.release();
+    await assert.rejects(pending, /admin required|登录状态已变化/);
+    assert.equal(h.credentials.get(), '');
+    assert.equal(h.inputs[0].value, '');
+  }
+  for (const change of [(h)=>h.change({id:'admin-two'}),(h)=>h.events.pagehide()]) {
+    const h = credentialsHarness();
+    const pending=h.credentials.connect('test-token'); h.release(); await pending;
+    assert.equal(h.credentials.get(),'test-token');
+    change(h); assert.equal(h.credentials.get(),'');
+  }
+  assert.doesNotMatch(read('js/admin.js'), /var token\s*=/, 'admin must not cache a duplicate PAT');
+});
+
+function authHarness({configured=true, initial=null, role='user', hash='', search='', missing=true, getUserGate=null} = {}) {
+  let current=initial, listener, failSignOut=false, getUserCount=0;
+  const notifications=[], replacements=[], calls=[];
+  const location={hash,search,replace:(value)=>replacements.push(value)};
+  const client={auth:{
+    getUser:async()=>{getUserCount++; if (getUserGate) await getUserGate; return {data:{user:current},error:!current && missing ? {name:'AuthSessionMissingError'} : null};},
+    onAuthStateChange:(fn)=>{listener=fn;},
+    signInWithPassword:async()=>({data:{},error:null}),
+    signOut:async()=>({data:{},error:failSignOut ? Error('network failure') : null}),
+    resetPasswordForEmail:async(email,options)=>{calls.push(options);return {data:{},error:null};},
+    updateUser:async()=>({data:{},error:null})
+  },from:()=>({select(){return this;},eq(){return this;},maybeSingle:async()=>({data:{role},error:null})})};
+  const context={window:{BlogConfig:{SITE_BASE_URL:'https://hsh-personal-blog.pages.dev/',SUPABASE_URL:configured?'https://example.supabase.co':'',SUPABASE_PUBLISHABLE_KEY:configured?'public-test-key':''},supabase:{createClient:()=>client}},
+    location,URL,URLSearchParams,setTimeout,console:{warn(){}},localStorage:{removeItem(){}},CustomEvent:class {constructor(name,options){this.name=name;this.detail=options.detail;}},
+    document:{dispatchEvent:(event)=>notifications.push(event.detail)}};
+  vm.runInNewContext(read('js/auth.js'), context);
+  return {auth:context.window.BlogAuth, notifications, replacements,calls,setUser:(value)=>{current=value;},failLogout:()=>{failSignOut=true;},event:(name)=>listener(name), getUserCount:()=>getUserCount};
+}
+
+test('Auth safely handles missing config/session, checks DB role, and clears identity before failed signout', async () => {
+  const blank=authHarness({configured:false}); await blank.auth.ready(); assert.equal(blank.auth.user(),null);
+  await assert.rejects(blank.auth.signIn('test@example.invalid','test-input'), /尚未配置/);
+  const guest=authHarness(); await guest.auth.ready(); assert.equal(guest.auth.user(),null); assert.equal(guest.auth.role(),'guest');
+  const h=authHarness({initial:{id:'one',user_metadata:{role:'admin'}},role:'user'});
+  await h.auth.ready(); assert.equal(h.auth.isAdmin(),false,'metadata must not grant admin');
+  const a=authHarness({initial:{id:'admin'},role:'admin'}); await a.auth.ready(); assert.equal(a.auth.isAdmin(),true);
+  a.failLogout(); const logout=a.auth.signOut(); assert.equal(a.auth.user(),null); assert.equal(a.auth.isAdmin(),false);
+  await assert.rejects(logout,/network failure/); a.event('TOKEN_REFRESHED'); await new Promise(r=>setTimeout(r,5));
+  assert.equal(a.auth.user(),null,'late refresh must not restore a locally signed-out user');
+});
+
+test('invite and password recovery redirect to canonical reset page; no public registration call', async () => {
+  for (const type of ['invite','recovery']) {
+    const h=authHarness({initial:{id:'one'},hash:'#type='+type}); await h.auth.ready();
+    assert.equal(h.replacements[0],'https://hsh-personal-blog.pages.dev/login.html?reset=1');
+  }
+  const h=authHarness(); await h.auth.resetPassword('test@example.invalid');
+  assert.equal(h.calls[0].redirectTo,'https://hsh-personal-blog.pages.dev/login.html?reset=1');
+  assert.doesNotMatch(read('js/auth.js'), /\.signUp\s*\(/);
+  assert.match(read('login.html'),/本站采用邀请制，目前不开放公开注册/);
+});
+
+
+test('overlapping SDK initial session event shares verified initialization before admin page gating', async () => {
+  let release;
+  const gate = new Promise(resolve=>{release=resolve;});
+  const h=authHarness({initial:{id:'admin'},role:'admin',getUserGate:gate});
+  const ready=h.auth.ready();
+  h.event('INITIAL_SESSION');
+  await new Promise(resolve=>setTimeout(resolve,5));
+  assert.equal(h.getUserCount(),1,'concurrent callers must share the same verification');
+  release(); await ready;
+  assert.equal(h.auth.isAdmin(),true,'ready must not resolve as guest before the admin lookup completes');
 });

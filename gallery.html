@@ -81,7 +81,7 @@
         <div id="galleryConnect" class="admin-card" hidden>
           <h2>连接 GitHub</h2>
           <p class="hint">管理图册需输入 Fine-grained PAT；只在当前页面内存中保留。</p>
-          <div class="field"><label for="galleryTokenInput">GitHub PAT</label><input id="galleryTokenInput" type="password" placeholder="github_pat_…" autocomplete="off"></div>
+          <div class="field"><label for="galleryTokenInput">GitHub PAT</label><input id="galleryTokenInput" data-github-pat type="password" placeholder="github_pat_…" autocomplete="off"></div>
           <div class="admin-row"><button class="btn primary" id="galleryConnectBtn" type="button">连接</button></div>
           <p id="galleryConnectStatus" class="status-line"></p>
         </div>
@@ -166,12 +166,12 @@
   </footer>
 
   <script src="js/config.js?v=3"></script>
-  <script src="js/auth.js?v=3"></script>
+  <script src="js/auth.js?v=4"></script>
   <script src="js/blog-data.js?v=3"></script>
-  <script src="js/github-credentials.js?v=3"></script>
+  <script src="js/github-credentials.js?v=4"></script>
   <script src="js/urls.js?v=2"></script>
   <script src="js/boot.js?v=2"></script>
   <script src="js/site.js?v=2"></script>
-  <script src="js/gallery.js?v=2"></script>
+  <script src="js/gallery.js?v=3"></script>
 </body>
 </html>

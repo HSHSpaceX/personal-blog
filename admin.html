@@ -9,7 +9,7 @@
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
   <link rel="stylesheet" href="css/style.css?v=2">
   <link rel="stylesheet" href="css/admin.css?v=2">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="assets/vendor/katex-0.16.11/katex.min.css">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -36,7 +36,7 @@
       <p class="hint">输入有本仓库写权限的 GitHub Token 后即可发布。Token 仅保存在当前页面内存中；刷新、关闭或退出后需要重新输入。</p>
       <div class="field">
         <label for="tokenInput">GitHub Token</label>
-        <input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off">
+        <input id="tokenInput" data-github-pat type="password" placeholder="github_pat_…" autocomplete="off">
       </div>
       <div class="admin-row">
         <button class="btn primary" id="connectBtn" type="button">连接</button>
@@ -207,13 +207,13 @@
   </main>
 
   <script src="js/config.js?v=3"></script>
-  <script src="js/auth.js?v=3"></script>
+  <script src="js/auth.js?v=4"></script>
   <script src="js/blog-data.js?v=3"></script>
-  <script src="js/github-credentials.js?v=3"></script>
+  <script src="js/github-credentials.js?v=4"></script>
   <script src="js/boot.js?v=2"></script>
   <script src="js/resource-manager.js?v=2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <script src="js/admin.js?v=2"></script>
+  <script src="assets/vendor/katex-0.16.11/katex.min.js"></script>
+  <script src="assets/vendor/katex-0.16.11/auto-render.min.js"></script>
+  <script src="js/admin.js?v=3"></script>
 </body>
 </html>
