@@ -3592,6 +3592,20 @@ a.tag-chip:hover {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
+.search-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.search-hit mark {
+  color: inherit;
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
 .search-hit {
   display: block;
   padding: 18px 20px;

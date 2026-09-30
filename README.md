@@ -10,6 +10,8 @@
 - 关于：个人介绍与联系方式
 - RSS：`feed.xml`
 
+搜索页支持文章标题、标签、分类、摘要和正文，以及公开动态与评论；多个关键词用空格分隔。可以分享 `search.html?q=关键词&type=post`，或在页面上按 `/` 聚焦搜索框。
+
 ## 修改内容
 
 所有文章都放在 `js/posts.js` 的 `window.BLOG_POSTS` 数组里。新增文章时复制其中一项，修改 `slug`、`title`、`category`、`tags`、`date`、`cover`、`excerpt` 和 `content` 即可。`content` 使用 HTML 书写，支持段落、标题、列表、引用和代码块。

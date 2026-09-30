@@ -2,6 +2,7 @@
   'use strict';
 
   var posts = window.BLOG_POSTS || [];
+  var postUrl = window.BlogUrls.postUrl;
   var SITE_NAME = '拾光手记';
   var AUTH_KEY = 'blog-auth';
 
@@ -121,10 +122,6 @@
       month: 'long',
       day: 'numeric'
     });
-  }
-
-  function postUrl(slug) {
-    return 'posts/' + encodeURIComponent(slug) + '.html';
   }
 
   function categoryUrl(category) {
