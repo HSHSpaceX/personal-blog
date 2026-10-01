@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   var auth = window.BlogAuth;
+  window.BlogTheme.setup();
   var email = document.getElementById('email');
   var password = document.getElementById('password');
   var status = document.getElementById('loginStatus');

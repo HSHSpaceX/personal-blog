@@ -18,6 +18,7 @@ python3 -m http.server 8080 --bind 127.0.0.1
 node scripts/generate-site.mjs
 node scripts/check-seo.mjs
 node tests/search.test.cjs
+node tests/ui.test.cjs
 node tests/auth-policy.test.cjs
 node tests/supply-chain.test.mjs
 node scripts/check-secrets.mjs

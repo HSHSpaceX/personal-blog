@@ -144,21 +144,40 @@
       '</article>';
   }
 
-  function renderHome() {
-    if (posts.length === 0) return;
+  function renderArchiveRow(post) {
+    return '<article class="archive-row glass-card">' +
+      '<a class="archive-thumb" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
+        '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy" decoding="async"></a>' +
+      '<div class="archive-row-main">' + categoryChip(post) +
+        '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
+        (post.excerpt ? '<p>' + escapeHtml(post.excerpt) + '</p>' : '') + '</div>' +
+      '<div class="archive-row-side"><div class="archive-row-tags">' + (post.tags || []).map(function (tag) {
+        return '<a class="archive-tag-link" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
+      }).join('') + '</div><time datetime="' + escapeHtml(post.date) + '">' + formatDate(post.date) + '</time>' +
+      '<span>' + escapeHtml(post.readingTime) + ' 分钟阅读</span></div></article>';
+  }
 
+  function renderHome() {
     var gridEl = document.getElementById('postGrid');
     var statsEl = document.getElementById('introStats');
     var categoryEl = document.getElementById('categoryList');
 
     var sorted = posts.slice().sort(function (a, b) {
-      return a.date < b.date ? 1 : -1;
+      return b.date.localeCompare(a.date);
     });
 
     var railEl = document.getElementById('featuredRail');
     if (railEl) {
-      var featured = sorted.slice(0, 4);
+      var featured = sorted.filter(function (post) { return post.featured === true; });
       railEl.innerHTML = featured.map(renderRailCard).join('');
+      var section = document.getElementById('featuredSection');
+      if (section) section.hidden = featured.length === 0;
+      var nav = railEl.parentElement.querySelector('.rail-nav');
+      if (nav) nav.hidden = featured.length < 2;
+      ['railPrev', 'railNext'].forEach(function (id) {
+        var button = document.getElementById(id);
+        if (button) button.disabled = featured.length < 2;
+      });
     }
 
     if (gridEl) {
@@ -173,7 +192,7 @@
 
     if (statsEl) {
       var categories = [];
-      var latestDate = posts[0].date;
+      var latestDate = posts.length ? posts[0].date : '';
       posts.forEach(function (post) {
         if (categories.indexOf(post.category) === -1) categories.push(post.category);
         if (post.date > latestDate) latestDate = post.date;
@@ -181,7 +200,7 @@
       statsEl.innerHTML =
         '<span class="stat"><strong>' + posts.length + '</strong> 篇文章</span>' +
         '<span class="stat"><strong>' + categories.length + '</strong> 个分类</span>' +
-        '<span class="stat">更新于 ' + formatDate(latestDate) + '</span>';
+        (latestDate ? '<span class="stat">更新于 ' + formatDate(latestDate) + '</span>' : '');
     }
 
     if (categoryEl) {
@@ -318,8 +337,8 @@
         [''].concat(availableTags).map(function (tag) {
           return '<a class="filter-chip' + (activeTag === tag ? ' active' : '') + '" href="' + filterUrl(tag) + '">' + escapeHtml(tag || '全部') + '</a>';
         }).join('') + '</div>' : '') +
-      '<div class="archive-post-grid">' +
-      (filtered.length ? filtered.map(renderPostCard).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') + '</div>';
+      '<div class="archive-list-inner">' +
+      (filtered.length ? filtered.map(renderArchiveRow).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') + '</div>';
   }
 
   function renderTimeline() {
@@ -469,39 +488,8 @@
   }
 
   function setupTheme() {
-    var toggle = document.getElementById('themeToggle');
-    if (!toggle) return;
-
-    function readTheme() {
-      try {
-        return localStorage.getItem('blog-theme') || 'light';
-      } catch (e) {
-        return 'light';
-      }
-    }
-
-    function writeTheme(value) {
-      try {
-        localStorage.setItem('blog-theme', value);
-      } catch (e) {
-        /* 某些环境下本地存储不可用，仅本次生效 */
-      }
-    }
-
-    function applyLabel() {
-      var dark = document.documentElement.dataset.theme === 'dark';
-      toggle.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换深色模式');
-      toggle.setAttribute('title', dark ? '切换到浅色模式' : '切换深色模式');
-    }
-
-    applyLabel();
-    toggle.addEventListener('click', function () {
-      var next = readTheme() === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      writeTheme(next);
-      applyLabel();
-      updateFavicon();
-    });
+    window.BlogTheme.setup();
+    document.addEventListener('blog-theme-change', updateFavicon);
   }
 
   function setupMenu() {

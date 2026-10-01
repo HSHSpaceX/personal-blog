@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   var auth = window.BlogAuth, data = window.BlogData;
+  window.BlogTheme.setup();
   var $ = function (id) { return document.getElementById(id); };
   var target = null;
   function status(text, kind) { $('profileStatus').textContent = text; $('profileStatus').className = 'status-line' + (kind ? ' ' + kind : ''); }
@@ -68,9 +69,5 @@
     finally { $('followBtn').disabled = false; }
   });
   $('profileLogout').addEventListener('click', async function () { await auth.signOut(); location.replace('index.html'); });
-  $('themeToggle').addEventListener('click', function () {
-    var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next; localStorage.setItem('blog-theme', next);
-  });
   load();
 })();

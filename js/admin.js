@@ -751,19 +751,6 @@
     }
   }
 
-  function setupTheme() {
-    var toggle = $('themeToggle');
-    toggle.addEventListener('click', function () {
-      var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      try {
-        localStorage.setItem('blog-theme', next);
-      } catch (e) {
-        /* 忽略 */
-      }
-    });
-  }
-
   function setupEvents() {
     $('connectBtn').addEventListener('click', async function () {
       var input = $('tokenInput').value.trim();
@@ -948,7 +935,7 @@
     try {
       await window.BlogAuth.ready();
       if (!isAuthed()) { window.location.replace(window.BlogAuth.user() ? 'profile.html' : 'login.html?next=admin.html'); return; }
-      setupTheme(); setupToolbar(); setupEvents();
+      window.BlogTheme.setup(); setupToolbar(); setupEvents();
       if (previewMode) { enterApp(); return; }
       if (!readToken()) {
         if (location.hash === '#messages') openMessageBox();

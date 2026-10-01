@@ -905,7 +905,7 @@ h1, h2, h3 {
 
 .archive-row {
   display: grid;
-  grid-template-columns: 180px 1fr auto;
+  grid-template-columns: 180px minmax(0, 1fr) minmax(140px, 220px);
   align-items: center;
   gap: 20px;
   padding: 14px;
@@ -934,6 +934,11 @@ h1, h2, h3 {
   object-fit: cover;
 }
 
+.archive-row-main {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .archive-row-main h3 {
   font-size: 16px;
   font-weight: 600;
@@ -956,7 +961,15 @@ h1, h2, h3 {
   gap: 4px;
   color: var(--muted);
   font-size: 12px;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.archive-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 .empty-state {
@@ -2616,7 +2629,7 @@ a.tag-chip:hover {
   }
 
   .archive-row {
-    grid-template-columns: 130px 1fr;
+    grid-template-columns: 130px minmax(0, 1fr);
   }
 
   .archive-row-side {
@@ -2624,6 +2637,11 @@ a.tag-chip:hover {
     flex-direction: row;
     align-items: center;
     gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .archive-row-tags {
+    justify-content: flex-start;
   }
 }
 
@@ -3701,6 +3719,9 @@ a.tag-chip:hover {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .archive-group {
@@ -3871,7 +3892,7 @@ a.tag-chip:hover {
 
 .archive-row.glass-card {
   padding: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .archive-tag-link {
@@ -3952,22 +3973,36 @@ a.tag-chip:hover {
   flex-shrink: 0;
 }
 
-/* Archive post grid (same as homepage) */
-.archive-post-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 900px) {
-  .archive-post-grid {
-    grid-template-columns: repeat(2, 1fr);
+/* Keep the existing header controls on one line on narrow phones. */
+@media (max-width: 480px) {
+  .header-inner {
+    gap: 8px;
+    padding-inline: 12px;
   }
-}
 
-@media (max-width: 560px) {
-  .archive-post-grid {
-    grid-template-columns: 1fr;
+  .header-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .brand {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .brand-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .brand-mark,
+  .header-actions .icon-btn {
+    flex-shrink: 0;
+  }
+
+  .btn-login {
+    white-space: nowrap;
   }
 }
 
