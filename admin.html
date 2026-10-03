@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex">
+  <meta name="robots" content="noindex,follow">
   <title>博客管理 - 拾光手记</title>
   <meta name="description" content="拾光手记的内容管理后台。">
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
-  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/style.css?v=3">
   <link rel="stylesheet" href="css/admin.css?v=2">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="assets/vendor/katex-0.16.11/katex.min.css">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -33,29 +33,25 @@
   <main id="main" class="admin-main container">
     <section id="authPanel" class="admin-card" hidden>
       <h1>连接 GitHub</h1>
-      <p class="hint">输入一个有本仓库写权限的 GitHub Token，即可在网页里编辑文章并发布。Token 只会保存在当前设备浏览器中。</p>
+      <p class="hint">输入有本仓库写权限的 GitHub Token 后即可发布。Token 仅保存在当前页面内存中；刷新、关闭或退出后需要重新输入。</p>
       <div class="field">
         <label for="tokenInput">GitHub Token</label>
-        <input id="tokenInput" type="password" placeholder="github_pat_… 或 ghp_…" autocomplete="off">
+        <input id="tokenInput" data-github-pat type="password" placeholder="github_pat_…" autocomplete="off">
       </div>
       <div class="admin-row">
         <button class="btn primary" id="connectBtn" type="button">连接</button>
+        <button class="btn" id="reviewWithoutPat" type="button">评论审核（无需 PAT）</button>
       </div>
       <details class="auth-details">
         <summary>如何创建 Token？</summary>
-        <p><strong>方式一（推荐，最简单）：经典 Token</strong></p>
-        <ol>
-          <li>打开 <a href="https://github.com/settings/tokens/new?scopes=public_repo&amp;description=blog-admin" target="_blank" rel="noopener">经典 Token 创建页</a>，已自动勾选 <code>public_repo</code> 权限。</li>
-          <li>Expiration 建议 90 天或 No expiration，点击底部 Generate token。</li>
-          <li>复制以 <code>ghp_</code> 开头的 Token，粘贴到上方输入框。</li>
-        </ol>
-        <p><strong>方式二（更安全）：Fine-grained Token</strong></p>
+        <p><strong>推荐：Fine-grained PAT</strong></p>
         <ol>
           <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained Token 创建页</a>。</li>
-          <li>Repository access 只勾选 <code>personal-blog</code>。</li>
+          <li>Repository access 只授权 <code>HSHSpaceX/personal-blog</code>。</li>
           <li>Permissions 中 Contents 必须选 <strong>Read and write</strong>。</li>
+          <li>设置合理到期时间，生成后只在当前页面输入 Token。</li>
         </ol>
-        <p>如果保存或删除时提示 Resource not accessible，说明 Token 没有写权限，按上面任一方式重新生成后，退出并重新连接即可。</p>
+        <p>已有 Classic PAT 可暂时兼容，但不建议新建或长期使用。若提示 Resource not accessible，请检查目标仓库的 Contents 写权限。</p>
       </details>
       <p id="authStatus" class="status-line"></p>
     </section>
@@ -68,6 +64,7 @@
           <button class="btn" id="pageBtn" type="button">页面内容</button>
           <button class="btn" id="messageBtn" type="button">消息</button>
           <button class="btn" id="resourceBtn" type="button">资源管理</button>
+          <a class="btn" href="profile.html">我的资料</a>
           <button class="btn" id="logoutBtn" type="button">退出</button>
         </div>
       </div>
@@ -209,10 +206,15 @@
     </section>
   </main>
 
+  <script src="js/theme.js?v=1"></script>
+  <script src="js/config.js?v=3"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/blog-data.js?v=3"></script>
+  <script src="js/github-credentials.js?v=4"></script>
   <script src="js/boot.js?v=2"></script>
   <script src="js/resource-manager.js?v=2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <script src="js/admin.js?v=2"></script>
+  <script src="assets/vendor/katex-0.16.11/katex.min.js"></script>
+  <script src="assets/vendor/katex-0.16.11/auto-render.min.js"></script>
+  <script src="js/admin.js?v=4"></script>
 </body>
 </html>

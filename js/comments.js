@@ -6,10 +6,9 @@ window.SITE_COMMENTS = {
       "id": "c1790504786170",
       "slug": "about",
       "nick": "HSH(站长)",
-      "email": "",
       "time": "2026-09-27",
       "content": "Test",
-      "device": "macOS 10.15"
+      "legacy": true
     }
   ],
   "moment-m20260914-204633-fp3i": [],

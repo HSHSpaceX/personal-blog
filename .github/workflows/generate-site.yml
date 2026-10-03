@@ -1,0 +1,42 @@
+name: Generate static site SEO files
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - js/posts.js
+      - post.html
+      - site.config.mjs
+      - scripts/generate-site.mjs
+      - index.html
+      - archive.html
+      - timeline.html
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-static-site
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/generate-site.mjs
+      - run: node scripts/check-seo.mjs
+      - run: git diff --check
+      - name: Commit refreshed public files
+        run: |
+          git add -A -- js/config.js index.html about.html archive.html timeline.html gallery.html moments.html posts sitemap.xml feed.xml robots.txt
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore: refresh generated SEO pages'
+            git push origin HEAD:main
+          fi

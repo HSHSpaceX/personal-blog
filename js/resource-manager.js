@@ -2,13 +2,11 @@
 (function () {
   'use strict';
 
-  var OWNER = 'HSHSpaceX';
-  var REPO = 'personal-blog';
+  var OWNER = window.BlogConfig.GITHUB_OWNER;
+  var REPO = window.BlogConfig.GITHUB_REPO;
   var BRANCH = 'main';
 
-  function getToken() {
-    try { return localStorage.getItem('blog-gh-token') || ''; } catch (e) { return ''; }
-  }
+  function getToken() { return window.GitHubCredentials.get(); }
 
   function apiHeaders() {
     return { Authorization: 'Bearer ' + getToken(), Accept: 'application/vnd.github+json' };
@@ -56,6 +54,7 @@
 
   // 资源中心弹窗
   function openResourceManager(onInsert) {
+    window.BlogAuth.requireAdmin();
     var existing = document.getElementById('rm-overlay');
     if (existing) existing.remove();
 
@@ -199,6 +198,7 @@
   }
 
   function uploadFile(file) {
+    window.BlogAuth.requireAdmin();
     var folder = file.type.indexOf('image/') === 0 ? 'assets/posts'
       : file.type.indexOf('video/') === 0 ? 'assets/videos'
       : 'assets/files';
@@ -227,6 +227,7 @@
   }
 
   function deleteResource(path) {
+    window.BlogAuth.requireAdmin();
     return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + path + '?ref=' + BRANCH, {
       headers: apiHeaders()
     }).then(function (res) {

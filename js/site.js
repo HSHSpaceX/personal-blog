@@ -2,48 +2,24 @@
   'use strict';
 
   var posts = window.BLOG_POSTS || [];
+  var postUrl = window.BlogUrls.postUrl;
   var SITE_NAME = '拾光手记';
-  var AUTH_KEY = 'blog-auth';
-
-  function isAuthed() {
-    try {
-      var until = Number(localStorage.getItem(AUTH_KEY) || 0);
-      return until > Date.now();
-    } catch (e) {
-      return false;
-    }
-  }
-
+  function isAuthed() { return window.BlogAuth && window.BlogAuth.isAdmin(); }
   function applyAuthUi() {
-    var authed = isAuthed();
-    var reader = window.ReaderAccount ? window.ReaderAccount.load() : null;
-    document.querySelectorAll('.btn-login').forEach(function (el) {
-      el.hidden = authed;
-    });
-    document.querySelectorAll('.user-menu-wrap').forEach(function (el) {
-      el.hidden = !authed;
-    });
-    // 读者已登录时头像换成自己的
-    if (!authed && reader && reader.name && reader.avatar) {
-      document.querySelectorAll('.user-avatar img').forEach(function (img) {
-        img.src = reader.avatar;
-      });
-    }
-    document.querySelectorAll('.user-menu-wrap').forEach(function (el) {
-      el.hidden = !authed;
-    });
-    if (!authed) closeUserMenus();
+    var auth = window.BlogAuth;
+    var logged = !!auth.user();
+    document.querySelectorAll('.btn-login').forEach(function (el) { el.hidden = logged; });
+    document.querySelectorAll('.user-menu-wrap').forEach(function (el) { el.hidden = !logged; });
+    document.querySelectorAll('[data-admin]').forEach(function (el) { el.hidden = !auth.isAdmin(); });
+    if (!logged) closeUserMenus();
+    if (logged) window.BlogData.getProfile(auth.user().id).then(function (profile) {
+      if (profile && profile.avatar_url) document.querySelectorAll('.user-avatar img').forEach(function (img) { img.src = profile.avatar_url; });
+    }).catch(function () {});
   }
-
   function closeUserMenus() {
-    document.querySelectorAll('.user-menu').forEach(function (el) {
-      el.hidden = true;
-    });
-    document.querySelectorAll('.user-avatar').forEach(function (el) {
-      el.setAttribute('aria-expanded', 'false');
-    });
+    document.querySelectorAll('.user-menu').forEach(function (el) { el.hidden = true; });
+    document.querySelectorAll('.user-avatar').forEach(function (el) { el.setAttribute('aria-expanded', 'false'); });
   }
-
   function setupUserMenu() {
     document.querySelectorAll('.user-avatar').forEach(function (btn) {
       btn.addEventListener('click', function (event) {
@@ -51,26 +27,17 @@
         var menu = btn.parentElement.querySelector('.user-menu');
         if (!menu) return;
         var open = menu.hidden;
-        closeUserMenus();
-        menu.hidden = !open;
-        btn.setAttribute('aria-expanded', String(open));
+        closeUserMenus(); menu.hidden = !open; btn.setAttribute('aria-expanded', String(open));
       });
     });
     document.querySelectorAll('[data-logout]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        try {
-          localStorage.removeItem(AUTH_KEY);
-          localStorage.removeItem('blog-gh-token');
-          sessionStorage.removeItem('blog-auth');
-        } catch (e) {
-          /* 忽略 */
-        }
-        applyAuthUi();
+        window.GitHubCredentials.clear();
+        window.BlogAuth.signOut().then(applyAuthUi);
       });
     });
-    document.addEventListener('click', function (event) {
-      if (!event.target.closest('.user-menu-wrap')) closeUserMenus();
-    });
+    document.addEventListener('click', function (event) { if (!event.target.closest('.user-menu-wrap')) closeUserMenus(); });
+    document.addEventListener('blog-auth-change', function () { applyAuthUi(); refreshPendingBadge(); });
   }
 
   function updateFavicon() {
@@ -123,10 +90,6 @@
     });
   }
 
-  function postUrl(slug) {
-    return 'post.html?slug=' + encodeURIComponent(slug);
-  }
-
   function categoryUrl(category) {
     return 'archive.html?category=' + encodeURIComponent(category);
   }
@@ -162,10 +125,6 @@
       '</article>';
   }
 
-  function renderFeatured(post) {
-    return renderRailCard(post, 0);
-  }
-
   function renderRailCard(post, index) {
     return '' +
       '<article class="rail-card reveal glass-card" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
@@ -186,41 +145,39 @@
   }
 
   function renderArchiveRow(post) {
-    return '' +
-      '<article class="archive-row glass-card">' +
-        '<a class="archive-thumb" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
-          '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy">' +
-        '</a>' +
-        '<div class="archive-row-main">' +
-          categoryChip(post) +
-          '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
-          '<p>' + escapeHtml(post.excerpt) + '</p>' +
-        '</div>' +
-        '<div class="archive-row-side">' +
-          (post.tags || []).slice(0, 3).map(function (tag) {
-            return '<a class="archive-tag-link" href="archive.html?tag=' + encodeURIComponent(tag) + '">' + escapeHtml(tag) + '</a>';
-          }).join('') +
-          '<span>' + formatDate(post.date) + '</span>' +
-          '<span>' + post.readingTime + ' 分钟阅读</span>' +
-        '</div>' +
-      '</article>';
+    return '<article class="archive-row glass-card">' +
+      '<a class="archive-thumb" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
+        '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy" decoding="async"></a>' +
+      '<div class="archive-row-main">' + categoryChip(post) +
+        '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
+        (post.excerpt ? '<p>' + escapeHtml(post.excerpt) + '</p>' : '') + '</div>' +
+      '<div class="archive-row-side"><div class="archive-row-tags">' + (post.tags || []).map(function (tag) {
+        return '<a class="archive-tag-link" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
+      }).join('') + '</div><time datetime="' + escapeHtml(post.date) + '">' + formatDate(post.date) + '</time>' +
+      '<span>' + escapeHtml(post.readingTime) + ' 分钟阅读</span></div></article>';
   }
 
   function renderHome() {
-    if (posts.length === 0) return;
-
     var gridEl = document.getElementById('postGrid');
     var statsEl = document.getElementById('introStats');
     var categoryEl = document.getElementById('categoryList');
 
     var sorted = posts.slice().sort(function (a, b) {
-      return a.date < b.date ? 1 : -1;
+      return b.date.localeCompare(a.date);
     });
 
     var railEl = document.getElementById('featuredRail');
     if (railEl) {
-      var featured = sorted.slice(0, 4);
+      var featured = sorted.filter(function (post) { return post.featured === true; });
       railEl.innerHTML = featured.map(renderRailCard).join('');
+      var section = document.getElementById('featuredSection');
+      if (section) section.hidden = featured.length === 0;
+      var nav = railEl.parentElement.querySelector('.rail-nav');
+      if (nav) nav.hidden = featured.length < 2;
+      ['railPrev', 'railNext'].forEach(function (id) {
+        var button = document.getElementById(id);
+        if (button) button.disabled = featured.length < 2;
+      });
     }
 
     if (gridEl) {
@@ -235,7 +192,7 @@
 
     if (statsEl) {
       var categories = [];
-      var latestDate = posts[0].date;
+      var latestDate = posts.length ? posts[0].date : '';
       posts.forEach(function (post) {
         if (categories.indexOf(post.category) === -1) categories.push(post.category);
         if (post.date > latestDate) latestDate = post.date;
@@ -243,7 +200,7 @@
       statsEl.innerHTML =
         '<span class="stat"><strong>' + posts.length + '</strong> 篇文章</span>' +
         '<span class="stat"><strong>' + categories.length + '</strong> 个分类</span>' +
-        '<span class="stat">更新于 ' + formatDate(latestDate) + '</span>';
+        (latestDate ? '<span class="stat">更新于 ' + formatDate(latestDate) + '</span>' : '');
     }
 
     if (categoryEl) {
@@ -301,125 +258,87 @@
   function renderArchive() {
     var listEl = document.getElementById('archiveList');
     var catWrap = document.getElementById('archiveCategories');
+    var statsEl = document.getElementById('archiveStats');
+    var allTagsEl = document.getElementById('archiveAllTags');
+    if (!listEl || !catWrap) return;
+
     var params = new URLSearchParams(window.location.search);
     var activeCategory = params.get('category') || '';
-    var activeTag = params.get('tag') || '全部';
-    if (!listEl) return;
+    var activeTag = params.get('tag') || '';
+    var categoryNames = Array.from(new Set(posts.map(function (post) { return post.category; })));
+    var configured = window.BLOG_CATEGORY_GROUPS || [];
+    var knownNames = new Set(configured.flatMap(function (group) { return group.cats.map(function (cat) { return cat.name; }); }));
+    var unknown = categoryNames.filter(function (name) { return !knownNames.has(name); }).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
+    var groups = configured.slice();
+    if (unknown.length) groups.push({ title: '其他', cats: unknown.map(function (name) { return { name: name }; }) });
+    var counts = {};
+    var commentCounts = {};
+    var comments = window.SITE_COMMENTS || {};
+    posts.forEach(function (post) {
+      counts[post.category] = (counts[post.category] || 0) + 1;
+      commentCounts[post.category] = (commentCounts[post.category] || 0) + (comments[post.slug] || []).length;
+    });
+    var tags = Array.from(new Set(posts.flatMap(function (post) { return post.tags || []; }))).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
+    var latestDate = posts.map(function (post) { return post.date; }).sort().pop();
+    if (statsEl) statsEl.innerHTML = '<strong>' + posts.length + '</strong> 篇文章 · <strong>' + categoryNames.length + '</strong> 个分类' +
+      (latestDate ? ' · 最近更新 ' + formatDate(latestDate) : '');
 
-    // 分类分组卡片(仅在未选分类时显示)
-    var ARCHIVE_GROUPS = [
-      { title: '火箭', cats: [{ name: '火箭部件', icon: 'assets/cats/部件.png' }, { name: '飞控制作', icon: 'assets/cats/飞控.png' }] },
-      { title: '开发', cats: [{ name: '软件设计', icon: 'assets/cats/软件.png' }, { name: '嵌入式', icon: 'assets/cats/嵌入式.png' }] },
-      { title: '科技', cats: [{ name: 'AI', icon: 'assets/cats/Al.png' }, { name: '3D打印', icon: 'assets/cats/3D打印.png' }] },
-      { title: '文艺', cats: [{ name: '人文历史', icon: 'assets/cats/历史.png' }, { name: '艺术创作', icon: 'assets/cats/艺术.png' }] },
-      { title: '新闻时报', cats: [{ name: '新闻时报', icon: 'assets/cats/新闻.png' }] }
-    ];
-    if (catWrap) {
-      var counts2 = {};
-      posts.forEach(function (p) {
-        counts2[p.category] = (counts2[p.category] || 0) + 1;
-      });
-      var commentCounts2 = {};
-      var allComments2 = window.SITE_COMMENTS || {};
-      posts.forEach(function (p) {
-        var cs = allComments2[p.slug] || [];
-        commentCounts2[p.category] = (commentCounts2[p.category] || 0) + cs.length;
-      });
-      catWrap.innerHTML = ARCHIVE_GROUPS.map(function (group) {
-        var rows = group.cats.map(function (cat) {
-          var latest = posts.filter(function (p) { return p.category === cat.name; }).slice(0, 3);
-          var count = counts2[cat.name] || 0;
-          var newR = commentCounts2[cat.name] || 0;
-          return '<a class="archive-cat-row" href="archive.html?category=' + encodeURIComponent(cat.name) + '">' +
-            '<div class="archive-cat-icon"><img src="' + cat.icon + '" alt="' + escapeHtml(cat.name) + '"></div>' +
-            '<div class="archive-cat-info">' +
-              '<div class="archive-cat-head"><strong>' + escapeHtml(cat.name) + '</strong><span class="archive-cat-count">(' + count + ')</span>' + (newR > 0 ? '<span class="archive-cat-new">' + newR + ' 条新评论</span>' : '') + '</div>' +
-              (count > 0 ? '<p class="cat-card-count">' + count + ' 篇文章</p>' : '<p class="archive-empty">暂无文章</p>') +
-            '</div>' +
-          '</a>';
-        }).join('');
-        return '<div class="archive-group">' +
-          '<h2 class="archive-group-title">' + escapeHtml(group.title) + '</h2>' +
-          rows +
-        '</div>';
-      }).join('');
+    if (allTagsEl) {
+      allTagsEl.innerHTML = tags.length ? '<h2>全部标签</h2><div class="archive-tag-filter">' + tags.map(function (tag) {
+        return '<a class="filter-chip" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
+      }).join('') + '</div>' : '';
+      allTagsEl.style.display = activeCategory || activeTag ? 'none' : '';
     }
+    catWrap.innerHTML = groups.map(function (group) {
+      return '<div class="archive-group"><h2 class="archive-group-title">' + escapeHtml(group.title) + '</h2>' +
+        group.cats.map(function (cat) {
+          var count = counts[cat.name] || 0;
+          var commentCount = commentCounts[cat.name] || 0;
+          return '<a class="archive-cat-row" href="' + categoryUrl(cat.name) + '">' +
+            (cat.icon ? '<div class="archive-cat-icon"><img src="' + escapeHtml(cat.icon) + '" alt=""></div>' : '') +
+            '<div class="archive-cat-info"><div class="archive-cat-head"><strong>' + escapeHtml(cat.name) + '</strong><span class="archive-cat-count">(' + count + ')</span>' +
+            (commentCount ? '<span class="archive-cat-new">' + commentCount + ' 条评论</span>' : '') + '</div>' +
+            (count ? '<p class="cat-card-count">' + count + ' 篇文章</p>' : '<p class="archive-empty">暂无文章</p>') +
+            '</div></a>';
+        }).join('') + '</div>';
+    }).join('');
 
-    // 分类独立页面
-    if (!activeCategory) {
-      if (listEl) listEl.innerHTML = '';
-      var archiveListSection = listEl ? listEl.closest('.archive-list') : null;
-      if (archiveListSection) archiveListSection.style.display = 'none';
+    var listSection = listEl.closest('.archive-list');
+    if (!activeCategory && !activeTag) {
+      listEl.innerHTML = '';
+      if (listSection) listSection.style.display = 'none';
       return;
     }
-    if (!listEl) return;
-    var archiveListSection = listEl.closest('.archive-list');
-    if (archiveListSection) archiveListSection.style.display = '';
+    catWrap.style.display = 'none';
+    if (statsEl) statsEl.style.display = 'none';
+    if (listSection) listSection.style.display = '';
 
-    // 支持通过 ?tag=xx 直接筛选
-    if (params.get('tag')) {
-      activeTag = params.get('tag');
+    var group = groups.find(function (item) { return item.title === activeCategory; });
+    var groupCats = group ? group.cats.map(function (cat) { return cat.name; }) : [activeCategory];
+    var categoryPosts = activeCategory ? posts.filter(function (post) { return groupCats.includes(post.category); }) : posts;
+    var availableTags = Array.from(new Set(categoryPosts.flatMap(function (post) { return post.tags || []; }))).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
+    var filtered = categoryPosts.filter(function (post) { return !activeTag || (post.tags || []).includes(activeTag); });
+    var icon = group && group.cats[0] ? group.cats[0].icon : '';
+    if (!group && activeCategory) {
+      groups.forEach(function (item) { item.cats.forEach(function (cat) { if (cat.name === activeCategory) icon = cat.icon; }); });
     }
-
-    var isGroup = ARCHIVE_GROUPS.some(function (g) { return g.title === activeCategory; });
-    var groupCats = [];
-    if (isGroup) {
-      groupCats = ARCHIVE_GROUPS.filter(function (g) { return g.title === activeCategory; })[0].cats.map(function (c) { return c.name; });
-    } else {
-      groupCats = [activeCategory];
+    var title = activeCategory || '标签：' + activeTag;
+    function filterUrl(tag) {
+      var query = new URLSearchParams();
+      if (activeCategory) query.set('category', activeCategory);
+      if (tag) query.set('tag', tag);
+      return 'archive.html' + (query.toString() ? '?' + query.toString() : '');
     }
-
-    var catIcon = null;
-    ARCHIVE_GROUPS.forEach(function (g) {
-      g.cats.forEach(function (c) { if (c.name === activeCategory) catIcon = c.icon; });
-      if (g.title === activeCategory && g.cats[0]) catIcon = g.cats[0].icon;
-    });
-
-    // 收集该分类的所有标签
-    var allTags = ['全部'];
-    posts.filter(function (p) {
-      return groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
-    }).forEach(function (p) {
-      (p.tags || []).forEach(function (t) { if (allTags.indexOf(t) === -1) allTags.push(t); });
-    });
-
-    function filterPosts() {
-      return posts.filter(function (p) {
-        var inCat = groupCats.indexOf(p.category) !== -1 || (p.tags || []).indexOf(activeCategory) !== -1;
-        var inTag = activeTag === '全部' || (p.tags || []).indexOf(activeTag) !== -1;
-        return inCat && inTag;
-      });
-    }
-
-    function renderFiltered() {
-      var filtered = filterPosts();
-      return (allTags.length > 1 ? '<div class="archive-tag-filter">' + allTags.map(function (t) {
-        return '<button class="filter-chip' + (t === activeTag ? ' active' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
-      }).join('') + '</div>' : '') +
-      '<div class="archive-post-grid">' +
-      (filtered.length ? filtered.map(renderPostCard).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') +
-      '</div>';
-    }
-
-    var catIconImg = catIcon ? '<div class="cat-page-icon"><img src="' + catIcon + '" alt="' + escapeHtml(activeCategory) + '"></div>' : '';
-    listEl.innerHTML =
-      '<div class="cat-page-header">' +
-        '<div class="cat-page-title-row">' + catIconImg +
-          '<div><h2 class="cat-page-title">' + escapeHtml(activeCategory) + '</h2></div>' +
-        '</div>' +
-        '<a class="btn cat-page-back" href="archive.html">← 返回归档</a>' +
-      '</div>' +
-      '<div id="archiveFilteredList">' + renderFiltered() + '</div>';
-
-    var listContainer = document.getElementById('archiveFilteredList');
-    if (listContainer) {
-      listContainer.addEventListener('click', function (event) {
-        var chip = event.target.closest('[data-tag]');
-        if (!chip) return;
-        activeTag = chip.getAttribute('data-tag');
-        listContainer.innerHTML = renderFiltered();
-      });
-    }
+    listEl.innerHTML = '<div class="cat-page-header"><div class="cat-page-title-row">' +
+      (icon ? '<div class="cat-page-icon"><img src="' + escapeHtml(icon) + '" alt=""></div>' : '') +
+      '<div><h2 class="cat-page-title">' + escapeHtml(title) + '</h2><p class="archive-result-count">' + filtered.length + ' 篇文章</p></div></div>' +
+      '<a class="btn cat-page-back" href="archive.html">← 返回归档</a></div>' +
+      (availableTags.length ? '<div class="archive-tag-filter" aria-label="标签筛选">' +
+        [''].concat(availableTags).map(function (tag) {
+          return '<a class="filter-chip' + (activeTag === tag ? ' active' : '') + '" href="' + filterUrl(tag) + '">' + escapeHtml(tag || '全部') + '</a>';
+        }).join('') + '</div>' : '') +
+      '<div class="archive-list-inner">' +
+      (filtered.length ? filtered.map(renderArchiveRow).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') + '</div>';
   }
 
   function renderTimeline() {
@@ -478,7 +397,9 @@
     if (!titleEl) return;
 
     var params = new URLSearchParams(window.location.search);
-    var slug = params.get('slug');
+    // Cloudflare Pages redirects .html URLs to extensionless routes.
+    var staticMatch = window.location.pathname.match(/\/posts\/([a-z0-9-]+)(?:\.html)?\/?$/);
+    var slug = staticMatch ? staticMatch[1] : params.get('slug');
     var post = posts.filter(function (item) { return item.slug === slug; })[0];
 
     if (!post) {
@@ -567,39 +488,8 @@
   }
 
   function setupTheme() {
-    var toggle = document.getElementById('themeToggle');
-    if (!toggle) return;
-
-    function readTheme() {
-      try {
-        return localStorage.getItem('blog-theme') || 'light';
-      } catch (e) {
-        return 'light';
-      }
-    }
-
-    function writeTheme(value) {
-      try {
-        localStorage.setItem('blog-theme', value);
-      } catch (e) {
-        /* 某些环境下本地存储不可用，仅本次生效 */
-      }
-    }
-
-    function applyLabel() {
-      var dark = document.documentElement.dataset.theme === 'dark';
-      toggle.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换深色模式');
-      toggle.setAttribute('title', dark ? '切换到浅色模式' : '切换深色模式');
-    }
-
-    applyLabel();
-    toggle.addEventListener('click', function () {
-      var next = readTheme() === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      writeTheme(next);
-      applyLabel();
-      updateFavicon();
-    });
+    window.BlogTheme.setup();
+    document.addEventListener('blog-theme-change', updateFavicon);
   }
 
   function setupMenu() {
@@ -736,7 +626,7 @@
     heads.forEach(function (head, index) {
       var id = 'sec-' + index;
       head.id = id;
-      html += '<a class="toc-link toc-' + head.tagName.toLowerCase() + '" href="#' + id + '">' + escapeHtml(head.textContent) + '</a>';
+      html += '<a class="toc-link toc-' + head.tagName.toLowerCase() + '" href="' + window.location.pathname + window.location.search + '#' + id + '">' + escapeHtml(head.textContent) + '</a>';
     });
     toc.innerHTML = html;
   }
@@ -792,268 +682,65 @@
     textarea.remove();
   }
 
+  function loginForAction() {
+    if (window.BlogAuth.user()) return true;
+    location.href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
+    return false;
+  }
   function initLikes(slug) {
     var btn = document.getElementById('likeBtn');
-    var countEl = document.getElementById('likeCount');
-    if (!btn || !countEl) return;
-    var key = 'blog-liked-' + slug;
-    var countKey = 'blog-like-count-' + slug;
-    var queueKey = 'blog-like-queue';
-    var liked = false;
-    var lastCount = null;
-    try {
-      liked = localStorage.getItem(key) === '1';
-      lastCount = Number(localStorage.getItem(countKey));
-      if (isNaN(lastCount)) lastCount = null;
-    } catch (e2) {
-      liked = false;
-      lastCount = null;
-    }
-
-    function persistCount(count) {
-      if (typeof count !== 'number' || isNaN(count)) return;
-      lastCount = count;
+    var count = document.getElementById('likeCount');
+    if (!btn || !count) return;
+    async function refresh() {
       try {
-        localStorage.setItem(countKey, String(count));
-      } catch (e3) {
-        /* 忽略 */
-      }
+        var row = (await window.BlogData.likes('post', [slug]))[slug] || { count: 0, liked: false };
+        count.textContent = String(row.count);
+        btn.classList.toggle('liked', row.liked);
+        btn.setAttribute('aria-label', row.liked ? '取消点赞' : '点赞这篇文章');
+      } catch (error) { count.textContent = '—'; }
     }
-
-    function render(count) {
-      persistCount(count);
-      countEl.textContent = lastCount === null ? '—' : String(lastCount);
-      btn.classList.toggle('liked', liked);
-      btn.disabled = false;
-      btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
-    }
-
-    function fetchLikeCount() {
-      return fetchLikeDiff(slug);
-    }
-
-    render(lastCount);
-    fetchLikeCount().then(function (count) {
-      if (count !== null) render(count);
-    });
-
-    btn.dataset.likeSlug = slug;
-    if (!likeHandlerBound) {
-      likeHandlerBound = true;
-      document.addEventListener('click', function (event) {
-        var target = event.target.closest('#likeBtn');
-        if (!target) return;
-        handleLikeToggle(target, target.dataset.likeSlug);
-      });
-    }
-
-    try {
-      var queue = JSON.parse(localStorage.getItem('blog-like-queue') || '[]');
-      if (queue.length) {
-        localStorage.setItem('blog-like-queue', '[]');
-        queue.forEach(function (job) {
-          fetch('https://abacus.jasoncameron.dev/hit/' + job.ns + '/' + encodeURIComponent(job.slug + LIKE_KEY_SUFFIX)).catch(function () {
-            /* 补发失败则放弃 */
-          });
-        });
-      }
-    } catch (e6) {
-      /* 忽略 */
-    }
+    btn.onclick = async function () {
+      if (!loginForAction()) return;
+      btn.disabled = true;
+      try { await window.BlogData.toggleLike('post', slug); await refresh(); }
+      catch (error) { alert(error.message); }
+      finally { btn.disabled = false; }
+    };
+    refresh();
+    document.addEventListener('blog-auth-change', refresh);
   }
-
-  var likeHandlerBound = false;
-
-  // 计数键版本号:旧键上的历史计数无法清零,换版本即全部归零
-  var LIKE_KEY_SUFFIX = '-v2';
-
-  function fetchLikeDiff(slug) {
-    function getCounter(ns) {
-      return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug + LIKE_KEY_SUFFIX))
-        .then(function (res) {
-          // 计数器从未创建过时接口返回 404,按 0 处理
-          return res.ok ? res.json() : { value: 0 };
-        })
-        .then(function (data) {
-          return (data && (data.count || data.value)) || 0;
-        })
-        .catch(function () {
-          return null;
-        });
-    }
-    return Promise.all([getCounter('shiguang-likes'), getCounter('shiguang-unlikes')]).then(function (results) {
-      if (results[0] === null || results[1] === null) return null;
-      return Math.max(0, results[0] - results[1]);
-    });
-  }
-
-  function handleLikeToggle(btn, slug) {
-    var likeKey = 'blog-liked-' + slug;
-    var countKey = 'blog-like-count-' + slug;
-    var queueKey = 'blog-like-queue';
-    var liked = false;
-    var current = 0;
-    try {
-      liked = localStorage.getItem(likeKey) === '1';
-      current = Number(localStorage.getItem(countKey)) || 0;
-    } catch (e) {
-      liked = false;
-      current = 0;
-    }
-    liked = !liked;
-    try {
-      if (liked) localStorage.setItem(likeKey, '1');
-      else localStorage.removeItem(likeKey);
-    } catch (e2) {
-      /* 忽略 */
-    }
-    var optimistic = Math.max(0, current + (liked ? 1 : -1));
-    try {
-      localStorage.setItem(countKey, String(optimistic));
-    } catch (e3) {
-      /* 忽略 */
-    }
-    btn.classList.toggle('liked', liked);
-    btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这篇文章');
-    var countEl = document.getElementById('likeCount');
-    if (countEl) countEl.textContent = String(optimistic);
-    var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
-    fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(slug + LIKE_KEY_SUFFIX))
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        // 接口只返回单侧计数器的值,必须重新拉两侧求差,否则取消后再点赞会显示成 +2
-        fetchLikeDiff(slug).then(function (value) {
-          var finalValue = value === null ? optimistic : value;
-          if (countEl) countEl.textContent = String(finalValue);
-          try {
-            localStorage.setItem(countKey, String(finalValue));
-          } catch (e4) {
-            /* 忽略 */
-          }
-        });
-      })
-      .catch(function () {
-        try {
-          var queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
-          queue.push({ ns: ns, slug: slug });
-          localStorage.setItem(queueKey, JSON.stringify(queue));
-        } catch (e5) {
-          /* 忽略 */
-        }
-      });
-  }
-
-  // 评论点赞:每条评论用 comment-<id> 计数键,双计数器求差,每个设备只能点一次
   var CommentLikes = (function () {
-    function counterKey(id) {
-      return 'comment-' + id;
-    }
-    function likedKey(id) {
-      return 'blog-liked-comment-' + id;
-    }
-    function cacheKey(id) {
-      return 'blog-comment-like-count-' + id;
-    }
-    function isLiked(id) {
-      try {
-        return localStorage.getItem(likedKey(id)) === '1';
-      } catch (e) {
-        return false;
-      }
-    }
-    function cachedCount(id) {
-      try {
-        return Number(localStorage.getItem(cacheKey(id))) || 0;
-      } catch (e) {
-        return 0;
-      }
-    }
-    function setCached(id, value) {
-      try {
-        localStorage.setItem(cacheKey(id), String(value));
-      } catch (e) {
-        /* 忽略 */
-      }
-    }
-    function fetchDiff(id) {
-      function get(ns) {
-        return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(counterKey(id)))
-          .then(function (res) {
-            return res.ok ? res.json() : { value: 0 };
-          })
-          .then(function (data) {
-            return (data && (data.count || data.value)) || 0;
-          })
-          .catch(function () {
-            return null;
-          });
-      }
-      return Promise.all([get('shiguang-likes'), get('shiguang-unlikes')]).then(function (results) {
-        if (results[0] === null || results[1] === null) return null;
-        return Math.max(0, results[0] - results[1]);
-      });
-    }
-    function updateUI(id, liked, count) {
-      document.querySelectorAll('[data-clike="' + id + '"]').forEach(function (btn) {
-        btn.classList.toggle('liked', liked);
-        btn.setAttribute('aria-label', liked ? '取消点赞' : '点赞这条评论');
-        var num = btn.querySelector('.comment-like-count');
-        if (num) num.textContent = String(count);
-      });
-    }
-    function toggle(id) {
-      var liked = !isLiked(id);
-      try {
-        if (liked) localStorage.setItem(likedKey(id), '1');
-        else localStorage.removeItem(likedKey(id));
-      } catch (e) {
-        /* 忽略 */
-      }
-      var optimistic = Math.max(0, cachedCount(id) + (liked ? 1 : -1));
-      setCached(id, optimistic);
-      updateUI(id, liked, optimistic);
-      var ns = liked ? 'shiguang-likes' : 'shiguang-unlikes';
-      fetch('https://abacus.jasoncameron.dev/hit/' + ns + '/' + encodeURIComponent(counterKey(id)))
-        .then(function () {
-          return fetchDiff(id);
-        })
-        .then(function (value) {
-          if (value === null) return;
-          setCached(id, value);
-          updateUI(id, isLiked(id), value);
-        })
-        .catch(function () {
-          /* 离线时保留乐观值 */
-        });
-    }
     var bound = false;
-    function bind() {
-      if (bound) return;
-      bound = true;
-      document.addEventListener('click', function (event) {
-        var btn = event.target.closest('[data-clike]');
-        if (btn) toggle(btn.getAttribute('data-clike'));
-      });
-    }
-    function decorate(container) {
-      bind();
-      (container || document).querySelectorAll('[data-clike]').forEach(function (btn) {
-        var id = btn.getAttribute('data-clike');
-        updateUI(id, isLiked(id), cachedCount(id));
-        fetchDiff(id).then(function (value) {
-          if (value === null) return;
-          setCached(id, value);
-          updateUI(id, isLiked(id), value);
-        });
-      });
-    }
     function button(id) {
-      return '<button class="comment-like-btn" type="button" data-clike="' + id + '" aria-label="点赞这条评论">' +
+      return '<button class="comment-like-btn" type="button" data-clike="' + escapeHtml(id) + '" aria-label="点赞这条评论">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.6-4.9-10-9.4C.4 8.5 2.5 4.9 6 4.9c2 0 3.4 1.1 4.2 2.4h3.6c.8-1.3 2.2-2.4 4.2-2.4 3.5 0 5.6 3.6 4 6.7C19.6 16.1 12 21 12 21z"/></svg>' +
-        '<span class="comment-like-count">0</span>' +
-      '</button>';
+        '<span class="comment-like-count">0</span></button>';
     }
-    return { decorate: decorate, button: button };
+    async function decorate(container) {
+      if (!bound) {
+        bound = true;
+        document.addEventListener('click', async function (event) {
+          var btn = event.target.closest('[data-clike]');
+          if (!btn) return;
+          if (!loginForAction()) return;
+          btn.disabled = true;
+          try { await window.BlogData.toggleLike('comment', btn.dataset.clike); await decorate(document); }
+          catch (error) { alert(error.message); }
+          finally { btn.disabled = false; }
+        });
+      }
+      var buttons = Array.from((container || document).querySelectorAll('[data-clike]'));
+      var ids = buttons.map(function (btn) { return btn.dataset.clike; });
+      try {
+        var rows = await window.BlogData.likes('comment', ids);
+        buttons.forEach(function (btn) {
+          var row = rows[btn.dataset.clike] || { count: 0, liked: false };
+          btn.classList.toggle('liked', row.liked);
+          btn.querySelector('.comment-like-count').textContent = String(row.count);
+        });
+      } catch (error) { /* read-only fallback */ }
+    }
+    return { button: button, decorate: decorate };
   })();
   window.CommentLikes = CommentLikes;
 
@@ -1144,14 +831,13 @@
     return '' +
       '<div class="comment-item">' +
         '<div class="comment-head">' +
-          '<img class="comment-avatar" src="' + (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg') + '" alt="" onerror="this.style.display=\'none\'">' +
+          '<img class="comment-avatar" src="' + escapeHtml(item.avatar && /^https:\/\//.test(item.avatar) ? item.avatar : (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg')) + '" alt="">' +
           '<strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span>' +
+          (item.status === 'pending' ? '<span>待审核</span>' : '') +
         '</div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
-        (item.reply ? '<div class="comment-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
         '<div class="comment-foot">' +
-          (item.device ? '<span class="comment-device-left">发布自 ' + escapeHtml(item.device) + '</span>' : '') +
-          CommentLikes.button(String(item.id)) +
+          (item.status === 'approved' && !item.legacy ? CommentLikes.button(String(item.id)) : '') +
           '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button>' +
         '</div>' +
       '</div>';
@@ -1181,161 +867,54 @@
     var section = document.getElementById('commentsSection');
     if (!section) return;
     var slug = section.dataset.slug;
-    if (!slug) {
-      section.hidden = true;
-      return;
-    }
+    if (!slug) { section.hidden = true; return; }
     var listEl = document.getElementById('commentList');
-    var data = (window.SITE_COMMENTS || {})[slug] || [];
-    listEl.innerHTML = data.length
-      ? data.filter(function (item) { return !item.parentId; }).map(function (item) {
-          return renderCommentTree(item, data);
-        }).join('')
-      : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
-    CommentLikes.decorate(listEl);
-
     var form = document.getElementById('commentForm');
     var replyTarget = null;
     var replyBanner = document.createElement('div');
-    replyBanner.className = 'comment-reply-banner';
-    replyBanner.hidden = true;
+    replyBanner.className = 'comment-reply-banner'; replyBanner.hidden = true;
     form.insertBefore(replyBanner, form.firstChild);
-
-    function clearReplyTarget() {
-      replyTarget = null;
-      replyBanner.hidden = true;
-      replyBanner.textContent = '';
+    function clearReply() { replyTarget = null; replyBanner.hidden = true; replyBanner.textContent = ''; }
+    async function refresh() {
+      try {
+        var all = await window.BlogData.listComments(slug);
+        listEl.innerHTML = all.length ? all.filter(function (item) { return !item.parentId; }).map(function (item) {
+          return renderCommentTree(item, all);
+        }).join('') : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
+        CommentLikes.decorate(listEl);
+      } catch (error) { listEl.textContent = '评论加载失败：' + error.message; }
     }
-
     listEl.addEventListener('click', function (event) {
-      var toggleBtn = event.target.closest('.comment-collapse-toggle');
-      if (toggleBtn) {
-        var repliesDiv = toggleBtn.nextElementSibling;
-        if (repliesDiv && repliesDiv.classList.contains('comment-replies')) {
-          var collapsed = toggleBtn.getAttribute('data-collapsed') === 'true';
-          repliesDiv.hidden = !collapsed;
-          toggleBtn.setAttribute('data-collapsed', String(!collapsed));
-          var count = repliesDiv.querySelectorAll('.comment-item').length;
-          toggleBtn.textContent = collapsed ? '收起回复' : '展开 ' + count + ' 条回复';
-        }
+      var toggle = event.target.closest('.comment-collapse-toggle');
+      if (toggle) {
+        var replies = toggle.nextElementSibling;
+        replies.hidden = !replies.hidden;
+        toggle.textContent = replies.hidden ? '展开回复' : '收起回复';
         return;
       }
       var btn = event.target.closest('.comment-reply-btn');
       if (!btn) return;
       replyTarget = { id: btn.dataset.replyId, nick: btn.dataset.replyNick };
       replyBanner.innerHTML = '回复 @' + escapeHtml(replyTarget.nick) + ' <button type="button" class="comment-reply-cancel" aria-label="取消回复">×</button>';
-      replyBanner.hidden = false;
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      replyBanner.hidden = false; form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-
-    replyBanner.addEventListener('click', function (event) {
-      if (event.target.closest('.comment-reply-cancel')) clearReplyTarget();
-    });
-
-    form.addEventListener('submit', function (event) {
+    replyBanner.addEventListener('click', function (event) { if (event.target.closest('.comment-reply-cancel')) clearReply(); });
+    form.addEventListener('submit', async function (event) {
       event.preventDefault();
-      var nick = document.getElementById('commentNick').value.trim();
-      var mail = document.getElementById('commentEmail').value.trim();
-      var content = document.getElementById('commentContent').value.trim();
       var status = document.getElementById('commentStatus');
-      if (!nick) {
-        setStatus(status, '请填写称呼。', 'err');
-        return;
-      }
-      if (!content) {
-        setStatus(status, '请填写评论内容。', 'err');
-        return;
-      }
-      var now = new Date();
-      var item = {
-        id: 'c' + now.getTime(),
-        slug: slug,
-        nick: (localStorage.getItem('blog-auth') && localStorage.getItem('blog-auth') !== '0') ? 'HSH(站长)' : nick,
-        email: mail,
-        time: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'),
-        content: content,
-        device: getDeviceModel()
-      };
-      if (replyTarget) {
-        item.parentId = replyTarget.id;
-        item.parentNick = replyTarget.nick;
-      }
-      var ownerToken = '';
+      var content = document.getElementById('commentContent').value.trim();
+      if (!content) { setStatus(status, '请输入评论内容。', 'err'); return; }
+      if (!loginForAction()) return;
       try {
-        ownerToken = localStorage.getItem('blog-gh-token') || '';
-      } catch (e2) {
-        ownerToken = '';
-      }
-      if (isAuthed() && ownerToken) {
-        setStatus(status, '已登录：正在直接发布…', 'ok');
-        githubCommentPut(slug, item).then(function () {
-          var data = (window.SITE_COMMENTS || {})[slug] || [];
-          var listEl = document.getElementById('commentList');
-          if (listEl) listEl.innerHTML = data.filter(function (c) { return !c.parentId; }).map(function (c) {
-            return renderCommentTree(c, data);
-          }).join('');
-          if (listEl) CommentLikes.decorate(listEl);
-          setStatus(status, '已发布。', 'ok');
-          clearReplyTarget();
-        }).catch(function (e3) {
-          var msg = String(e3.message || '').indexOf('409') !== -1 ? '保存冲突，请再点一次提交。' : e3.message;
-          setStatus(status, '发布失败：' + msg, 'err');
-        });
-        return;
-      }
-      if (!window.PendingComments) {
-        setStatus(status, '提交通道暂不可用，请稍后再试。', 'err');
-        return;
-      }
-      setStatus(status, '正在提交…');
-      window.PendingComments.add(item).then(function () {
-        setStatus(status, '已提交，博主审核通过后就会显示。', 'ok');
-        clearReplyTarget();
-        document.getElementById('commentNick').value = '';
-        document.getElementById('commentEmail').value = '';
+        setStatus(status, '正在提交…');
+        await window.BlogData.addComment(slug, content, replyTarget && replyTarget.id);
         document.getElementById('commentContent').value = '';
-      }).catch(function () {
-        setStatus(status, '提交失败，请稍后再试。', 'err');
-      });
+        clearReply(); await refresh();
+        setStatus(status, '评论已提交，审核通过后公开可见。', 'ok');
+      } catch (error) { setStatus(status, '提交失败：' + error.message, 'err'); }
     });
-  }
-
-  async function githubCommentPut(slug, comment) {
-    var ownerToken = localStorage.getItem('blog-gh-token') || '';
-    var headers = {
-      Authorization: 'Bearer ' + ownerToken,
-      Accept: 'application/vnd.github+json'
-    };
-    var data = window.SITE_COMMENTS || {};
-    if (!data[slug]) data[slug] = [];
-    data[slug].push(comment);
-    var text = '/* 评论数据：在后台“消息”栏目中管理。 */\nwindow.SITE_COMMENTS = ' + JSON.stringify(data, null, 2) + ';\n';
-    var content = btoa(unescape(encodeURIComponent(text)));
-    var lastError = null;
-    for (var attempt = 0; attempt < 3; attempt++) {
-      try {
-        var metaRes = await fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js?ref=main', { headers: headers });
-        if (!metaRes.ok) throw new Error('GitHub ' + metaRes.status);
-        var meta = await metaRes.json();
-        var putRes = await fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/contents/js/comments.js', {
-          method: 'PUT',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-          body: JSON.stringify({
-            message: '新增评论：' + comment.nick,
-            content: content,
-            branch: 'main',
-            sha: meta.sha
-          })
-        });
-        if (!putRes.ok) throw new Error('GitHub ' + putRes.status);
-        window.SITE_COMMENTS = data;
-        return;
-      } catch (e) {
-        lastError = e;
-        if (String(e.message).indexOf('409') === -1 && String(e.message).indexOf('422') === -1) throw e;
-      }
-    }
-    throw lastError;
+    refresh();
+    document.addEventListener('blog-auth-change', refresh);
   }
 
   function updatePendingBadge(count) {
@@ -1350,12 +929,10 @@
   }
 
   function refreshPendingBadge() {
-    if (!isAuthed() || !window.PendingComments) return;
-    window.PendingComments.list().then(function (pending) {
-      updatePendingBadge(pending.length);
-    }).catch(function () {
-      /* 忽略 */
-    });
+    if (!isAuthed()) { updatePendingBadge(0); return; }
+    window.BlogData.listModeration().then(function (rows) {
+      updatePendingBadge(rows.filter(function (row) { return row.status === 'pending'; }).length);
+    }).catch(function () { updatePendingBadge(0); });
   }
 
   function setupRail() {
@@ -1378,60 +955,6 @@
       scrollRail(1);
     });
   }
-
-  // 识别设备型号用于评论显示
-  function getDeviceModel() {
-    // 优先使用 User-Agent Client Hints(更准确)
-    if (navigator.userAgentData) {
-      var brands = navigator.userAgentData.brands || [];
-      var brand = '';
-      for (var i = 0; i < brands.length; i++) {
-        if (brands[i].brand !== 'Not A(Brand' && brands[i].brand !== 'Not_A Brand') {
-          brand = brands[i].brand;
-          break;
-        }
-      }
-      var platform = navigator.userAgentData.platform || '';
-      var mobile = navigator.userAgentData.mobile;
-      if (/iPad/i.test(platform)) return 'iPad' + (brand ? ' · ' + brand : '');
-      if (/iPhone|iOS/.test(platform)) return 'iPhone' + (brand ? ' · ' + brand : '');
-      if (/Android/.test(platform)) return 'Android ' + (brand ? brand : '') + (mobile ? '' : ' 平板');
-      if (/macOS/.test(platform)) return 'Mac' + (brand ? ' · ' + brand : '');
-      if (/Windows/.test(platform)) return 'Windows' + (brand ? ' · ' + brand : '');
-      if (/Chrome OS/.test(platform)) return 'ChromeOS' + (brand ? ' · ' + brand : '');
-      if (/Linux/.test(platform)) return 'Linux' + (brand ? ' · ' + brand : '');
-    }
-    // Fallback: User-Agent
-    var ua = navigator.userAgent;
-    // iOS
-    if (/iPhone/.test(ua)) {
-      var match = ua.match(/iPhone OS (\d+)/);
-      return 'iPhone' + (match ? ' iOS ' + match[1] : '');
-    }
-    if (/iPad/i.test(ua) || (/Macintosh/i.test(ua) && /Mobile/i.test(ua))) {
-      var match = ua.match(/CPU OS (\d+)/);
-      return 'iPad' + (match ? ' iPadOS ' + match[1] : '');
-    }
-    if (/Macintosh/.test(ua)) {
-      var match = ua.match(/Mac OS X (\d+)[._](\d+)/);
-      return match ? 'macOS ' + match[1] + '.' + match[2] : 'Mac';
-    }
-    // Android
-    if (/Android/.test(ua)) {
-      var match = ua.match(/Android (\d+(\.\d+)?)/);
-      var isMobile = /Mobile/.test(ua);
-      return (isMobile ? 'Android ' : 'Android 平板 ') + (match ? match[1] : '');
-    }
-    // Windows
-    if (/Windows NT (\d+\.\d+)/.test(ua)) {
-      var v = { '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7' };
-      return 'Windows ' + (v[ua.match(/Windows NT (\d+\.\d+)/)[1]] || '10/11');
-    }
-    if (/Windows/.test(ua)) return 'Windows';
-    if (/Linux/.test(ua)) return 'Linux';
-    return '未知设备';
-  }
-  window.getDeviceModel = getDeviceModel;
 
   function init() {
     posts = window.BLOG_POSTS || [];

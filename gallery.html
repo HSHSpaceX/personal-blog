@@ -3,10 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- SEO_META_START -->
   <title>画廊 - 拾光手记</title>
   <meta name="description" content="拾光手记的图片画廊。">
+  <link rel="canonical" href="https://hsh-personal-blog.pages.dev/gallery">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="画廊 - 拾光手记">
+  <meta property="og:description" content="拾光手记的图片画廊。">
+  <meta property="og:url" content="https://hsh-personal-blog.pages.dev/gallery">
+  <meta property="og:image" content="https://hsh-personal-blog.pages.dev/assets/covers/cover-travel.jpg">
+  <!-- SEO_META_END -->
   <link rel="icon" href="assets/icon.jpg" type="image/jpeg">
-  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/style.css?v=3">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -43,8 +51,9 @@
             <span class="menu-badge" hidden></span>
           </button>
           <div class="user-menu" hidden>
-            <a class="user-menu-item" href="admin.html#messages">消息 <span class="menu-badge" hidden></span></a>
-            <a class="user-menu-item" href="admin.html">管理后台</a>
+            <a class="user-menu-item" data-admin href="admin.html#messages">评论审核 <span class="menu-badge" hidden></span></a>
+            <a class="user-menu-item" data-admin href="admin.html">管理后台</a>
+            <a class="user-menu-item" href="profile.html">我的资料</a>
             <button class="user-menu-item" type="button" data-logout>退出登录</button>
           </div>
         </span>
@@ -69,6 +78,13 @@
 
     <section class="band gallery-band">
       <div class="container">
+        <div id="galleryConnect" class="admin-card" hidden>
+          <h2>连接 GitHub</h2>
+          <p class="hint">管理图册需输入 Fine-grained PAT；只在当前页面内存中保留。</p>
+          <div class="field"><label for="galleryTokenInput">GitHub PAT</label><input id="galleryTokenInput" data-github-pat type="password" placeholder="github_pat_…" autocomplete="off"></div>
+          <div class="admin-row"><button class="btn primary" id="galleryConnectBtn" type="button">连接</button></div>
+          <p id="galleryConnectStatus" class="status-line"></p>
+        </div>
         <div id="galleryGrid" class="album-grid"></div>
         <div id="albumView" class="album-view" hidden>
           <div class="album-view-head">
@@ -149,9 +165,14 @@
     </div>
   </footer>
 
-  <script src="js/account.js?v=2"></script>
+  <script src="js/theme.js?v=1"></script>
+  <script src="js/config.js?v=3"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/blog-data.js?v=3"></script>
+  <script src="js/github-credentials.js?v=4"></script>
+  <script src="js/urls.js?v=2"></script>
   <script src="js/boot.js?v=2"></script>
-  <script src="js/site.js?v=2"></script>
-  <script src="js/gallery.js?v=2"></script>
+  <script src="js/site.js?v=3"></script>
+  <script src="js/gallery.js?v=3"></script>
 </body>
 </html>

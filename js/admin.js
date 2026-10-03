@@ -1,14 +1,12 @@
 (function () {
   'use strict';
 
-  var OWNER = 'HSHSpaceX';
-  var REPO = 'personal-blog';
+  var OWNER = window.BlogConfig.GITHUB_OWNER;
+  var REPO = window.BlogConfig.GITHUB_REPO;
   var BRANCH = 'main';
   var POSTS_PATH = 'js/posts.js';
   var CONTENT_PATH = 'js/content.js';
   var API_ROOT = 'https://api.github.com';
-  var TOKEN_KEY = 'blog-gh-token';
-  var AUTH_KEY = 'blog-auth';
   var DEFAULT_CONTENT = {
     siteName: '拾光手记',
     introTitle: '记录思考，也记录生活。',
@@ -22,7 +20,6 @@
   var posts = [];
   var deletedSlugs = [];
   var postsSha = null;
-  var token = '';
   var editingIndex = -1;
   var isNewPost = false;
   var dirty = false;
@@ -42,7 +39,7 @@
     { label: '公式', cmd: 'insertFormula', snippet: '$$公式$$' }
   ];
 
-  var messageComments = null;
+  var moderationRows = [];
 
   function $(id) {
     return document.getElementById(id);
@@ -60,38 +57,9 @@
     });
   }
 
-  function readToken() {
-    try {
-      return localStorage.getItem(TOKEN_KEY) || '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function saveToken(value) {
-    try {
-      localStorage.setItem(TOKEN_KEY, value);
-    } catch (e) {
-      /* 本地存储不可用时仅在本次会话生效 */
-    }
-  }
-
-  function clearToken() {
-    try {
-      localStorage.removeItem(TOKEN_KEY);
-    } catch (e) {
-      /* 忽略 */
-    }
-  }
-
-  function isAuthed() {
-    try {
-      var until = Number(localStorage.getItem(AUTH_KEY) || 0);
-      return until > Date.now();
-    } catch (e) {
-      return false;
-    }
-  }
+  function readToken() { return window.GitHubCredentials.get(); }
+  function clearToken() { window.GitHubCredentials.clear(); }
+  function isAuthed() { return window.BlogAuth.isAdmin(); }
 
   function setStatus(el, message, kind) {
     el.textContent = message;
@@ -122,13 +90,15 @@
 
   function apiHeaders() {
     return {
-      Authorization: 'Bearer ' + token,
+      Authorization: 'Bearer ' + readToken(),
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28'
     };
   }
 
   async function api(path, options) {
+    window.BlogAuth.requireAdmin();
+    if (!readToken()) throw new Error('请在当前页面重新连接 GitHub PAT。');
     options = options || {};
     var headers = Object.assign(apiHeaders(), options.headers || {});
     var init = { method: options.method || 'GET', headers: headers };
@@ -328,7 +298,7 @@
   }
 
   async function savePageContent() {
-    if (!token) {
+    if (!readToken()) {
       setStatus($('pageStatus'), '尚未连接 GitHub，无法保存。', 'err');
       return;
     }
@@ -370,180 +340,58 @@
   }
 
   function openMessageBox() {
-    messageComments = JSON.parse(JSON.stringify(window.SITE_COMMENTS || {}));
-    renderMessageBox();
     showMessage();
+    refreshModeration();
+    refreshLikeStats();
     window.scrollTo({ top: 0 });
   }
-
-  function renderMessageBox() {
-    var flat = [];
-    Object.keys(messageComments).forEach(function (slug) {
-      (messageComments[slug] || []).forEach(function (item) {
-        flat.push(Object.assign({ slug: slug }, item));
-      });
-    });
-    var listEl = $('msgCommentList');
-    listEl.innerHTML = flat.length
-      ? flat.map(renderMsgItem).join('')
-      : '<p class="empty-state">暂无评论，收到读者评论后在这里添加并发布。</p>';
-
-   refreshPendingList();
-  }
-
-  function renderMsgItem(item) {
-    var ownerName = (window.SITE_CONTENT && window.SITE_CONTENT.siteName) || '拾光手记';
-    var actions = '';
-    if (item.email) {
-      var body = (item.reply || '') + '\n\n—— ' + ownerName;
-      actions += '<a class="btn" href="mailto:' + escapeHtml(item.email) + '?subject=' + encodeURIComponent('回复你的评论 - ' + ownerName) + '&body=' + encodeURIComponent(body) + '">邮件回复</a>';
-    }
-    actions += '<button type="button" class="btn danger" data-del-comment="' + escapeHtml(item.id) + '" data-del-slug="' + escapeHtml(item.slug) + '">删除</button>';
-    return '' +
-      '<div class="msg-item">' +
-        '<div class="msg-item-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.slug) + ' · ' + escapeHtml(item.time || '') + '</span></div>' +
-        '<p class="msg-item-content">' + escapeHtml(item.content) + '</p>' +
-        (item.reply ? '<div class="msg-item-reply"><strong>博主回复：</strong>' + escapeHtml(item.reply) + '</div>' : '') +
-        '<div class="msg-item-actions">' + actions + '</div>' +
-      '</div>';
-  }
-
-  function refreshPendingList() {
-    var listEl = $('msgPendingList');
-    var countEl = $('pendingCount');
-    if (!listEl) return;
-    if (!window.PendingComments) {
-      listEl.innerHTML = '<p class="empty-state">评论通道加载中，请刷新页面重试。</p>';
-      return;
-    }
-    window.PendingComments.list().then(function (pending) {
-      if (countEl) {
-        countEl.textContent = pending.length > 99 ? '99+' : String(pending.length);
-        countEl.hidden = pending.length === 0;
-      }
-      listEl.innerHTML = pending.length
-        ? pending.map(renderPendingItem).join('')
-        : '<p class="empty-state">没有待审核的评论。</p>';
-    }).catch(function () {
-      listEl.innerHTML = '<p class="empty-state">待审核列表加载失败，请稍后重试。</p>';
-    });
-  }
-
-  function renderPendingItem(item) {
-    var actions = '';
-    if (item.email) {
-      actions += '<a class="btn" href="mailto:' + escapeHtml(item.email) + '?subject=' + encodeURIComponent('你的评论已通过审核') + '">邮件回复</a>';
-    }
-    actions += '<button type="button" class="btn primary" data-approve-comment="' + escapeHtml(item.id) + '">通过</button>';
-    actions += '<button type="button" class="btn danger" data-delete-pending="' + escapeHtml(item.id) + '">删除</button>';
-    return '' +
-      '<div class="msg-item">' +
-        '<div class="msg-item-head"><strong>' + escapeHtml(item.nick) + '</strong><span>' + (item.parentId ? '↩ 回复 @' + escapeHtml(item.parentNick || '') + ' · ' : '') + escapeHtml(item.slug) + ' · ' + escapeHtml(item.time || '') + '</span></div>' +
-        '<p class="msg-item-content">' + escapeHtml(item.content) + '</p>' +
-        '<div class="msg-item-actions">' + actions + '</div>' +
-      '</div>';
-  }
-
-  function approvePendingItem(id) {
-    setStatus($('msgStatus'), '正在通过并发布…');
-    window.PendingComments.list().then(function (pending) {
-      var item = pending.filter(function (entry) { return entry.id === id; })[0];
-      if (!item) return;
-      if (!messageComments[item.slug]) messageComments[item.slug] = [];
-      messageComments[item.slug].push({
-        id: item.id,
-        nick: item.nick,
-        email: item.email,
-        time: item.time,
-        content: item.content,
-        reply: '',
-        parentId: item.parentId,
-        parentNick: item.parentNick
-      });
-      return saveComments().then(function () {
-        return window.PendingComments.remove(id);
-      }).then(function () {
-        refreshPendingList();
-        setStatus($('msgStatus'), '评论已通过并发布，读者刷新页面即可看到。', 'ok');
-      });
-    }).catch(function (e) {
-      setStatus($('msgStatus'), '发布失败：' + friendlyApiError(e), 'err');
-    });
-  }
-
-  function deletePendingItem(id) {
-    window.PendingComments.remove(id).then(function () {
-      refreshPendingList();
-      setStatus($('msgStatus'), '已删除该待审核评论。');
-    });
-  }
-
-  async function refreshLikeStats() {
-    var likesEl = $('msgLikes');
-    var slugs = posts.map(function (post) { return post.slug; });
-    likesEl.innerHTML = '<span class="hint">加载中…</span>';
-    var rows = await Promise.all(slugs.map(function (slug) {
-      var getCount = function (ns) {
-        return fetch('https://abacus.jasoncameron.dev/get/' + ns + '/' + encodeURIComponent(slug + '-v2'))
-          .then(function (res) { return res.json(); })
-          .then(function (data) {
-            return (data && (data.count || data.value)) || 0;
-          })
-          .catch(function () {
-            return null;
-          });
-      };
-      return Promise.all([getCount('shiguang-likes'), getCount('shiguang-unlikes')]).then(function (results) {
-        var count = (results[0] === null || results[1] === null) ? null : Math.max(0, results[0] - results[1]);
-        return { slug: slug, count: count };
-      });
-    }));
-    likesEl.innerHTML = rows.map(function (row) {
-      return '<div class="msg-like-row"><span>' + escapeHtml(row.slug) + '</span><strong>' + (row.count === null ? '暂时无法获取' : row.count + ' 个赞') + '</strong></div>';
-    }).join('');
-  }
-
-  async function saveComments() {
-    if (!token) {
-      setStatus($('msgStatus'), '尚未连接 GitHub，无法保存。', 'err');
-      return;
-    }
-    var saveBtn = $('msgSaveBtn');
-    if (saveBtn) saveBtn.disabled = true;
-    setStatus($('msgStatus'), '正在提交到 GitHub…');
-    var lastError = null;
+  async function refreshModeration() {
     try {
-      var text = '/* 评论数据：在后台“消息”栏目中管理。 */\nwindow.SITE_COMMENTS = ' + JSON.stringify(messageComments, null, 2) + ';\n';
-      var content = toBase64(text);
-      for (var attempt = 0; attempt < 3; attempt++) {
-        try {
-          var remote = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js') + '?ref=' + BRANCH);
-          await api('/repos/' + OWNER + '/' + REPO + '/contents/' + CONTENT_PATH.replace('content.js', 'comments.js'), {
-            method: 'PUT',
-            body: {
-              message: '更新评论',
-              content: content,
-              branch: BRANCH,
-              sha: remote.sha
-            }
-          });
-          window.SITE_COMMENTS = JSON.parse(JSON.stringify(messageComments));
-          setStatus($('msgStatus'), '已保存并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
-          lastError = null;
-          break;
-        } catch (retryError) {
-          lastError = retryError;
-          if (retryError.status !== 409 && retryError.status !== 422) break;
-        }
-      }
-      if (lastError) {
-        setStatus($('msgStatus'), '保存失败：' + friendlyApiError(lastError), 'err');
-      }
-    } catch (e) {
-      setStatus($('msgStatus'), '保存失败：' + friendlyApiError(lastError || e), 'err');
-    } finally {
-      if (saveBtn) saveBtn.disabled = false;
-    }
+      moderationRows = await window.BlogData.listModeration();
+      var pending = moderationRows.filter(function (r) { return r.status === 'pending'; });
+      var reviewed = moderationRows.filter(function (r) { return r.status !== 'pending'; });
+      $('msgPendingList').innerHTML = pending.length ? pending.map(renderPendingItem).join('') : '<p class="empty-state">没有待审核的评论。</p>';
+      $('msgCommentList').innerHTML = reviewed.length ? reviewed.map(renderMsgItem).join('') : '<p class="empty-state">暂无已审核评论。</p>';
+      $('pendingCount').hidden = !pending.length;
+      $('pendingCount').textContent = String(pending.length);
+    } catch (error) { setStatus($('msgStatus'), '读取评论失败：' + error.message, 'err'); }
+  }
+  function renderMsgItem(item) {
+    return '<div class="msg-item"><div class="msg-item-head"><strong>' + escapeHtml(item.legacy_author_name || item.user_id || '用户') +
+      '</strong><span>' + escapeHtml(item.post_slug) + ' · ' + escapeHtml(item.created_at.slice(0, 10)) + ' · ' + escapeHtml(item.status) +
+      '</span></div><p class="msg-item-content">' + escapeHtml(item.content) + '</p><div class="msg-item-actions">' +
+      '<button type="button" class="btn danger" data-del-comment="' + escapeHtml(item.id) + '">删除</button></div></div>';
+  }
+  function renderPendingItem(item) {
+    return '<div class="msg-item"><div class="msg-item-head"><strong>' + escapeHtml(item.legacy_author_name || item.user_id || '用户') +
+      '</strong><span>' + escapeHtml(item.post_slug) + ' · ' + escapeHtml(item.created_at.slice(0, 10)) +
+      '</span></div><p class="msg-item-content">' + escapeHtml(item.content) + '</p><div class="msg-item-actions">' +
+      '<button type="button" class="btn primary" data-approve-comment="' + escapeHtml(item.id) + '">通过</button>' +
+      '<button type="button" class="btn" data-reject-comment="' + escapeHtml(item.id) + '">拒绝</button>' +
+      '<button type="button" class="btn danger" data-delete-pending="' + escapeHtml(item.id) + '">删除</button></div></div>';
+  }
+  function refreshPendingList() { return refreshModeration(); }
+  async function approvePendingItem(id) {
+    try { await window.BlogData.moderateComment(id, 'approved'); await refreshModeration(); setStatus($('msgStatus'), '评论已通过。', 'ok'); }
+    catch (error) { setStatus($('msgStatus'), error.message, 'err'); }
+  }
+  async function rejectPendingItem(id) {
+    try { await window.BlogData.moderateComment(id, 'rejected'); await refreshModeration(); setStatus($('msgStatus'), '评论已拒绝。', 'ok'); }
+    catch (error) { setStatus($('msgStatus'), error.message, 'err'); }
+  }
+  async function deletePendingItem(id) {
+    try { await window.BlogData.deleteComment(id); await refreshModeration(); setStatus($('msgStatus'), '评论已删除。', 'ok'); }
+    catch (error) { setStatus($('msgStatus'), error.message, 'err'); }
+  }
+  async function refreshLikeStats() {
+    var el = $('msgLikes');
+    try {
+      var slugs = posts.map(function (post) { return post.slug; });
+      var rows = await window.BlogData.likes('post', slugs);
+      el.innerHTML = slugs.map(function (slug) {
+        return '<div class="msg-like-row"><span>' + escapeHtml(slug) + '</span><strong>' + ((rows[slug] && rows[slug].count) || 0) + ' 个赞</strong></div>';
+      }).join('');
+    } catch (error) { el.textContent = '点赞读取失败：' + error.message; }
   }
 
   function updateCoverPreview() {
@@ -652,7 +500,7 @@
   }
 
   async function savePost() {
-    if (!token) {
+    if (!readToken()) {
       setStatus($('editorStatus'), '尚未连接 GitHub，无法保存。', 'err');
       return;
     }
@@ -903,19 +751,6 @@
     }
   }
 
-  function setupTheme() {
-    var toggle = $('themeToggle');
-    toggle.addEventListener('click', function () {
-      var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      try {
-        localStorage.setItem('blog-theme', next);
-      } catch (e) {
-        /* 忽略 */
-      }
-    });
-  }
-
   function setupEvents() {
     $('connectBtn').addEventListener('click', async function () {
       var input = $('tokenInput').value.trim();
@@ -923,35 +758,29 @@
         setStatus($('authStatus'), '请先粘贴 Token。', 'err');
         return;
       }
-      token = input;
       setStatus($('authStatus'), '正在连接…');
       try {
-        await api('/user');
+        await window.GitHubCredentials.connect(input);
         await fetchPostsMeta();
-        saveToken(token);
+        $('tokenInput').value = '';
         showList();
       } catch (e) {
-        token = '';
+        clearToken();
         setStatus($('authStatus'), '连接失败：' + friendlyApiError(e), 'err');
-      }
+      } finally { $('tokenInput').value = ''; }
     });
 
     $('tokenInput').addEventListener('keydown', function (event) {
       if (event.key === 'Enter') $('connectBtn').click();
     });
 
-    $('logoutBtn').addEventListener('click', function () {
+    $('logoutBtn').addEventListener('click', async function () {
       clearToken();
-      token = '';
       postsSha = null;
-      try {
-        localStorage.removeItem(AUTH_KEY);
-        sessionStorage.removeItem(AUTH_KEY);
-      } catch (e) {
-        /* 忽略 */
-      }
-      window.location.href = 'login.html';
+      try { await window.BlogAuth.signOut(); window.location.href = 'login.html'; }
+      catch (error) { setStatus($('listStatus'), '退出失败：' + error.message, 'err'); }
     });
+    $('reviewWithoutPat').addEventListener('click', openMessageBox);
 
     $('newPostBtn').addEventListener('click', function () {
       openEditor(-1);
@@ -1006,7 +835,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能上传封面。', 'err');
         return;
       }
@@ -1017,7 +846,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能插入图片。', 'err');
         return;
       }
@@ -1028,7 +857,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能上传视频。', 'err');
         return;
       }
@@ -1039,7 +868,7 @@
       var file = this.files[0];
       this.value = '';
       if (!file) return;
-      if (!token) {
+      if (!readToken()) {
         setStatus($('editorStatus'), '连接 GitHub 后才能上传资源。', 'err');
         return;
       }
@@ -1063,31 +892,17 @@
     });
     $('msgRefreshLikes').addEventListener('click', refreshLikeStats);
     $('msgRefreshPending').addEventListener('click', refreshPendingList);
-   $('msgCommentList').addEventListener('click', function (event) {
-     var btn = event.target.closest('button[data-del-comment]');
-     if (!btn) return;
-     var slug = btn.dataset.delSlug;
-     var id = btn.dataset.delComment;
-     messageComments[slug] = (messageComments[slug] || []).filter(function (item) {
-       return item.id !== id;
-     });
-     renderMessageBox();
-      saveComments().then(function () {
-        setStatus($('msgStatus'), '已删除并保存。', 'ok');
-      }).catch(function (e) {
-        setStatus($('msgStatus'), '删除失败：' + friendlyApiError(e), 'err');
-      });
-   });
-
+    $('msgCommentList').addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-del-comment]');
+      if (btn) deletePendingItem(btn.dataset.delComment);
+    });
     $('msgPendingList').addEventListener('click', function (event) {
-      var approveBtn = event.target.closest('button[data-approve-comment]');
-      if (approveBtn) {
-        approveBtn.disabled = true;
-        approvePendingItem(approveBtn.dataset.approveComment);
-        return;
-      }
-      var delBtn = event.target.closest('button[data-delete-pending]');
-      if (delBtn) deletePendingItem(delBtn.dataset.deletePending);
+      var approve = event.target.closest('[data-approve-comment]');
+      var reject = event.target.closest('[data-reject-comment]');
+      var remove = event.target.closest('[data-delete-pending]');
+      if (approve) approvePendingItem(approve.dataset.approveComment);
+      else if (reject) rejectPendingItem(reject.dataset.rejectComment);
+      else if (remove) deletePendingItem(remove.dataset.deletePending);
     });
 
     $('postCover').addEventListener('input', updateCoverPreview);
@@ -1117,35 +932,22 @@
   }
 
   async function start() {
-    if (!previewMode && !isAuthed()) {
-      window.location.replace('login.html');
-      return;
-    }
-
-    setupTheme();
-    setupToolbar();
-    setupEvents();
-
-    if (previewMode) {
-      enterApp();
-      return;
-    }
-
-    var stored = readToken();
-    if (!stored) {
-      showAuth();
-      return;
-    }
-
-    token = stored;
     try {
-      await api('/user');
+      await window.BlogAuth.ready();
+      if (!isAuthed()) { window.location.replace(window.BlogAuth.user() ? 'profile.html' : 'login.html?next=admin.html'); return; }
+      window.BlogTheme.setup(); setupToolbar(); setupEvents();
+      if (previewMode) { enterApp(); return; }
+      if (!readToken()) {
+        if (location.hash === '#messages') openMessageBox();
+        else showAuth();
+        return;
+      }
+      await window.GitHubCredentials.validate(readToken());
       await fetchPostsMeta();
       enterApp();
-    } catch (e) {
-      token = '';
+    } catch (error) {
       clearToken();
-      showAuth('上次连接已失效，请重新输入 Token。');
+      showAuth('连接已失效：' + error.message, 'err');
     }
   }
 
@@ -1153,6 +955,10 @@
     posts = window.BLOG_POSTS || [];
     start();
   }
+
+  window.addEventListener('pageshow', function (event) {
+    if (event.persisted && isAuthed() && !readToken()) showAuth('页面已恢复，请重新连接 GitHub PAT。');
+  });
 
   if (window.BLOG_POSTS) {
     init();
