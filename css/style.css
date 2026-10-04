@@ -154,9 +154,9 @@ h1, h2, h3 {
 
 .brand-mark {
   display: block;
-  width: 64px;
-  height: 64px;
-  border-radius: 13px;
+  width: 58px;
+  height: 58px;
+  border-radius: 11px;
   overflow: hidden;
 }
 
