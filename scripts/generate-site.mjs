@@ -73,12 +73,12 @@ function staticLinks(source, id, markup) {
 }
 
 const publicPages = [
-  ['index.html', '', '拾光手记 - 记录思考，也记录生活', '一个个人博客，记录技术笔记、读书感想和日常观察。'],
-  ['about.html', 'about', '关于 - 拾光手记', '关于拾光手记和它的作者。'],
-  ['archive.html', 'archive', '归档 - 拾光手记', '按分类和标签浏览拾光手记的文章。'],
-  ['timeline.html', 'timeline', '时间线 - 拾光手记', '按时间浏览拾光手记的全部文章。'],
-  ['gallery.html', 'gallery', '画廊 - 拾光手记', '拾光手记的图片画廊。'],
-  ['moments.html', 'moments', '动态 - 拾光手记', '拾光手记的短动态与即时想法。']
+  ['index.html', '', '拾光手记 - 记录思考，也记录生活', '拾光手记是一个记录技术笔记、读书感想、旅行见闻与日常观察的个人博客，分享值得长期保留的思考与生活记录。'],
+  ['about.html', 'about', '关于 - 拾光手记', '了解拾光手记的作者与写作初衷，看看这个个人博客如何记录技术探索、阅读感悟和生活中值得珍藏的片段。'],
+  ['archive.html', 'archive', '归档 - 拾光手记', '按分类和标签浏览拾光手记的文章归档，从技术笔记、阅读记录到旅行见闻，寻找感兴趣的话题与值得重读的内容。'],
+  ['timeline.html', 'timeline', '时间线 - 拾光手记', '沿着时间线浏览拾光手记的全部文章，回看不同阶段的技术探索、阅读思考与生活记录，感受日常积累的变化。'],
+  ['gallery.html', 'gallery', '画廊 - 拾光手记', '浏览拾光手记的图片画廊，在照片中回看旅行途中的风景与日常生活的细节，留住那些值得慢慢欣赏的瞬间。'],
+  ['moments.html', 'moments', '动态 - 拾光手记', '阅读拾光手记的最新动态，看看长文之外的随手记录、即时想法与生活片段，分享日常遇见的小事和新发现。']
 ];
 const fallback = posts.map((post) => `          <a href="${html(postPath(post))}">${html(post.title)}</a>`).join('\n');
 for (const [file, route, title, description] of publicPages) {
@@ -94,7 +94,8 @@ for (const [file, route, title, description] of publicPages) {
 const template = await read('post.html');
 await mkdir(path.join(root, 'posts'), { recursive: true });
 for (const post of posts) {
-  const description = plain(post.excerpt || post.content).slice(0, 180);
+  const excerpt = plain(post.excerpt);
+  const description = Array.from(Array.from(excerpt).length >= 25 ? excerpt : plain(post.content)).slice(0, 155).join('');
   let output = pageMeta(template, {
     title: `${post.title} - 拾光手记`, description,
     address: postUrl(post), image: url(post.cover || 'assets/icon.jpg'), type: 'article'

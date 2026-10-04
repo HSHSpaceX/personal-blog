@@ -117,7 +117,7 @@
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="post-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="post-card-meta">' +
-            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt=""><span>HSH(站长)</span></a>' +
+            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt="HSH站长头像"><span>HSH(站长)</span></a>' +
             '<span class="post-date">' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -129,14 +129,14 @@
     return '' +
       '<article class="rail-card reveal glass-card" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
         '<a class="rail-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
-          '<img src="' + escapeHtml(post.cover) + '" alt="" loading="eager" decoding="async" fetchpriority="high">' +
+          '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="eager" decoding="async" fetchpriority="high">' +
         '</a>' +
         '<div class="rail-card-body">' +
           categoryChip(post) +
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="rail-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="rail-card-meta">' +
-            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt=""><span>HSH(站长)</span></a>' +
+            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt="HSH站长头像"><span>HSH(站长)</span></a>' +
             '<span>' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -147,7 +147,7 @@
   function renderArchiveRow(post) {
     return '<article class="archive-row glass-card">' +
       '<a class="archive-thumb" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
-        '<img src="' + escapeHtml(post.cover) + '" alt="" loading="lazy" decoding="async"></a>' +
+        '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="lazy" decoding="async"></a>' +
       '<div class="archive-row-main">' + categoryChip(post) +
         '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
         (post.excerpt ? '<p>' + escapeHtml(post.excerpt) + '</p>' : '') + '</div>' +
