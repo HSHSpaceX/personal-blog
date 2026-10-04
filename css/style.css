@@ -136,7 +136,7 @@ h1, h2, h3 {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  min-height: 72px;
+  min-height: 58px;
   padding: 0 18px;
   border: 1px solid var(--glass-border);
   border-radius: 980px;
@@ -154,9 +154,9 @@ h1, h2, h3 {
 
 .brand-mark {
   display: block;
-  width: 56px;
-  height: 56px;
-  border-radius: 11px;
+  width: 64px;
+  height: 64px;
+  border-radius: 13px;
   overflow: hidden;
 }
 
