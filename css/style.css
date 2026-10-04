@@ -136,7 +136,7 @@ h1, h2, h3 {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  min-height: 58px;
+  min-height: 72px;
   padding: 0 18px;
   border: 1px solid var(--glass-border);
   border-radius: 980px;
