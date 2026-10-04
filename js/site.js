@@ -317,7 +317,12 @@
     var groupCats = group ? group.cats.map(function (cat) { return cat.name; }) : [activeCategory];
     var categoryPosts = activeCategory ? posts.filter(function (post) { return groupCats.includes(post.category); }) : posts;
     var availableTags = Array.from(new Set(categoryPosts.flatMap(function (post) { return post.tags || []; }))).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
-    var filtered = categoryPosts.filter(function (post) { return !activeTag || (post.tags || []).includes(activeTag); });
+    var showFeatured = params.get('featured') === '1';
+    var filtered = categoryPosts.filter(function (post) {
+      if (activeTag && !(post.tags || []).includes(activeTag)) return false;
+      if (showFeatured && !post.featured) return false;
+      return true;
+    });
     var icon = group && group.cats[0] ? group.cats[0].icon : '';
     if (!group && activeCategory) {
       groups.forEach(function (item) { item.cats.forEach(function (cat) { if (cat.name === activeCategory) icon = cat.icon; }); });
@@ -329,14 +334,23 @@
       if (tag) query.set('tag', tag);
       return 'archive.html' + (query.toString() ? '?' + query.toString() : '');
     }
+    function featuredUrl() {
+      var query = new URLSearchParams();
+      if (activeCategory) query.set('category', activeCategory);
+      if (!showFeatured) query.set('featured', '1');
+      return 'archive.html' + (query.toString() ? '?' + query.toString() : '');
+    }
     listEl.innerHTML = '<div class="cat-page-header"><div class="cat-page-title-row">' +
       (icon ? '<div class="cat-page-icon"><img src="' + escapeHtml(icon) + '" alt=""></div>' : '') +
       '<div><h2 class="cat-page-title">' + escapeHtml(title) + '</h2><p class="archive-result-count">' + filtered.length + ' 篇文章</p></div></div>' +
       '<a class="btn cat-page-back" href="archive.html">← 返回归档</a></div>' +
-      (availableTags.length ? '<div class="archive-tag-filter" aria-label="标签筛选">' +
+      '<div class="archive-tag-filter" aria-label="筛选">' +
+        '<a class="filter-chip' + (showFeatured ? ' active' : '') + '" href="' + featuredUrl() + '">精选文章</a>' +
+        (availableTags.length ?
         [''].concat(availableTags).map(function (tag) {
           return '<a class="filter-chip' + (activeTag === tag ? ' active' : '') + '" href="' + filterUrl(tag) + '">' + escapeHtml(tag || '全部') + '</a>';
-        }).join('') + '</div>' : '') +
+        }).join('') : '') +
+      '</div>' +
       '<div class="archive-list-inner">' +
       (filtered.length ? filtered.map(renderArchiveRow).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') + '</div>';
   }

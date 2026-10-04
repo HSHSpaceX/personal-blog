@@ -166,12 +166,13 @@ h1, h2, h3 {
   object-fit: cover;
 }
 
-/* 黑色 X 图标在浅色模式下用 mix-blend-mode: darken 变白,深色模式保持原样 */
-[data-theme="light"] .brand-mark img,
-[data-theme="light"] .user-avatar img,
-[data-theme="light"] .about-band .avatar img,
-[data-theme="light"] .about-page-inner .avatar img {
-  filter: invert(1);
+/* 浅色模式用深灰X图标,深色模式用浅灰X图标 */
+img[src$="icon.jpg"] {
+  content: url("../assets/icon-light.png");
+}
+
+[data-theme="dark"] img[src$="icon.jpg"] {
+  content: url("../assets/icon-dark.png");
 }
 
 .brand-name {
@@ -1887,6 +1888,14 @@ a.tag-chip:hover {
   -webkit-backdrop-filter: var(--blur);
 }
 
+.profile-edit .field {
+  margin-bottom: 18px;
+}
+
+.profile-edit .field:last-of-type {
+  margin-bottom: 14px;
+}
+
 .avatar-upload-row {
   display: flex;
   align-items: center;
@@ -3102,6 +3111,13 @@ a.tag-chip:hover {
   height: 18px;
 }
 
+.about-follow-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 28px;
+  font-size: 15px;
+}
+
 .contrib-link {
   display: block;
   padding: 16px;
@@ -3783,10 +3799,6 @@ a.tag-chip:hover {
   height: 22px;
   border-radius: 50%;
   object-fit: cover;
-}
-
-[data-theme="light"] .post-card-author-img {
-  filter: invert(1);
 }
 
 .archive-cat-icon {
