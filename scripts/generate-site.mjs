@@ -11,7 +11,7 @@ if (base.protocol !== 'https:' || base.search || base.hash || !SITE_BASE_URL.end
   throw new Error('SITE_BASE_URL must be an HTTPS directory URL ending in /');
 }
 const read = (name) => readFile(path.join(root, name), 'utf8');
-const write = (name, value) => writeFile(path.join(root, name), value, 'utf8');
+const write = (name, value) => writeFile(path.join(root, name), value.replace(/\r\n/g, '\n'), 'utf8');
 await write('js/config.js', `// Generated from site.config.mjs. Public values only.\nwindow.BlogConfig = Object.freeze(${JSON.stringify({ SITE_BASE_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, JOIN_REQUEST_URL, GITHUB_OWNER, GITHUB_REPO }, null, 2)});\n`);
 const url = (name = '') => new URL(name, base).href;
 const html = (value) => String(value).replace(/[&<>"']/g, (char) => ({
