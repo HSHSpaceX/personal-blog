@@ -167,10 +167,12 @@ h1, h2, h3 {
 }
 
 /* 浅色模式用深灰X图标,深色模式用浅灰X图标 */
+img[src$="icon-big.jpg"],
 img[src$="icon.jpg"] {
   content: url("../assets/icon-light.png");
 }
 
+[data-theme="dark"] img[src$="icon-big.jpg"],
 [data-theme="dark"] img[src$="icon.jpg"] {
   content: url("../assets/icon-dark.png");
 }
