@@ -217,6 +217,19 @@
     return data;
   }
 
+  async function removePostContent(slug) {
+    var path = 'posts/' + encodeURIComponent(slug) + '.html';
+    try {
+      var data = await api('/repos/' + OWNER + '/' + REPO + '/contents/' + path + '?ref=' + BRANCH);
+      await api('/repos/' + OWNER + '/' + REPO + '/contents/' + path, {
+        method: 'DELETE',
+        body: { message: '删除文章页面：' + slug, sha: data.sha, branch: BRANCH }
+      });
+    } catch (error) {
+      if (error.status !== 404) throw error;
+    }
+  }
+
   function uniqueCategories() {
     var seen = [];
     posts.forEach(function (post) {
@@ -541,6 +554,7 @@
     setStatus($('listStatus'), '正在删除…');
     try {
       await commitPosts('删除文章：' + post.title);
+      await removePostContent(post.slug);
       setStatus($('listStatus'), '已删除并提交，GitHub Pages 将在一两分钟内自动发布。', 'ok');
     } catch (e) {
       posts.splice(index, 0, post);

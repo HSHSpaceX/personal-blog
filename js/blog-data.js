@@ -9,6 +9,8 @@
     return {
       id: row.id, slug: row.post_slug, parentId: row.parent_id,
       nick: row.legacy_author_name || (profile && (profile.display_name || profile.username)) || '已注销用户',
+      username: profile && profile.username,
+      profileId: row.user_id,
       avatar: profile && profile.avatar_url,
       time: row.created_at.slice(0, 10), content: row.content, status: row.status,
       own: !!(auth.user() && row.user_id === auth.user().id)
@@ -33,6 +35,53 @@
   async function listModeration() {
     await auth.ready(); auth.requireAdmin();
     return value(await db().from('comments').select('*').order('created_at', { ascending: false }));
+  }
+
+  async function listLatestComments(limit) {
+    await auth.ready();
+    if (!auth.configured()) return [];
+    var size = Number(limit) || 9;
+    var rows = value(await db().from('comments').select('*').eq('status', 'approved')
+      .order('created_at', { ascending: false }).limit(size));
+    var ids = [...new Set(rows.map(function (row) { return row.user_id; }).filter(Boolean))];
+    var profiles = {};
+    if (ids.length) value(await db().from('profiles').select('id,username,display_name,avatar_url').in('id', ids))
+      .forEach(function (profile) { profiles[profile.id] = profile; });
+    return rows.filter(function (row) { return row.status === 'approved'; })
+      .map(function (row) { return normalizeComment(row, profiles); });
+  }
+
+  async function listNotifications() {
+    await auth.ready();
+    if (!auth.user()) return [];
+    var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at')
+      .eq('user_id', auth.user().id).order('created_at', { ascending: false }).limit(50));
+    var actorIds = [...new Set(rows.map(function (row) { return row.actor_id; }).filter(Boolean))];
+    var actors = {};
+    if (actorIds.length) {
+      value(await db().from('profiles').select('id,username,display_name,avatar_url').in('id', actorIds))
+        .forEach(function (profile) { actors[profile.id] = profile; });
+    }
+    return rows.map(function (row) {
+      var actor = row.actor_id && actors[row.actor_id];
+      return Object.assign({}, row, {
+        actorName: actor && (actor.display_name || actor.username),
+        actorUsername: actor && actor.username,
+        actorAvatar: actor && actor.avatar_url
+      });
+    });
+  }
+
+  async function notificationCount() {
+    await auth.ready();
+    if (!auth.user()) return 0;
+    return value(await db().from('notifications').select('id').eq('user_id', auth.user().id).eq('read', false)).length;
+  }
+
+  async function markNotificationsRead() {
+    await auth.ready();
+    if (!auth.user()) return;
+    value(await db().from('notifications').update({ read: true }).eq('user_id', auth.user().id).eq('read', false));
   }
   async function moderateComment(id, status) {
     await auth.ready(); auth.requireAdmin();
@@ -116,6 +165,8 @@
     return !has;
   }
   window.BlogData = { listComments: listComments, addComment: addComment, listModeration: listModeration,
+    listLatestComments: listLatestComments,
+    listNotifications: listNotifications, notificationCount: notificationCount, markNotificationsRead: markNotificationsRead,
     moderateComment: moderateComment, deleteComment: deleteComment, likes: likes, toggleLike: toggleLike,
     followerCount: followerCount, userLikeCount: userLikeCount,
     getProfile: getProfile, saveProfile: saveProfile, uploadAvatar: uploadAvatar, following: following, toggleFollow: toggleFollow };

@@ -37,7 +37,7 @@
       });
     });
     document.addEventListener('click', function (event) { if (!event.target.closest('.user-menu-wrap')) closeUserMenus(); });
-    document.addEventListener('blog-auth-change', function () { applyAuthUi(); refreshPendingBadge(); });
+    document.addEventListener('blog-auth-change', function () { applyAuthUi(); refreshPendingBadge(); refreshNotificationBadge(); });
   }
 
   function updateFavicon() {
@@ -194,45 +194,63 @@
       }).join('');
     }
 
+    renderHomeComments(window.SITE_COMMENTS ? latestStaticComments() : []);
+    refreshHomeComments();
+  }
+
+  function latestStaticComments() {
+    var allComments = [];
+    var commentData = window.SITE_COMMENTS || {};
+    Object.keys(commentData).forEach(function (slug) {
+      (commentData[slug] || []).forEach(function (item) {
+        allComments.push(Object.assign({ slug: slug }, item));
+      });
+    });
+    allComments.sort(function (a, b) {
+      return String(b.time || '').localeCompare(String(a.time || ''));
+    });
+    return allComments.slice(0, 9);
+  }
+
+  function renderHomeComments(latestComments) {
     var homeCommentsEl = document.getElementById('homeComments');
-    if (homeCommentsEl) {
-      var allComments = [];
-      var commentData = window.SITE_COMMENTS || {};
-      Object.keys(commentData).forEach(function (slug) {
-        (commentData[slug] || []).forEach(function (item) {
-          allComments.push(Object.assign({ slug: slug }, item));
-        });
-      });
-      allComments.sort(function (a, b) {
-        return String(b.time || '').localeCompare(String(a.time || ''));
-      });
-      var latestComments = allComments.slice(0, 9);
-      var commentsBand = homeCommentsEl.closest('.band');
-      if (!latestComments.length) {
-        if (commentsBand) commentsBand.hidden = true;
-      } else {
-        if (commentsBand) commentsBand.hidden = false;
-        homeCommentsEl.innerHTML = latestComments.map(function (item) {
-          var post = posts.filter(function (entry) { return entry.slug === item.slug; })[0];
-          var source;
-          var link;
-          if (item.slug === 'about') {
-            source = '关于';
-            link = 'about.html#commentsSection';
-          } else if (item.slug.indexOf('moment-') === 0) {
-            source = '动态';
-            link = 'moments.html#' + item.slug;
-          } else {
-            source = post ? post.title : item.slug;
-            link = postUrl(item.slug) + '#commentsSection';
-          }
-          return '<a class="home-comment-card" href="' + escapeHtml(link) + '">' +
-            '<p class="home-comment-text">' + escapeHtml(item.content) + '</p>' +
-            '<div class="home-comment-meta"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + ' · ' + escapeHtml(source) + '</span></div>' +
-          '</a>';
-        }).join('');
-      }
+    if (!homeCommentsEl) return;
+    var commentsBand = homeCommentsEl.closest('.band');
+    if (!latestComments.length) {
+      if (commentsBand) commentsBand.hidden = true;
+      return;
     }
+    if (commentsBand) commentsBand.hidden = false;
+    homeCommentsEl.innerHTML = latestComments.map(function (item) {
+      var post = posts.filter(function (entry) { return entry.slug === item.slug; })[0];
+      var source;
+      var link;
+      if (item.slug === 'about') {
+        source = '关于';
+        link = 'about.html#commentsSection';
+      } else if (item.slug.indexOf('moment-') === 0) {
+        source = '动态';
+        link = 'moments.html#' + item.slug;
+      } else {
+        source = post ? post.title : item.slug;
+        link = postUrl(item.slug) + '#commentsSection';
+      }
+      return '<a class="home-comment-card" href="' + escapeHtml(link) + '">' +
+        '<p class="home-comment-text">' + escapeHtml(item.content) + '</p>' +
+        '<div class="home-comment-meta"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + ' · ' + escapeHtml(source) + '</span></div>' +
+      '</a>';
+    }).join('');
+  }
+
+  async function refreshHomeComments() {
+    try {
+      var rows = await window.BlogData.listLatestComments(9);
+      renderHomeComments(rows);
+    } catch (error) { /* keep static comments as fallback */ }
+  }
+
+  if (typeof window.setInterval === 'function') {
+    window.setInterval(refreshHomeComments, 20000);
   }
 
   function renderArchive() {
@@ -826,7 +844,9 @@
       '<div class="comment-item">' +
         '<div class="comment-head">' +
           '<img class="comment-avatar" src="' + escapeHtml(item.avatar && /^https:\/\//.test(item.avatar) ? item.avatar : (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg')) + '" alt="">' +
-          '<strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span>' +
+          (item.username
+            ? '<a class="comment-author" href="profile.html?username=' + encodeURIComponent(item.username) + '">' + escapeHtml(item.nick) + '</a>'
+            : '<strong>' + escapeHtml(item.nick) + '</strong>') + '<span>' + escapeHtml(item.time || '') + '</span>' +
           (item.status === 'pending' ? '<span>待审核</span>' : '') +
         '</div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
@@ -912,7 +932,7 @@
   }
 
   function updatePendingBadge(count) {
-    document.querySelectorAll('.menu-badge').forEach(function (el) {
+    document.querySelectorAll('.menu-badge:not(.notification-badge)').forEach(function (el) {
       if (count > 0) {
         el.textContent = count > 99 ? '99+' : String(count);
         el.hidden = false;
@@ -927,6 +947,22 @@
     window.BlogData.listModeration().then(function (rows) {
       updatePendingBadge(rows.filter(function (row) { return row.status === 'pending'; }).length);
     }).catch(function () { updatePendingBadge(0); });
+  }
+
+  function updateNotificationBadge(count) {
+    document.querySelectorAll('.notification-badge').forEach(function (el) {
+      if (count > 0) {
+        el.textContent = count > 99 ? '99+' : String(count);
+        el.hidden = false;
+      } else {
+        el.hidden = true;
+      }
+    });
+  }
+
+  function refreshNotificationBadge() {
+    if (!window.BlogAuth.user()) { updateNotificationBadge(0); return; }
+    window.BlogData.notificationCount().then(updateNotificationBadge).catch(function () { updateNotificationBadge(0); });
   }
 
   function setupRail() {
@@ -956,6 +992,7 @@
     applyAuthUi();
     setupUserMenu();
     refreshPendingBadge();
+    refreshNotificationBadge();
     updateFavicon();
     var yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();

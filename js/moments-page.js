@@ -135,7 +135,9 @@
     });
     return '<div class="comment-item moment-comment-item">' +
       '<div class="comment-head"><img class="comment-avatar" src="' + escapeHtml(item.avatar && /^https:\/\//.test(item.avatar) ? item.avatar : (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg')) + '" alt="">' +
-      '<strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + '</span>' +
+      (item.username
+        ? '<a class="comment-author" href="profile.html?username=' + encodeURIComponent(item.username) + '">' + escapeHtml(item.nick) + '</a>'
+        : '<strong>' + escapeHtml(item.nick) + '</strong>') + '<span>' + escapeHtml(item.time || '') + '</span>' +
       (item.status === 'pending' ? '<span>待审核</span>' : '') +
       '</div>' +
       (item.parentNick ? '<p class="comment-parent-hint">回复 @' + escapeHtml(item.parentNick) + '</p>' : '') +
@@ -347,7 +349,7 @@
       var count = getCachedCount(item.id);
       var displayName = item.author || 'HSH(站长)';
       return '<article class="moment-card" id="moment-' + escapeHtml(item.id) + '">' +
-        '<img class="moment-avatar" src="assets/icon.jpg" alt="">' +
+        '<img class="moment-avatar" src="assets/avatar-default.jpg" alt="">' +
         '<div class="moment-body">' +
           '<div class="moment-head">' +
             '<span class="moment-name">' + escapeHtml(displayName) + '</span>' +
