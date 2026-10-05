@@ -15,7 +15,7 @@ window.BLOG_POSTS = [
   {
     slug: "post-20261005-1732",
     title: "测试",
-    category: "人文历史",
+    category: "火箭部件",
     tags: [],
     date: "2026-10-05",
     readingTime: 5,
