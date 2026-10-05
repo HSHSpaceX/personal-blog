@@ -20,6 +20,7 @@ window.BLOG_POSTS = [
     date: "2026-10-05",
     readingTime: 5,
     cover: "assets/covers/cover-travel.jpg",
+    featured: true,
     excerpt: "",
     content: `测试文章<p></p>`
   }
