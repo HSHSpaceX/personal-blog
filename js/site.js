@@ -43,30 +43,10 @@
   function updateFavicon() {
     var link = document.querySelector('link[rel="icon"]');
     if (!link) return;
-    var image = new Image();
-    image.onload = function () {
-      try {
-        var canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        var context = canvas.getContext('2d');
-        context.drawImage(image, 0, 0);
-        if (document.documentElement.dataset.theme !== 'dark') {
-          var data = context.getImageData(0, 0, canvas.width, canvas.height);
-          var px = data.data;
-          for (var i = 0; i < px.length; i += 4) {
-            px[i] = 255 - px[i];
-            px[i + 1] = 255 - px[i + 1];
-            px[i + 2] = 255 - px[i + 2];
-          }
-          context.putImageData(data, 0, 0);
-        }
-        link.href = canvas.toDataURL('image/png');
-      } catch (e) {
-        /* 忽略 */
-      }
-    };
-    image.src = 'assets/icon.jpg';
+    link.type = 'image/png';
+    link.href = document.documentElement.dataset.theme === 'dark'
+      ? 'assets/icon-dark.png'
+      : 'assets/icon-light.png';
   }
 
   function escapeHtml(value) {
