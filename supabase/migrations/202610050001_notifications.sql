@@ -1,5 +1,5 @@
 -- User-facing notifications for comment approval, replies, likes and follows.
-create table public.notifications (
+create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   actor_id uuid references auth.users(id) on delete set null,
@@ -9,16 +9,18 @@ create table public.notifications (
   read boolean not null default false,
   created_at timestamptz not null default now()
 );
-create index notifications_recipient on public.notifications(user_id, read, created_at desc);
+create index if not exists notifications_recipient on public.notifications(user_id, read, created_at desc);
 alter table public.notifications enable row level security;
+drop policy if exists notifications_read_own on public.notifications;
 create policy notifications_read_own on public.notifications for select to authenticated
   using (user_id = (select auth.uid()));
+drop policy if exists notifications_update_own on public.notifications;
 create policy notifications_update_own on public.notifications for update to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 revoke all on table public.notifications from public, anon, authenticated;
 grant select, update (read) on public.notifications to authenticated;
 
-create function public.notify_comment_approved() returns trigger language plpgsql security definer
+create or replace function public.notify_comment_approved() returns trigger language plpgsql security definer
 set search_path = '' as $$
 begin
   if new.status = 'approved' and old.status <> 'approved' and new.user_id is not null then
@@ -28,10 +30,11 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists notifications_comment_approved on public.comments;
 create trigger notifications_comment_approved after update of status on public.comments
   for each row execute function public.notify_comment_approved();
 
-create function public.notify_comment_reply() returns trigger language plpgsql security definer
+create or replace function public.notify_comment_reply() returns trigger language plpgsql security definer
 set search_path = '' as $$
 declare
   parent_owner uuid;
@@ -46,10 +49,11 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists notifications_comment_reply on public.comments;
 create trigger notifications_comment_reply after insert on public.comments
   for each row execute function public.notify_comment_reply();
 
-create function public.notify_comment_like() returns trigger language plpgsql security definer
+create or replace function public.notify_comment_like() returns trigger language plpgsql security definer
 set search_path = '' as $$
 declare
   comment_owner uuid;
@@ -64,10 +68,11 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists notifications_comment_like on public.likes;
 create trigger notifications_comment_like after insert on public.likes
   for each row execute function public.notify_comment_like();
 
-create function public.notify_follow() returns trigger language plpgsql security definer
+create or replace function public.notify_follow() returns trigger language plpgsql security definer
 set search_path = '' as $$
 begin
   if new.follower_id is distinct from new.target_id then
@@ -77,6 +82,7 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists notifications_follow on public.follows;
 create trigger notifications_follow after insert on public.follows
   for each row execute function public.notify_follow();
 

@@ -30,7 +30,8 @@
   async function addComment(slug, content, parentId) {
     await auth.ready();
     var id = requireLogin();
-    return value(await db().from('comments').insert({ post_slug: slug, content: content, parent_id: parentId || null, user_id: id, status: 'pending' }).select().single());
+    var status = typeof auth.isAdmin === 'function' && auth.isAdmin() ? 'approved' : 'pending';
+    return value(await db().from('comments').insert({ post_slug: slug, content: content, parent_id: parentId || null, user_id: id, status: status }).select().single());
   }
   async function listModeration() {
     await auth.ready(); auth.requireAdmin();
@@ -53,7 +54,7 @@
 
   async function listNotifications() {
     await auth.ready();
-    if (!auth.user()) return [];
+    if (!auth.user() || (typeof auth.isAdmin === 'function' && auth.isAdmin())) return [];
     var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at')
       .eq('user_id', auth.user().id).order('created_at', { ascending: false }).limit(50));
     var actorIds = [...new Set(rows.map(function (row) { return row.actor_id; }).filter(Boolean))];
@@ -74,13 +75,13 @@
 
   async function notificationCount() {
     await auth.ready();
-    if (!auth.user()) return 0;
+    if (!auth.user() || (typeof auth.isAdmin === 'function' && auth.isAdmin())) return 0;
     return value(await db().from('notifications').select('id').eq('user_id', auth.user().id).eq('read', false)).length;
   }
 
   async function markNotificationsRead() {
     await auth.ready();
-    if (!auth.user()) return;
+    if (!auth.user() || (typeof auth.isAdmin === 'function' && auth.isAdmin())) return;
     value(await db().from('notifications').update({ read: true }).eq('user_id', auth.user().id).eq('read', false));
   }
   async function moderateComment(id, status) {
