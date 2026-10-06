@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -92,8 +92,22 @@ for (const post of posts) {
     assert.ok((await read(listing)).includes(`href="${route}"`), `Missing raw article link in ${listing}`);
   }
 }
-for (const page of ['admin.html', 'login.html', 'profile.html', 'search.html', 'post.html', '404.html']) {
+for (const page of ['admin.html', 'login.html', 'account.html', 'messages.html', 'profile.html', 'search.html', 'post.html', '404.html']) {
   assert.match(await read(page), /<meta name="robots" content="noindex,follow">/, `Missing noindex: ${page}`);
+  assert.ok(!urls.some(address => new URL(address).pathname.replace(/\.html$/, '') === '/' + page.replace(/\.html$/, '')), `Functional page in sitemap: ${page}`);
+}
+// Keep private workflow links out of static crawl paths, including post templates.
+for (const page of [...(await readdir(root)).filter(name => name.endsWith('.html')), ...posts.map(post => `posts/${post.slug}.html`)]) {
+  const contents = await read(page);
+  for (const [tag] of contents.matchAll(/<a\b[^>]*>/gi)) {
+    const attrs = attributes(tag);
+    const href = attrs.href || '';
+    assert.ok(!/^admin\.html(?:[?#]|$)/.test(href), `Static admin link: ${page}`);
+    if (/^(?:login|account|messages|admin|profile)\.html(?:[?#]|$)/.test(href)) {
+      assert.ok((attrs.rel || '').split(/\s+/).includes('nofollow'), `Missing functional-link nofollow: ${page} (${href})`);
+    }
+    assert.ok(!(href === 'login.html' && (attrs.class || '').split(/\s+/).includes('footer-link')), `Footer login management link: ${page}`);
+  }
 }
 for (const page of ['index.html', 'about.html', 'archive.html', 'timeline.html', 'gallery.html', 'moments.html', 'post.html', 'search.html', ...posts.map((post) => `posts/${post.slug}.html`)]) {
   const contents = await read(page);

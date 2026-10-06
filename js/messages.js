@@ -1,7 +1,9 @@
 (function () {
   'use strict';
+  window.BlogTheme.setup();
   var listEl = document.getElementById('messagesList');
   var statusEl = document.getElementById('messagesStatus');
+  var generation = 0;
   function setStatus(message, kind) {
     if (!statusEl) return;
     statusEl.textContent = message || '';
@@ -29,15 +31,22 @@
     '</article>';
   }
   async function load() {
+    var attempt = ++generation;
+    listEl.replaceChildren();
+    setStatus('正在读取个人通知…');
     try {
       await window.BlogAuth.ready();
-      if (!window.BlogAuth.user()) { location.replace('login.html?next=messages.html'); return; }
+      if (attempt !== generation) return;
+      var user = window.BlogAuth.user();
+      if (!user) { location.replace('login.html?next=messages.html'); return; }
       var rows = await window.BlogData.listNotifications();
-      listEl.innerHTML = rows.length ? rows.map(itemHtml).join('') : '<p class="empty-state">还没有新消息。</p>';
+      if (attempt !== generation || !window.BlogAuth.user() || window.BlogAuth.user().id !== user.id) return;
+      listEl.innerHTML = rows.length ? rows.map(itemHtml).join('') : '<p class="empty-state">还没有新通知。</p>';
       if (rows.length) await window.BlogData.markNotificationsRead();
+      if (attempt !== generation) return;
       document.querySelectorAll('.notification-badge').forEach(function (badge) { badge.hidden = true; });
-      setStatus(rows.length ? '消息已更新。' : '暂无消息。', 'ok');
-    } catch (error) { setStatus(error.message, 'err'); }
+      setStatus(rows.length ? '通知已更新。' : '暂无通知。', 'ok');
+    } catch (error) { if (attempt === generation) setStatus(error.message, 'err'); }
   }
   document.addEventListener('blog-auth-change', load);
   load();

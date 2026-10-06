@@ -47,17 +47,17 @@
         <button class="icon-btn menu-btn" id="menuToggle" type="button" aria-label="打开菜单" title="菜单" aria-expanded="false" aria-controls="siteNav">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
-        <a class="btn-login" href="login.html">登录</a>
+        <a class="btn-login" href="login.html" rel="nofollow">登录</a>
         <span class="user-menu-wrap" hidden>
           <button class="user-avatar" type="button" aria-label="账号菜单" aria-haspopup="true" aria-expanded="false">
             <img src="assets/avatar-default.jpg" alt="">
             <span class="menu-badge" hidden></span>
           </button>
           <div class="user-menu" hidden>
-            <a class="user-menu-item" data-admin href="admin.html#messages">评论审核 <span class="menu-badge" hidden></span></a>
-            <a class="user-menu-item" data-admin href="admin.html">管理后台</a>
-            <a class="user-menu-item" href="messages.html">消息 <span class="menu-badge notification-badge" hidden></span></a>
-            <a class="user-menu-item" href="profile.html">我的资料</a>
+            <span data-admin-links></span>
+            <a class="user-menu-item" href="messages.html" rel="nofollow">通知 <span class="menu-badge notification-badge" hidden></span></a>
+            <a class="user-menu-item" href="account.html" rel="nofollow">账号中心</a>
+            <a class="user-menu-item" href="profile.html" rel="nofollow">我的资料</a>
             <button class="user-menu-item" type="button" data-logout>退出登录</button>
           </div>
         </span>
@@ -142,7 +142,7 @@
       <p>© <span id="year"></span> 拾光手记</p>
       <p>保留所有权利</p>
       <div class="footer-links">友情链接：<a href="https://www.kechuang.org/" target="_blank" rel="noopener">科创</a><span class="footer-sep"> | </span><a href="https://vanyu0710.github.io/Varen-AI-CAD/" target="_blank" rel="noopener">Varen-AI-CAD</a></div>
-      <div class="footer-right"><a class="footer-link" href="login.html">管理</a><a class="footer-link footer-gh" href="https://github.com/HSHSpaceX/personal-blog" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12.02c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.61-3.37-1.19-3.37-1.19-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.49A10.01 10.01 0 0 0 22 12.02C22 6.48 17.52 2 12 2z"/></svg><strong>personal-blog</strong></a></div>
+      <div class="footer-right"><a class="footer-link footer-gh" href="https://github.com/HSHSpaceX/personal-blog" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12.02c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.61-3.37-1.19-3.37-1.19-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.49A10.01 10.01 0 0 0 22 12.02C22 6.48 17.52 2 12 2z"/></svg><strong>personal-blog</strong></a></div>
     </div>
   </footer>
 
@@ -151,10 +151,10 @@
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=3"></script>
+  <script src="js/blog-data.js?v=5"></script>
   <script src="js/github-credentials.js?v=4"></script>
   <script src="js/urls.js?v=2"></script>
   <script src="js/boot.js?v=2"></script>
-  <script src="js/site.js?v=4"></script>
+  <script src="js/site.js?v=5"></script>
 </body>
 </html>

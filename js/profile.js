@@ -28,7 +28,14 @@
       if (target.avatar_url) $('profileAvatar').src = target.avatar_url;
       $('profileEditor').hidden = !own;
       $('profileLogout').hidden = !own;
-      $('adminLink').hidden = !own || !auth.isAdmin();
+      var adminLinks = $('profileAdminLinks');
+      adminLinks.replaceChildren();
+      if (own && auth.isAdmin()) {
+        var adminLink = document.createElement('a');
+        adminLink.className = 'btn'; adminLink.href = 'admin.html';
+        adminLink.rel = 'nofollow'; adminLink.textContent = '管理后台';
+        adminLinks.appendChild(adminLink);
+      }
       if (own) {
         $('profileUsernameInput').value = target.username;
         $('profileDisplayInput').value = target.display_name;
@@ -69,5 +76,6 @@
     finally { $('followBtn').disabled = false; }
   });
   $('profileLogout').addEventListener('click', async function () { await auth.signOut(); location.replace('index.html'); });
+  document.addEventListener('blog-auth-change', function () { $('profileAdminLinks').replaceChildren(); });
   load();
 })();

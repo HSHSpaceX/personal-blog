@@ -15,7 +15,7 @@
 <body>
   <header class="site-header"><div class="container header-inner">
     <a class="brand" href="index.html"><span class="brand-mark"><img src="assets/icon-big.jpg" alt=""></span><span class="brand-name">拾光手记</span></a>
-    <div class="header-actions"><a class="btn" href="index.html">返回首页</a><a class="btn" href="messages.html">消息</a><button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
+    <div class="header-actions"><a class="btn" href="account.html" rel="nofollow">账号中心</a><a class="btn" href="index.html">返回首页</a><a class="btn" href="messages.html" rel="nofollow">消息</a><button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
           <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button></div>
@@ -26,7 +26,7 @@
       <p id="profileStatus" class="status-line" aria-live="polite"></p>
       <div class="profile-summary"><img id="profileAvatar" src="assets/avatar-default.jpg" alt="用户头像" width="96" height="96"><div><h2 id="profileName"></h2><p id="profileUsername"></p><p id="profileBio"></p></div></div>
       <p id="profileCounts"></p>
-      <div class="admin-row"><button class="btn primary" id="followBtn" type="button" hidden>关注</button><a class="btn" id="adminLink" href="admin.html" hidden>管理后台</a><button class="btn" id="profileLogout" type="button" hidden>退出</button></div>
+      <div class="admin-row"><button class="btn primary" id="followBtn" type="button" hidden>关注</button><span id="profileAdminLinks"></span><button class="btn" id="profileLogout" type="button" hidden>退出</button></div>
     </section>
     <section class="admin-card wide" id="profileEditor" hidden>
       <h2>编辑我的资料</h2>
@@ -40,7 +40,7 @@
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=3"></script>
-  <script src="js/profile.js?v=4"></script>
+  <script src="js/blog-data.js?v=5"></script>
+  <script src="js/profile.js?v=5"></script>
 </body>
 </html>

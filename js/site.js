@@ -10,7 +10,20 @@
     var logged = !!auth.user();
     document.querySelectorAll('.btn-login').forEach(function (el) { el.hidden = logged; });
     document.querySelectorAll('.user-menu-wrap').forEach(function (el) { el.hidden = !logged; });
-    document.querySelectorAll('[data-admin]').forEach(function (el) { el.hidden = !auth.isAdmin(); });
+    document.querySelectorAll('[data-admin-links]').forEach(function (slot) {
+      slot.replaceChildren();
+      if (!logged || !auth.isAdmin()) return;
+      [['account.html#review-center', '审核中心'], ['admin.html#messages', '评论审核'], ['admin.html', '管理后台']].forEach(function (entry) {
+        var link = document.createElement('a');
+        link.className = 'user-menu-item'; link.href = entry[0]; link.rel = 'nofollow';
+        link.textContent = entry[1];
+        if (entry[0] === 'admin.html#messages') {
+          var badge = document.createElement('span'); badge.className = 'menu-badge'; badge.hidden = true;
+          link.appendChild(badge);
+        }
+        slot.appendChild(link);
+      });
+    });
     if (!logged) closeUserMenus();
     if (logged) window.BlogData.getProfile(auth.user().id).then(function (profile) {
       if (profile && profile.avatar_url) document.querySelectorAll('.user-avatar img').forEach(function (img) { img.src = profile.avatar_url; });
