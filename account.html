@@ -10,7 +10,7 @@
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/admin.css?v=2">
-  <link rel="stylesheet" href="css/community.css?v=3">
+  <link rel="stylesheet" href="css/community.css?v=5">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -66,6 +66,7 @@
           <div class="field"><label for="communityTitle">标题</label><input id="communityTitle" maxlength="160" required></div>
           <div class="field"><label for="communityText" id="communityTextLabel">正文（纯文本）</label><textarea id="communityText" rows="10" maxlength="100000"></textarea></div>
           <div id="communityArticleFields">
+            <div class="field"><label for="communityCategory">分类（纯文本，1–40 字）</label><input id="communityCategory" maxlength="40" value="用户投稿"></div>
             <div class="field"><label for="communitySummary">摘要（最多 500 字）</label><textarea id="communitySummary" maxlength="500" rows="2"></textarea></div>
             <div class="field"><label for="communityTags">标签（英文逗号分隔，最多 10 个）</label><input id="communityTags"></div>
           </div>
@@ -152,9 +153,9 @@
   <script src="js/auth.js?v=4"></script>
   <script src="js/blog-data.js?v=8"></script>
   <script src="js/github-credentials.js?v=4"></script>
-  <script src="js/community-schema.js?v=1"></script>
-  <script src="js/community-data.js?v=1"></script>
-  <script src="js/public-cards.js?v=1"></script><script src="js/community-ui.js?v=2"></script>
+  <script src="js/community-schema.js?v=9"></script>
+  <script src="js/community-data.js?v=9"></script>
+  <script src="js/public-cards.js?v=1"></script><script src="js/community-ui.js?v=9"></script>
   <script src="js/asset-center.js?v=1"></script><script src="js/comment-edit-data.js?v=2"></script><script src="js/account-comments.js?v=2"></script>
   <script src="js/account.js?v=3"></script>
 </body>

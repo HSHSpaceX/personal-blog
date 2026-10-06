@@ -2,7 +2,7 @@
   'use strict';
   var auth=window.BlogAuth, data=window.CommunityData, schema=window.CommunitySchema;
   var $=function(id){return document.getElementById(id);};
-  var names={article:'文章',moment:'动态',album:'图册'}, states={draft:'draft · 草稿',pending:'pending · 待审',approved:'published · 已发布',rejected:'rejected · 已驳回'};
+  var names={article:'文章',moment:'动态',album:'图册'}, states={draft:'draft · 草稿',pending:'pending · 待审',approved:'approved · 已审核，等待站点同步',rejected:'rejected · 已驳回'};
   var generation=0, draft=null, preview=null, assets=[], policyTarget=null, timers=[], busy=false, selection=[];
   function node(tag,text,cls){var n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
   function message(text,error,id){var el=$(id||'communityStatus');el.textContent=text;el.className='status-line '+(error?'err':'ok');}
@@ -16,7 +16,7 @@
     generation++;draft=null;preview=null;assets=[];selection=[];policyTarget=null;busy=false;
     timers.forEach(clearTimeout);timers=[];
     ['communityItems','communityAssets','communityAssetChoices','communityAssetViewer','communityPreviewBody','communityPreviewAssets','communityPreviewActions','communityPreviewAuthor','communityReviewQueue','communityPolicyRows'].forEach(function(id){$(id).replaceChildren();});
-    ['communityTitle','communityText','communitySummary','communityTags','communityRejectReason','communityPolicyUser','communityPolicyThreshold','communityUploadFile'].forEach(function(id){$(id).value='';});
+    ['communityTitle','communityText','communityCategory','communitySummary','communityTags','communityRejectReason','communityPolicyUser','communityPolicyThreshold','communityUploadFile'].forEach(function(id){$(id).value='';});
     ['communityStatus','communityAssetStatus','communityPreviewTitle','communityPreviewState','communityPreviewReason','communityPolicyIdentity'].forEach(function(id){$(id).textContent='';});
     $('communityEditor').hidden=true;$('communityPreview').hidden=true;$('communityReviewControls').hidden=true;
   }
@@ -28,6 +28,7 @@
       var row=node('article',undefined,'community-row'), latest=(item.content_revisions||[])[0];
       row.appendChild(node('h3',(latest?latest.title:item.slug)+' · '+names[item.content_type]));
       row.appendChild(node('p',latest?states[latest.status]:'空条目 · 请新建草稿'));
+      var publication=Array.isArray(item.community_publication_state)?item.community_publication_state[0]:item.community_publication_state;if(publication)row.appendChild(node('p',publication.status==='published'?'已发布':publication.status==='failed'?'发布失败 / 等待重试':'已审核，等待站点同步'));
       if(item.published_revision_id&&(!latest||latest.id!==item.published_revision_id))row.appendChild(node('p','已有公开版本仍然可见。'));
       if(latest&&latest.rejection_reason)row.appendChild(node('p','驳回原因：'+latest.rejection_reason));
       if(latest)button(row,'查看版本',function(token){return openRevision(latest.id,token);});
@@ -64,6 +65,7 @@
     $('communityTitle').value=row?row.title:'';$('communityText').value=body.text||body.description||'';
     $('communityText').maxLength=item.content_type==='article'?100000:2000;
     $('communityTextLabel').textContent=item.content_type==='album'?'图册描述（纯文本）':'正文（纯文本）';
+    if($('communityCategory'))$('communityCategory').value=body.category||'用户投稿';
     $('communitySummary').value=body.summary||'';$('communityTags').value=(body.tags||[]).join(', ');
     $('communityArticleFields').hidden=item.content_type!=='article';
     $('communityAssetLegend').textContent=item.content_type==='album'?'选择图片并填写说明':'选择我的资源';
@@ -76,7 +78,7 @@
       var caption=Array.from($('communityAssetChoices').querySelectorAll('[data-asset-caption]')).find(function(el){return el.dataset.assetCaption===id;});
       return{asset_id:id,caption:caption?caption.value:''};
     })}:{text:$('communityText').value,asset_ids:selected};
-    if(type==='article'){body.summary=$('communitySummary').value;body.tags=$('communityTags').value.split(',').map(function(t){return t.trim();}).filter(Boolean);}
+    if(type==='article'){if($('communityCategory'))body.category=$('communityCategory').value.trim()||'用户投稿';body.summary=$('communitySummary').value;body.tags=$('communityTags').value.split(',').map(function(t){return t.trim();}).filter(Boolean);}
     schema.validate(type,$('communityTitle').value,body);return body;
   }
   async function saveEditor(token,submit){

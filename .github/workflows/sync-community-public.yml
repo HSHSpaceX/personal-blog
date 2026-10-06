@@ -1,0 +1,51 @@
+name: Sync approved Community public state
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: generate-static-site
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reconcile approved snapshot and validate media
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-community-public.mjs
+      - name: Generate and validate public files offline
+        run: |
+          node scripts/generate-site.mjs
+          node scripts/check-seo.mjs
+          node scripts/check-secrets.mjs
+          node --test tests/auth-policy.test.cjs tests/supply-chain.test.mjs tests/community-publication.test.mjs
+          git diff --check
+      - name: Recheck current authority before committing
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-community-public.mjs --verify
+      - name: Push complete public state with Actions credentials
+        run: |
+          git add -A -- data/community-public.json js/community-published.js js/config.js index.html about.html archive.html timeline.html gallery.html moments.html posts sitemap.xml feed.xml robots.txt
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore: reconcile approved Community publication'
+            git push origin HEAD:main
+          fi
+      - name: Finalize after successful push (also repair previous interrupted finalize)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-community-public.mjs --finalize

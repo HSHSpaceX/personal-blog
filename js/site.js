@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var posts = window.BLOG_POSTS || [];
+  var posts = (window.CommunityPublic ? window.CommunityPublic.mergePosts(window.BLOG_POSTS) : window.BLOG_POSTS || []);
   var postUrl = window.BlogUrls.postUrl;
   var SITE_NAME = '拾光手记';
   function isAuthed() { return window.BlogAuth && window.BlogAuth.isAdmin(); }
@@ -249,6 +249,8 @@
       if (item.slug === 'about') {
         source = '关于';
         link = 'about.html#commentsSection';
+      } else if (item.slug.indexOf('community-')===0 && window.CommunityPublic) {
+        var target=(window.COMMUNITY_PUBLIC.items||[]).find(function(i){return 'community-'+i.id===item.slug;});if(!target)return '';source=target.title;link=window.CommunityPublic.target(target);
       } else if (item.slug.indexOf('moment-') === 0) {
         source = '动态';
         link = 'moments.html#' + item.slug;
@@ -414,10 +416,10 @@
           return '<div class="timeline-month">' +
             '<span class="timeline-month-label">' + parseInt(month, 10) + ' 月</span>' +
             byMonth[month].map(function (post) {
-              return '<a class="timeline-item" href="' + postUrl(post.slug) + '">' +
+              return '<div class="timeline-entry"><a class="timeline-item" href="' + postUrl(post.slug) + '">' +
                 '<span class="timeline-item-title">' + escapeHtml(post.title) + '</span>' +
                 '<span class="timeline-item-meta">' + formatDate(post.date) + ' · ' + escapeHtml(post.category) + '</span>' +
-              '</a>';
+              '</a>'+postAuthor(post)+'</div>';
             }).join('') +
           '</div>';
         }).join('') +
@@ -456,7 +458,8 @@
       return '<a class="tag-chip" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
     }).join('');
 
-    document.getElementById('postContent').innerHTML = post.content;
+    document.getElementById('postContent').innerHTML = post.community ? window.CommunityPublic.articleHTML(post.public_item) : post.content;
+    var authorEl=document.getElementById('postAuthor');if(authorEl)authorEl.innerHTML=postAuthor(post);
     document.getElementById('postContent').querySelectorAll('img').forEach(function (img) {
       img.setAttribute('decoding', 'async');
       img.setAttribute('loading', 'eager');
@@ -476,9 +479,9 @@
     enhanceCodeBlocks(document.getElementById('postContent'));
     SiteLightbox.watch(document.getElementById('postContent'));
     buildToc();
-    initLikes(post.slug);
+    initLikes(post.community ? post.item_id : post.slug, post.community ? 'content' : 'post');
     var section = document.getElementById('commentsSection');
-    if (section) section.dataset.slug = post.slug;
+    if (section) section.dataset.slug = post.community ? 'community-'+post.item_id : post.slug;
 
     var index = posts.indexOf(post);
     var prev = index > 0 ? posts[index - 1] : null;
@@ -720,13 +723,14 @@
     location.href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
     return false;
   }
-  function initLikes(slug) {
+  function initLikes(slug, type) {
+    type=type||'post';
     var btn = document.getElementById('likeBtn');
     var count = document.getElementById('likeCount');
     if (!btn || !count) return;
     async function refresh() {
       try {
-        var row = (await window.BlogData.likes('post', [slug]))[slug] || { count: 0, liked: false };
+        var row = (await window.BlogData.likes(type, [slug]))[slug] || { count: 0, liked: false };
         count.textContent = String(row.count);
         btn.classList.toggle('liked', row.liked);
         btn.setAttribute('aria-label', row.liked ? '取消点赞' : '点赞这篇文章');
@@ -735,7 +739,7 @@
     btn.onclick = async function () {
       if (!loginForAction()) return;
       btn.disabled = true;
-      try { await window.BlogData.toggleLike('post', slug); await refresh(); }
+      try { await window.BlogData.toggleLike(type, slug); await refresh(); }
       catch (error) { alert(error.message); }
       finally { btn.disabled = false; }
     };
@@ -1016,7 +1020,8 @@
   }
 
   function init() {
-    posts = window.BLOG_POSTS || [];
+    if(window.CommunityPublic&&!window.COMMUNITY_PUBLIC){document.addEventListener('posts-ready',init,{once:true});return;}
+    posts = (window.CommunityPublic ? window.CommunityPublic.mergePosts(window.BLOG_POSTS) : window.BLOG_POSTS || []);
     applyContent();
     applyAuthUi();
     setupUserMenu();

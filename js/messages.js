@@ -42,7 +42,10 @@
     if(item.type==='follow'&&data.uuid(item.target_id))return ['profile.html?id='+item.target_id,'查看主页'];
     if(!['content_like','comment_like','content_comment','comment_reply'].includes(item.type))return null;
     var id=item.target_id;
-    if(item.target_type==='content'&&data.uuid(id)&&/^[a-zA-Z0-9_]{3,30}$/.test(item.target_username||''))return ['profile.html?username='+encodeURIComponent(item.target_username)+'&item='+id,'查看内容'];
+    if(item.target_type==='content'&&data.uuid(id)){
+      if(item.target_kind==='article'&&/^[a-z0-9][a-z0-9-]{0,159}$/.test(item.target_slug||''))return ['posts/'+item.target_slug+'.html','查看文章'];
+      if(item.target_kind==='moment')return ['moments.html#community-'+id,'查看动态'];
+      if(item.target_kind==='album')return ['gallery.html?community='+id,'查看图册'];return null;}
     if(!/^[a-zA-Z0-9_-]{1,160}$/.test(id||''))return null;
     if(item.target_type==='post')return [id==='about'?'about.html#commentsSection':'posts/'+encodeURIComponent(id)+'.html#commentsSection','查看文章'];
     if(item.target_type==='moment')return ['moments.html#moment-'+encodeURIComponent(id),'查看动态'];

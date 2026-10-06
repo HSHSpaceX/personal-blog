@@ -14,7 +14,8 @@
   function validate(type, title, body) {
     if (TYPES.indexOf(type) < 0) throw Error('无效内容类型。');
     string(title, 160, true);
-    keys(body, type === 'article' ? ['text','summary','tags','asset_ids'] : type === 'moment' ? ['text','asset_ids'] : ['description','photos']);
+    keys(body, type === 'article' ? ['text','summary','tags','asset_ids','category'] : type === 'moment' ? ['text','asset_ids'] : ['description','photos']);
+    if ('category' in body) { string(body.category,40,true); if (/[<>]/.test(body.category)) throw Error('分类须为纯文本。'); }
     var ids = [];
     if (type === 'album') {
       if ('description' in body) string(body.description, 2000, false);

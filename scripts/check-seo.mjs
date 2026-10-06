@@ -2,6 +2,8 @@ import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import {createRequire} from 'node:module';
+const community=createRequire(import.meta.url)('../js/community-public.js');
 import assert from 'node:assert/strict';
 import { SITE_BASE_URL } from '../site.config.mjs';
 
@@ -11,7 +13,8 @@ const full = (route = '') => new URL(route, SITE_BASE_URL).href;
 const baseHost = new URL(SITE_BASE_URL).host;
 const postsContext = { window: {} };
 vm.runInNewContext(await read('js/posts.js'), postsContext, { filename: 'js/posts.js', timeout: 1000 });
-const posts = Array.from(postsContext.window.BLOG_POSTS || []);
+const snapshot=community.validate(JSON.parse(await read('data/community-public.json')));
+const posts = Array.from(postsContext.window.BLOG_POSTS || []).concat(community.posts(snapshot));
 assert.ok(posts.length, 'No real posts found');
 
 // Count decoded Unicode code points, not UTF-16 units or HTML entity bytes.
@@ -85,10 +88,10 @@ for (const post of [...posts, { ...posts[0], title: '中文标题 😀 & "引号
 for (const post of posts) {
   const route = `posts/${post.slug}.html`;
   const page = await read(route);
-  assert.ok(page.includes(`<h1 id="postTitle">${post.title}</h1>`), `Missing raw title: ${route}`);
+  assert.ok(page.includes(`<h1 id="postTitle">${community.escape(post.title)}</h1>`), `Missing raw title: ${route}`);
   const body = page.match(/<div id="postContent" class="prose">([\s\S]*?)<\/div>/)?.[1] || '';
-  assert.ok(body.replace(/<[^>]+>/g, '').trim().length > 30, `Empty raw article body: ${route}`);
-  for (const value of [post.date, post.category, ...post.tags]) assert.ok(page.includes(value), `Missing post metadata ${value}: ${route}`);
+  assert.ok(body.replace(/<[^>]+>/g, '').trim().length > (post.community?0:30), `Empty raw article body: ${route}`);
+  for (const value of [post.date, post.category, ...post.tags]) assert.ok(page.includes(community.escape(value)), `Missing post metadata ${value}: ${route}`);
   for (const listing of ['index.html', 'archive.html', 'timeline.html']) {
     assert.ok((await read(listing)).includes(`href="${route}"`), `Missing raw article link in ${listing}`);
   }

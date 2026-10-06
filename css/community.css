@@ -54,3 +54,10 @@ a.moment-avatar img { width: 100%; height: 100%; border-radius: inherit; object-
 .dm-attachment span { max-width: 100%; }
 .dm-unsent { margin-top: 1.5rem; }
 @media (max-width: 650px) { .dm-layout { grid-template-columns: minmax(0, 1fr); } .dm-message { max-width: 100%; } }
+/* Published user text and media must fit narrow viewports. */
+#postTitle, #postContent, #postAuthor, .moment-text, .moment-name, .album-card-title-row, #albumTitle, #communityDiscussion { overflow-wrap: anywhere; min-width: 0; }
+#postContent img, #postContent video, .moment-media-item video { max-width: 100%; height: auto; }
+#communityDiscussion textarea { box-sizing: border-box; width: 100%; }
+#communityDiscussion .public-content-card p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.photo-item figcaption { padding: .65rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+.timeline-entry > .public-author { margin: .25rem 0 1rem; }

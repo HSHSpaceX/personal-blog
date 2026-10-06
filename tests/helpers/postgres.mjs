@@ -33,9 +33,9 @@ export async function asActor(db, role, id, sql, params = []) {
 
 export async function prepareDatabase(db, {through} = {}) {
     await db.exec(`
-      create role anon nologin; create role authenticated nologin;
+      create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
       create schema auth; create schema storage;
-      grant usage on schema public, auth, storage to anon, authenticated;
+      grant usage on schema public, auth, storage to anon, authenticated, service_role;
       alter default privileges in schema public grant all on tables to anon, authenticated;
       alter default privileges in schema public grant all on functions to anon, authenticated;
       create function auth.uid() returns uuid language sql stable as

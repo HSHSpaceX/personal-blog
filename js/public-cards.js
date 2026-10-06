@@ -4,7 +4,7 @@
   function avatar(url){if(typeof url!=='string'||!url)return 'assets/avatar-default.jpg';try{var u=new URL(url,location.href);if(u.protocol==='https:'||u.origin===location.origin)return u.href;}catch(e){}return 'assets/avatar-default.jpg';}
   function author(p){
     var username=p.username||'',valid=/^[a-zA-Z0-9_]{3,30}$/.test(username);
-    var a=node(valid?'a':'span',undefined,'public-author');if(valid)a.href='profile.html?username='+encodeURIComponent(username);
+    var a=node(valid?'a':'span',undefined,'public-author');if(valid){a.href='profile.html?username='+encodeURIComponent(username);a.rel='nofollow';}
     var img=node('img');img.src=avatar(p.avatar_url);img.alt=p.username==='hshspacex'&&p.display_name==='HSH(站长)'?'HSH站长头像':(p.display_name||username||'用户')+'的头像';img.width=36;img.height=36;a.appendChild(img);
     a.appendChild(node('span',(p.display_name||username||'已注销用户')+(valid?' / @'+username:'')));return a;
   }

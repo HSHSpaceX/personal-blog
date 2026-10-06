@@ -8,7 +8,7 @@
   async function rpc(name, args) { return value(await (await client()).rpc(name, args)); }
   async function listItems() {
     var db = await client();
-    return value(await db.from('content_items').select(itemFields+',content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no)')
+    return value(await db.from('content_items').select(itemFields+',community_publication_state(status,last_error,published_revision_id),content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no)')
       .eq('author_id',auth.user().id).order('created_at',{ascending:false}).limit(50)
       .order('revision_no',{referencedTable:'content_revisions',ascending:false}).limit(1,{referencedTable:'content_revisions'}));
   }
