@@ -4,7 +4,7 @@
 
 ## A. migration 正式顺序
 
-先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复手工执行。新测试/RC 项目按下列顺序完整执行；生产仅补尚未执行者（Round 5 只有最后一项新增）：
+先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复手工执行。新测试/RC 项目按下列顺序完整执行；生产仅补尚未执行者（Round 5 只有最后两项新增）：
 
 1. 202609300001_invite_auth.sql
 2. 202609300002_private_reactions.sql
@@ -22,6 +22,7 @@
 14. 202610070001_notifications_v2.sql
 15. 202610070002_direct_messages.sql
 16. 202610070003_publication_bridge.sql
+17. 202610070004_category_raw_length.sql
 
 检查 function 固定 search_path、表/列 grants、RLS、restrictive policies。service_role 是 Supabase 已有数据库角色。不要开启客户端 service_role 权限。
 

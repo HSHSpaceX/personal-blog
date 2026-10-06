@@ -52,7 +52,9 @@ for (const post of posts) {
 // Cloudflare Pages serves .html files at clean URLs and 308 redirects .html requests.
 const postUrl = (post) => url(`posts/${post.slug}`);
 const postPath = (post) => `posts/${post.slug}.html`;
-const postsDate = newer(gitDate('js/posts.js'),gitDate('data/community-public.json'));
+const postsDate = gitDate('js/posts.js');
+const communityDate = (type) => newer(...snapshot.items.filter(i => !type || i.content_type===type).map(i => i.published_at.slice(0,10)));
+const articleDate = newer(postsDate,communityDate('article'));
 
 function pageMeta(source, { title, description, address, image, type = 'website' }) {
   let output = source.replace(/\s*<!-- SEO_META_START -->[\s\S]*?<!-- SEO_META_END -->/g, '');
@@ -130,8 +132,8 @@ for (const name of await readdir(path.join(root, 'posts'))) {
 }
 
 const sitemapUrls = [
-  ...publicPages.map(([file, route]) => ({ loc: url(route), lastmod: newer(gitDate(file), route === '' || route === 'archive' || route === 'timeline' ? postsDate : route==='moments' ? newer(gitDate('js/moments.js'),gitDate('data/community-public.json')) : route==='gallery' ? newer(gitDate('js/albums.js'),gitDate('data/community-public.json')) : '') })),
-  ...posts.map((post) => ({ loc: postUrl(post), lastmod: newer(post.date, postsDate) }))
+  ...publicPages.map(([file, route]) => ({ loc: url(route), lastmod: newer(gitDate(file), route === '' || route === 'archive' || route === 'timeline' ? articleDate : route==='moments' ? newer(gitDate('js/moments.js'),communityDate('moment')) : route==='gallery' ? newer(gitDate('js/albums.js'),communityDate('album')) : '') })),
+  ...posts.map((post) => ({ loc: postUrl(post), lastmod: newer(post.date, post.community ? post.published_at.slice(0,10) : postsDate) }))
 ];
 await write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.map(({ loc, lastmod }) => `  <url><loc>${xml(loc)}</loc><lastmod>${lastmod}</lastmod></url>`).join('\n')}\n</urlset>\n`);
 await write('robots.txt', `User-agent: *\nAllow: /\nSitemap: ${url('sitemap.xml')}\n`);

@@ -1,6 +1,6 @@
 # Community V2 Round 5：静态发布桥
 
-本轮基于 `ca6b9c5deb3a5b4326bd5ce122b23df146b48471`。只新增 `202610070003_publication_bridge.sql`；未连接生产 Supabase、执行生产迁移或合并 main。RC 操作见 [最终发布清单](COMMUNITY_V2_RELEASE.md)。
+本轮基于 `ca6b9c5deb3a5b4326bd5ce122b23df146b48471`。只新增 `202610070003_publication_bridge.sql` 与 `202610070004_category_raw_length.sql`；未连接生产 Supabase、执行生产迁移或合并 main。RC 操作见 [最终发布清单](COMMUNITY_V2_RELEASE.md)。
 
 ## 权威源与状态
 
@@ -57,7 +57,7 @@ checkout main、Node 22、自带 GITHUB_TOKEN 推送；与原 generate-site work
 
 ## 验证
 
-完整 Community CI glob 自动覆盖 Round 1–5：PGlite、独立 native PostgreSQL、多连接并发、jsdom、真实 Chrome 375px、搜索/Auth/供应链/SEO/secret scan。本地最终完整回归为 80 项通过、0 失败、0 跳过；该结果不代表生产验收。Round 5 fixture 位于 `tests/fixtures/community-publish/`，包括 article/moment/album、PNG/JPEG/WebP/MP4/PDF/TXT、恶意正文、私有 pending/rejected/history、替换/删除/中断重试。HTTP adapter 测试检查凭据不进入快照、bucket 边界、公开清理及非生产 CLI guard。
+完整 Community CI glob 自动覆盖 Round 1–5：PGlite、独立 native PostgreSQL、多连接并发、jsdom、真实 Chrome 375px、搜索/Auth/供应链/SEO/secret scan。本地最终完整回归为 81 项通过、0 失败、0 跳过；该结果不代表生产验收。Round 5 fixture 位于 `tests/fixtures/community-publish/`，包括 article/moment/album、PNG/JPEG/WebP/MP4/PDF/TXT、恶意正文、私有 pending/rejected/history、替换/删除/中断重试。HTTP adapter 测试检查凭据不进入快照、bucket 边界、公开清理及非生产 CLI guard。
 
 ```bash
 node scripts/generate-site.mjs

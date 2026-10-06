@@ -70,3 +70,11 @@ test('service HTTP adapter stays in exact bucket boundaries, cleans only generat
  f.rows=[];await reconcile({adapter,directory:dir});await reconcile({adapter,directory:dir,finalize:true,commitSHA:sha});assert.equal(f.objects.size,0);assert.ok(requests.filter(r=>r[1]==='DELETE').every(r=>r[0]==='/storage/v1/object/published-media'));assert.ok(requests.every(r=>!r[0].includes('dm-media')));
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+test('Git commit dates cannot repaint legacy/Community lastmod or create a second identical publication commit',async()=>{
+ const dir=await fixtureSite(),f=fixture();
+ const git=(args,date)=>execFileSync('git',args,{cwd:dir,stdio:'pipe',env:{...process.env,...(date?{GIT_AUTHOR_DATE:date,GIT_COMMITTER_DATE:date}:{})}});
+ try{git(['init']);git(['add','-A']);git(['-c','user.name=fixture','-c','user.email=fixture@example.invalid','commit','-m','initial fixture'],'2026-10-05T12:00:00Z');await reconcile({adapter:f.adapter,directory:dir});generate(dir);const before=await readFile(dir+'/sitemap.xml','utf8');
+ assert.match(before,/<loc>[^<]*\/posts\/post-austria-history<\/loc><lastmod>2026-10-05<\/lastmod>/);assert.match(before,/<loc>[^<]*\/posts\/community-first-article<\/loc><lastmod>2026-10-07<\/lastmod>/);
+ git(['add','data/community-public.json']);git(['-c','user.name=fixture','-c','user.email=fixture@example.invalid','commit','-m','snapshot fixture'],'2026-10-08T12:00:00Z');generate(dir);assert.equal(await readFile(dir+'/sitemap.xml','utf8'),before);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
