@@ -52,37 +52,36 @@
       .map(function (row) { return normalizeComment(row, profiles); });
   }
 
-  async function listNotifications() {
+  var personalGeneration = 0;
+  if (typeof document !== 'undefined') document.addEventListener('blog-auth-change', function () { personalGeneration++; });
+  async function personalRpc(name, args) {
+    var actor = auth.user(), token = personalGeneration;
     await auth.ready();
-    if (!auth.user()) return [];
-    var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at,revision_id,comment_edit_id')
-      .eq('user_id', auth.user().id).order('created_at', { ascending: false }).limit(50));
-    var actorIds = [...new Set(rows.map(function (row) { return row.actor_id; }).filter(Boolean))];
-    var actors = {};
-    if (actorIds.length) {
-      value(await db().from('profiles').select('id,username,display_name,avatar_url').in('id', actorIds))
-        .forEach(function (profile) { actors[profile.id] = profile; });
-    }
-    return rows.map(function (row) {
-      var actor = row.actor_id && actors[row.actor_id];
-      return Object.assign({}, row, {
-        actorName: actor && (actor.display_name || actor.username),
-        actorUsername: actor && actor.username,
-        actorAvatar: actor && actor.avatar_url
-      });
-    });
+    if (actor && (!auth.user() || actor.id !== auth.user().id || token !== personalGeneration)) throw Error('账号已变化。');
+    actor = auth.requireUser(); token = personalGeneration;
+    var result = value(await db().rpc(name, args));
+    if (!auth.user() || auth.user().id !== actor.id || token !== personalGeneration) throw Error('账号已变化。');
+    return result;
   }
-
-  async function notificationCount() {
-    await auth.ready();
-    if (!auth.user()) return 0;
-    return value(await db().from('notifications').select('id').eq('user_id', auth.user().id).eq('read', false)).length;
+  async function listNotifications(offset, limit) {
+    await auth.ready(); if (!auth.user()) return [];
+    return personalRpc('notifications_page', { p_limit: limit || 20, p_offset: offset || 0 });
   }
-
-  async function markNotificationsRead() {
-    await auth.ready();
-    if (!auth.user()) return;
-    value(await db().from('notifications').update({ read: true }).eq('user_id', auth.user().id).eq('read', false));
+  async function notificationCount(includeDM) {
+    await auth.ready(); if (!auth.user()) return 0;
+    return Number(await personalRpc('notification_unread_count', { p_include_dm: includeDM !== false }));
+  }
+  async function markNotificationsRead(id) {
+    await auth.ready(); if (!auth.user()) return;
+    await personalRpc('notification_mark_read', { p_id: id || null });
+  }
+  async function dmUnreadCount() {
+    await auth.ready(); if (!auth.user()) return 0;
+    return Number(await personalRpc('dm_unread_count', {}));
+  }
+  async function messageUnreadCount() {
+    var values = await Promise.all([notificationCount(false), dmUnreadCount()]);
+    return values[0] + values[1];
   }
   async function moderateComment(id, status, reason, expectedContent) {
     await auth.ready(); auth.requireAdmin();
@@ -169,7 +168,7 @@
   }
   window.BlogData = { listComments: listComments, addComment: addComment, listModeration: listModeration,
     listLatestComments: listLatestComments,
-    listNotifications: listNotifications, notificationCount: notificationCount, markNotificationsRead: markNotificationsRead,
+    listNotifications: listNotifications, notificationCount: notificationCount, markNotificationsRead: markNotificationsRead, dmUnreadCount: dmUnreadCount, messageUnreadCount: messageUnreadCount,
     moderateComment: moderateComment, deleteComment: deleteComment, likes: likes, toggleLike: toggleLike,
     followerCount: followerCount, userLikeCount: userLikeCount,
     getProfile: getProfile, saveProfile: saveProfile, uploadAvatar: uploadAvatar, following: following, toggleFollow: toggleFollow };

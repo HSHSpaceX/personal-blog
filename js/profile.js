@@ -5,7 +5,7 @@
   var $=function(id){return document.getElementById(id);};
   var target=null,generation=0,pageGeneration=0,tab='moment',offset=0,legacyRows=[],legacyIndex=0,pageStartLegacy=0,cursors=[],hasNext=false;
   function status(text,error){$('profileStatus').textContent=text;$('profileStatus').className='status-line '+(error?'err':'ok');}
-  function clear(){generation++;pageGeneration++;target=null;$('profileCards').replaceChildren();$('profileDetail').replaceChildren();$('profileLogout').hidden=true;$('profileEditor').hidden=true;$('profileOwnLinks').hidden=true;$('followBtn').hidden=true;$('profileMessage').hidden=true;
+  function clear(){if(window.ProfileComments)window.ProfileComments.clear();generation++;pageGeneration++;target=null;$('profileCards').replaceChildren();$('profileDetail').replaceChildren();$('profileLogout').hidden=true;$('profileEditor').hidden=true;$('profileOwnLinks').hidden=true;$('followBtn').hidden=true;$('profileMessage').hidden=true;$('profileMessage').removeAttribute('href');
     ['profileUsernameInput','profileDisplayInput','profileBioInput','profileAvatarInput'].forEach(function(id){$(id).value='';});}
   async function load(){
     clear();var token=generation;
@@ -16,7 +16,7 @@
       var loaded=await data.profile(query);if(token!==generation)return;target=loaded;
       if(!target)throw Error('找不到该用户资料。');
       $('profileName').textContent=target.display_name||target.username;$('profileUsername').textContent='@'+target.username;$('profileBio').textContent=target.bio||'还没有简介。';$('profileAvatar').src=cards.avatar(target.avatar_url);
-      var own=!!auth.user()&&auth.user().id===target.id;$('profileOwnLinks').hidden=!own;$('profileLogout').hidden=!own;$('profileMessage').hidden=!auth.user()||own;
+      var own=!!auth.user()&&auth.user().id===target.id;$('profileOwnLinks').hidden=!own;$('profileLogout').hidden=!own;$('profileMessage').hidden=own;var messageTarget='messages.html?user='+encodeURIComponent(target.id);$('profileMessage').href=auth.user()?messageTarget:'login.html?next='+encodeURIComponent(messageTarget);
       $('profileEditor').hidden=!own||params.get('edit')!=='1';
       if(own){$('profileUsernameInput').value=target.username;$('profileDisplayInput').value=target.display_name;$('profileBioInput').value=target.bio;}
       if(auth.user()&&!own){$('followBtn').hidden=false;var following=await window.BlogData.following(target.id);if(token!==generation)return;$('followBtn').textContent=following?'取消关注':'关注';}
@@ -24,7 +24,7 @@
       tab=params.get('tab')||'moment';if(!['moment','article','album','comment','likes','followers','following'].includes(tab))tab='moment';
       await changeTab(tab);
       if(token!==generation)return;
-      if(params.get('item')){var card=await data.item(params.get('item'));if(token!==generation)return;$('profileDetail').replaceChildren(cards.content(card,true));}
+      if(params.get('item')){var card=await data.item(params.get('item'));if(token!==generation)return;$('profileDetail').replaceChildren(cards.content(card,true));if(window.ProfileComments)await window.ProfileComments.show(params.get('item'));}
       status('公开主页。');
     }catch(e){if(token===generation)status(e.message,true);}
   }

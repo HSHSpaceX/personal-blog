@@ -21,7 +21,7 @@ async function profileHarness(role='guest',own=false){const d=await dom('profile
 test('profile DOM: guests see public fields/cards, followers, bounded paging and inert text',options,async()=>{
  const h=await profileHarness();try{
  assert.equal(h.$('profileName').textContent,attack);assert.equal(h.$('profileBio').querySelector('script,img'),null);assert.equal(h.w.compromised,undefined);
- assert.equal(h.$('followBtn').hidden,true);assert.equal(h.$('profileMessage').hidden,true);assert.equal(h.$('profileEditor').hidden,true);assert.equal(h.$('profileOwnLinks').hidden,true);
+ assert.equal(h.$('followBtn').hidden,true);assert.equal(h.$('profileMessage').hidden,false);assert.match(h.$('profileMessage').href,/login.html\?next=/);assert.equal(h.$('profileEditor').hidden,true);assert.equal(h.$('profileOwnLinks').hidden,true);
  assert.equal(h.$('profileAvatar').getAttribute('src'),'assets/avatar-default.jpg');assert.equal(h.$('profileCards').children.length,20);assert.equal(h.$('profileCards').querySelector('script,[onerror]'),null);
  assert.match(h.$('profileCards').querySelector('.public-author').href,/profile.html\?username=other_user/);
  await h.click('profileNext');assert.equal(h.$('profileCards').children.length,1);assert.equal(h.$('profileCards').querySelector('h3').textContent,'Card 20');await h.click('profilePrev');assert.equal(h.$('profileCards').querySelector('h3').textContent,'Card 0');
@@ -30,7 +30,7 @@ test('profile DOM: guests see public fields/cards, followers, bounded paging and
  }finally{h.d.window.close();}
 });
 test('profile DOM: user and admin share follow/message/own-edit behavior and logout clears editing fields',options,async()=>{
- for(const role of ['user','admin']){const h=await profileHarness(role);try{assert.equal(h.$('followBtn').hidden,false);assert.equal(h.$('profileMessage').hidden,false);assert.equal(h.$('profileMessage').disabled,true);assert.equal(h.w.document.querySelector('a[href="admin.html"]'),null);await h.click('followBtn');assert.ok(h.calls.some(c=>c[0]==='follow'));
+ for(const role of ['user','admin']){const h=await profileHarness(role);try{assert.equal(h.$('followBtn').hidden,false);assert.equal(h.$('profileMessage').hidden,false);assert.match(h.$('profileMessage').href,/messages.html\?user=/);assert.equal(h.w.document.querySelector('a[href="admin.html"]'),null);await h.click('followBtn');assert.ok(h.calls.some(c=>c[0]==='follow'));
  await h.click('profileFollowers');const b=h.$('profileCards').querySelector('button');assert.equal(b.textContent,'关注');b.click();await flush();assert.equal(b.textContent,'取消关注');}finally{h.d.window.close();}
  const own=await profileHarness(role,true);try{assert.equal(own.$('profileOwnLinks').hidden,false);assert.equal(own.$('followBtn').hidden,true);await own.click('profileEdit');assert.equal(own.$('profileEditor').hidden,false);own.state.set(null);own.w.document.dispatchEvent(new own.w.Event('blog-auth-change'));await flush();assert.equal(own.$('profileEditor').hidden,true);assert.equal(own.$('profileBioInput').value,'');}finally{own.d.window.close();}}
 });

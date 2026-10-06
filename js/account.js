@@ -23,6 +23,7 @@
     $('accountSections').hidden = true;
     $('accountIdentity').textContent = '';
     $('accountSummary').textContent = '';
+    $('accountNotificationCount').textContent='';$('accountDMCount').textContent='';
     $('accountConnections').textContent = '在公开主页查看关注与粉丝列表。';
     $('accountAdminNav').replaceChildren();
     $('accountReviewLinks').replaceChildren();
@@ -49,10 +50,11 @@
     if (window.AssetCenter) window.AssetCenter.refresh();
     if (window.AccountComments) window.AccountComments.refresh();
     try {
-      var values = await Promise.all([data.getProfile(user.id), data.notificationCount(), data.followerCount(user.id)]);
+      var values = await Promise.all([data.getProfile(user.id), data.notificationCount(), data.followerCount(user.id), data.dmUnreadCount()]);
       if (generation !== attempt || !auth.user() || auth.user().id !== user.id) return;
       var profile = values[0];
-      $('accountSummary').textContent = (profile && (profile.display_name || profile.username) || '用户') + ' · ' + values[1] + ' 条未读通知';
+      $('accountSummary').textContent = (profile && (profile.display_name || profile.username) || '用户') + ' · ' + values[1] + ' 条未读通知 · ' + values[3] + ' 条未读私信';
+      $('accountNotificationCount').textContent=values[1]+' 条未读通知';$('accountDMCount').textContent=values[3]+' 条未读私信';
       $('accountConnections').textContent = values[2] + ' 位关注者。在公开主页查看关注与粉丝列表。';
     } catch (error) {
       if (generation === attempt) status('账号概览暂不可用：' + error.message, 'err');

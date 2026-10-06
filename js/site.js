@@ -51,6 +51,7 @@
     });
     document.addEventListener('click', function (event) { if (!event.target.closest('.user-menu-wrap')) closeUserMenus(); });
     document.addEventListener('blog-auth-change', function () { applyAuthUi(); refreshPendingBadge(); refreshNotificationBadge(); });
+    document.addEventListener('blog-messages-change', refreshNotificationBadge);
   }
 
   function updateFavicon() {
@@ -983,9 +984,14 @@
     });
   }
 
+  var notificationBadgeGeneration = 0;
   function refreshNotificationBadge() {
+    var token = ++notificationBadgeGeneration, actor = window.BlogAuth.user();
+    updateNotificationBadge(0);
     if (!window.BlogAuth.user()) { updateNotificationBadge(0); return; }
-    window.BlogData.notificationCount().then(updateNotificationBadge).catch(function () { updateNotificationBadge(0); });
+    window.BlogData.messageUnreadCount().then(function (count) {
+      if (token === notificationBadgeGeneration && window.BlogAuth.user() && window.BlogAuth.user().id === actor.id) updateNotificationBadge(count);
+    }).catch(function () { if (token === notificationBadgeGeneration) updateNotificationBadge(0); });
   }
 
   function setupRail() {

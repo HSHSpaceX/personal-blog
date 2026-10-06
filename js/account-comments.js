@@ -10,6 +10,7 @@
   function editor(c){selected=c;$('accountCommentEditor').hidden=false;$('accountCommentText').value=c.latest_edit?c.latest_edit.proposed_content:c.content;$('accountCommentIdentity').textContent='评论 / '+c.post_slug+' · '+c.status;}
   async function mine(t){var rows=await data.mine(offset);if(!active(t))return;$('accountCommentsList').replaceChildren();
     rows.forEach(function(c){var row=node('article',undefined,'public-content-card');row.appendChild(node('p',c.post_slug+' · '+c.created_at.slice(0,10)+' · '+c.status));row.appendChild(node('p',c.content,'public-text'));
+      if(c.rejection_reason&&c.status==='rejected')row.appendChild(node('p','初次审核驳回原因：'+c.rejection_reason,'public-text'));
       if(c.latest_edit){row.appendChild(node('p','最新编辑：'+c.latest_edit.status));if(c.latest_edit.rejection_reason)row.appendChild(node('p','驳回原因：'+c.latest_edit.rejection_reason,'public-text'));}
       if(!(c.status==='approved'&&c.latest_edit&&c.latest_edit.status==='pending'&&!auth.isAdmin()))button(row,'编辑我的评论',function(){editor(c);});
       $('accountCommentsList').appendChild(row);});if(!rows.length)$('accountCommentsList').appendChild(node('p','暂无自己的评论。'));

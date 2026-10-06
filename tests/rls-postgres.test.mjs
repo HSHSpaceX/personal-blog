@@ -103,7 +103,11 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
       'profile_content','profile_recent_likes','community_like_target_visible','community_edit_comment',
       'community_review_comment_edit','community_moderate_comment','community_my_comments','community_notify_comment_edit',
       'community_assets_page','community_asset_references','community_rename_asset','community_orphan_assets',
-      'community_prepare_asset_delete','community_prepare_orphan_delete','community_guard_orphan_delete','community_clear_delete_intent'
+      'community_prepare_asset_delete','community_prepare_orphan_delete','community_guard_orphan_delete','community_clear_delete_intent',
+      'community_public_comments','notification_content_owner','notify_initial_comment_result','notification_unread_count','notification_mark_read',
+      'dm_can_read_object','dm_guard_object','dm_clear_delete_intent','dm_get_or_create_thread','dm_threads','dm_messages',
+      'dm_register_asset','dm_send_message','dm_mark_thread_read','dm_unread_count','dm_unsent_assets','dm_orphan_assets',
+      'dm_prepare_asset_delete','dm_prepare_orphan_delete','notifications_page'
     ].sort());
     for (const fn of functions.rows) assert.ok(fn.proconfig.includes('search_path=""')); assertions++;
     // Auth deletion must preserve legacy content and clear FK identities even

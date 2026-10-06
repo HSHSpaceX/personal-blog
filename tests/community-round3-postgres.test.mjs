@@ -48,7 +48,7 @@ test('Round 3 public RPCs: minimal profile projections, bounded pages, current p
  await db.query('insert into public.likes(user_id,target_type,target_id) values($1,$2,$3)',[user,'comment',hidden]);
  const unpub=await c.item(other);await c.save(other,unpub,{text:'Private item'});await db.query('insert into public.likes(user_id,target_type,target_id) values($1,$2,$3)',[user,'content',unpub]);
  await db.query('insert into public.likes(user_id,target_type,target_id) values($1,$2,$3)',[user,'album','private-album']);
- await db.query("insert into public.legacy_public_targets values('album','public-album','Album','Public album','gallery.html?album=public-album',now())");
+ await db.query("insert into public.legacy_public_targets(target_type,target_id,title,excerpt,target_path,published_at) values('album','public-album','Album','Public album','gallery.html?album=public-album',now())");
  await c.run(user,'insert into public.likes(user_id,target_type,target_id) values($1,$2,$3)',[user,'album','public-album']);
  for(const actor of [null,other,admin]){
  const likes=await c.cards(actor,'public.profile_recent_likes($1,20,0)',[user]);c.eq(likes.length,5);c.eq(likes.find(r=>r.target_id===i).text,'First public text');

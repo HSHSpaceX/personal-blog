@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,follow">
-  <title>个人通知 - 拾光手记</title>
+  <title>消息中心 - 拾光手记</title>
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=4">
-  <link rel="stylesheet" href="css/community.css?v=2">
+  <link rel="stylesheet" href="css/community.css?v=3">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -20,18 +20,55 @@
       <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button></div>
   </div></header>
-  <main class="admin-main container">
+  <main class="admin-main container message-center">
     <section class="admin-card wide">
-      <h1>个人通知</h1>
-      <p id="messagesStatus" class="status-line" aria-live="polite"></p>
-      <div id="messagesList" class="msg-comment-list"></div>
-      <div class="admin-row"><a class="btn" href="profile.html" rel="nofollow">我的资料</a></div>
+      <h1>消息中心</h1>
+      <p id="messagesStatus" class="status-line" role="status" aria-live="polite"></p>
+      <nav class="message-tabs" aria-label="消息分类">
+        <button id="notificationTab" class="btn" type="button" aria-pressed="true">通知 <span id="notificationUnread">0</span></button>
+        <button id="dmTab" class="btn" type="button" aria-pressed="false">私信 <span id="dmUnread">0</span></button>
+      </nav>
+      <div id="messagePanels" hidden>
+        <section id="notificationsPanel" aria-label="个人通知">
+          <div class="admin-row"><button id="notificationRefresh" class="btn" type="button">刷新通知</button><button id="notificationReadAll" class="btn" type="button">全部通知标已读</button></div>
+          <div id="messagesList" class="msg-comment-list"></div>
+          <div class="admin-row"><button id="notificationPrev" class="btn" type="button" disabled>上一页通知</button><span id="notificationPage"></span><button id="notificationNext" class="btn" type="button" disabled>下一页通知</button></div>
+        </section>
+        <section id="dmPanel" aria-label="一对一私信" hidden>
+          <div class="dm-layout">
+            <section class="dm-conversations" aria-label="会话列表">
+              <h2>会话</h2><button id="dmThreadsRefresh" class="btn" type="button">刷新会话</button><div id="dmThreads"></div>
+              <div class="admin-row"><button id="dmThreadsPrev" class="btn" type="button" disabled>上一页会话</button><button id="dmThreadsNext" class="btn" type="button" disabled>下一页会话</button></div>
+            </section>
+            <section id="dmChat" class="dm-chat" aria-label="聊天窗口" hidden>
+              <h2 id="dmPeer"></h2><p id="dmChatStatus" class="status-line" role="status" aria-live="polite"></p>
+              <div class="admin-row"><button id="dmOlder" class="btn" type="button" disabled>加载更早消息</button><button id="dmChatRefresh" class="btn" type="button">刷新聊天</button></div>
+              <div id="dmHistory" aria-label="消息历史"></div>
+              <form id="dmComposer">
+                <label for="dmBody">消息（最多 4000 字）</label><textarea id="dmBody" maxlength="8000" rows="4"></textarea>
+                <label for="dmImages">图片（JPG/PNG/WebP，单张最多 8 MiB，每条最多 4 张）</label><input id="dmImages" type="file" multiple accept="image/jpeg,image/png,image/webp">
+                <div id="dmAttachments"></div><button id="dmSend" class="btn primary" type="submit">发送私信</button>
+              </form>
+            </section>
+          </div>
+          <details class="dm-unsent"><summary>未发送图片与上传清理</summary>
+            <p>未发送图片仅自己可见。可选择加入当前会话，或删除；已发送图片不可删除。这里只按文件元数据限制类型和大小，不提供内容扫描。</p>
+            <button id="dmAssetsRefresh" class="btn" type="button">读取我的未发送图片</button><div id="dmUnsent"></div>
+            <div class="admin-row"><button id="dmAssetsPrev" class="btn" type="button" disabled>上一页图片</button><button id="dmAssetsNext" class="btn" type="button" disabled>下一页图片</button></div>
+            <h3>未登记的上传</h3><div id="dmOrphans"></div>
+            <div class="admin-row"><button id="dmOrphansPrev" class="btn" type="button" disabled>上一页未登记上传</button><button id="dmOrphansNext" class="btn" type="button" disabled>下一页未登记上传</button></div>
+          </details>
+        </section>
+      </div>
+      <div class="admin-row"><a class="btn" href="account.html" rel="nofollow">账号中心</a><a class="btn" href="profile.html" rel="nofollow">我的主页</a></div>
     </section>
   </main>
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=7"></script>
-  <script src="js/messages.js?v=7"></script>
+  <script src="js/blog-data.js?v=8"></script>
+  <script src="js/public-cards.js?v=1"></script>
+  <script src="js/message-data.js?v=1"></script>
+  <script src="js/messages.js?v=8"></script>
 </body>
 </html>

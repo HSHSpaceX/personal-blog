@@ -10,7 +10,8 @@
   async function ownComment(id){if(!window.CommunitySchema.uuid(id))throw Error('无效评论链接。');var db=await client();
     var r=value(await db.from('comments').select('id,post_slug,parent_id,content,status,created_at').eq('id',id).eq('user_id',auth.requireUser().id).maybeSingle());
     if(!r)throw Error('只能编辑自己的评论。');
-    var edits=value(await db.from('comment_edits').select('id,proposed_content,status,rejection_reason').eq('comment_id',id).order('edit_no',{ascending:false}).limit(1));r.latest_edit=edits[0]||null;return r;}
+    var edits=value(await db.from('comment_edits').select('id,proposed_content,status,rejection_reason').eq('comment_id',id).order('edit_no',{ascending:false}).limit(1));r.latest_edit=edits[0]||null;
+    var result=value(await db.from('comment_review_results').select('rejection_reason').eq('comment_id',id).eq('decision','rejected').order('created_at',{ascending:false}).order('id',{ascending:false}).limit(1));r.rejection_reason=result[0]&&result[0].rejection_reason;return r;}
   window.CommentEditData={getEdit:getEdit,ownComment:ownComment,
     mine:function(offset){return rpc('community_my_comments',{p_limit:20,p_offset:offset});},
     save:function(id,text){return rpc('community_edit_comment',{p_comment_id:id,p_content:text});},

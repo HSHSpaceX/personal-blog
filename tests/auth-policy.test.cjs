@@ -16,6 +16,7 @@ function dataHarness(role = 'guest') {
   const follows = new Set();
   const client = { rpc(name, args) {
     calls.push({ rpc: name, args });
+    if (name === 'notifications_page') return Promise.resolve({ data: [], error: null });
     if (name === 'like_counts') return Promise.resolve({ data: args.p_target_ids.filter((id) => likes.has(id)).map((id) => ({ target_id: id, like_count: 1 })), error: null });
     if (name === 'user_like_count') return Promise.resolve({ data: likes.size, error: null });
     return Promise.resolve({ data: 0, error: null });
@@ -296,10 +297,11 @@ test('admin retains user comment/like/follow/profile and personal notification c
     await h.data.listNotifications();
     await h.data.notificationCount();
     await h.data.markNotificationsRead();
-    const calls = h.calls.filter(call=>call.table==='notifications');
+    const calls = h.calls.filter(call=>['notifications_page','notification_unread_count','notification_mark_read'].includes(call.rpc));
     assert.equal(calls.length,3,'both users and admins use their personal inbox');
-    assert.ok(calls.every(call=>call.filters.user_id==='actor-uuid'));
-    assert.equal(calls[2].payload.read,true);
+    assert.deepEqual(calls.map(call=>call.rpc),['notifications_page','notification_unread_count','notification_mark_read']);
+    assert.equal(calls[0].args.p_limit,20);
+    assert.equal(calls[2].args.p_id,null);
   }
   const guest=dataHarness();
   assert.equal((await guest.data.listNotifications()).length,0);

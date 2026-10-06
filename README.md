@@ -35,3 +35,5 @@ Community V2 Round 1 的数据模型、权限、账号中心及独立测试项�
 Community V2 Round 2 的投稿/审核、按用户与类型阈值、私有 Storage 和原生 PostgreSQL/DOM CI 见 [Round 2](docs/COMMUNITY_V2_ROUND2.md)。仅新增迁移，部署前需在独立测试 Supabase 项目验收。
 
 Community V2 Round 3 的公开主页/RPC、评论编辑审核、完整个人资源中心和真实 Chromium 移动端测试见 [Round 3](docs/COMMUNITY_V2_ROUND3.md)。
+
+Community V2 Round 4 的通知事件、一对一私信/图片、消息中心和 unread/Storage 权限见 [Round 4](docs/COMMUNITY_V2_ROUND4.md)。

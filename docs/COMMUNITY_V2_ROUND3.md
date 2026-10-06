@@ -1,5 +1,7 @@
 # Community V2 Round 3
 
+本页保留 Round 3 交付状态；当前通知/私信/初次评论审核行为见 [Round 4](COMMUNITY_V2_ROUND4.md)。
+
 基于 feature/community-v2 HEAD `ec702d5f4569b5698382011d277ecab462fa1fba`。已完成公开个人主页、公开社交/个人内容分页、独立评论编辑审核和个人资源管理。没有 merge main，没有连接或修改生产 Supabase；全部旧 migration 保持原样。私信留 Round 4，GitHub/静态 SEO 发布桥留 Round 5。
 
 ## 新迁移

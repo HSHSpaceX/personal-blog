@@ -202,7 +202,7 @@ test('Social notifications: user and multiple admins retain all social powers, n
     c.equal(await notifyCount(admin,'comment_like'),2);
     c.equal(await notifyCount(admin,'comment_approved'),1);
     const rejected = await comment(user,'Rejected private reply',adminComment);
-    await c.run(admin,'select public.community_moderate_comment($2,$1,null)',['rejected',rejected]);
+    await c.run(admin,'select public.community_moderate_comment($2,$1,$3)',['rejected',rejected,'Private reply not approved']);
     c.equal(await notifyCount(admin,'comment_reply'),2);
     await c.denied(null,'select * from public.notifications');
     await c.rows(admin,'select * from public.notifications where user_id=$1',[user],0);

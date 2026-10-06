@@ -21,7 +21,7 @@ function accountHarness(initialRole, deferred = false, deferredData = false) {
     resetPassword: async email => { resets.push(email); }, signOut: async () => { role = 'guest'; } };
   const dataPromise = deferredData ? new Promise(resolve => {resolveData=resolve;}) : Promise.resolve({display_name:'Test user'});
   const context = {window:{BlogAuth:auth,BlogTheme:{setup(){}},BlogData:{getProfile:()=>dataPromise,
-    notificationCount:async()=>3,followerCount:async()=>4},GitHubCredentials:{clear(){}}},
+    notificationCount:async()=>3,followerCount:async()=>4,dmUnreadCount:async()=>2},GitHubCredentials:{clear(){}}},
     document:{getElementById:id=>elements[id],createElement:()=>element(),addEventListener:(name,fn)=>{events[name]=fn;}},
     location:{replace:href=>redirects.push(href)}};
   vm.runInNewContext(read('js/account.js'),context);
@@ -29,7 +29,7 @@ function accountHarness(initialRole, deferred = false, deferredData = false) {
     change(nextRole) { role=nextRole; events['blog-auth-change'](); }};
 }
 
-test('account has all personal sections and Round 2 submission/upload controls, keeps private messages a placeholder and stays noindex', () => {
+test('account has all personal sections and Round 2 submission/upload controls, opens private messages and stays noindex', () => {
   const html = read('account.html');
   for (const id of ['overview','profile','content','assets','notifications','direct-messages','connections','security','review-center','review-policies']) {
     assert.match(html,new RegExp(`id="${id}"`));
@@ -38,7 +38,8 @@ test('account has all personal sections and Round 2 submission/upload controls, 
   assert.doesNotMatch(html,/href="admin\.html|contenteditable/);
   assert.match(html,/id="communityUploadFile" type="file"/);
   for (const type of ['article','moment','album']) assert.match(html,new RegExp(`data-new-content="${type}"`));
-  assert.match(html,/私信功能尚未开放/);
+  assert.match(html,/id="accountDMCount"/);
+  assert.match(html,/href="messages.html\?tab=dm"[^>]*rel="nofollow"/);
   assert.doesNotMatch(read('sitemap.xml'),/(?:account|messages|login|admin)(?:\.html)?<\/loc>/);
   for (const file of ['login.html','profile.html','messages.html','admin.html']) {
     assert.match(read(file),/href="account\.html"[^>]*rel="nofollow"/);
@@ -108,11 +109,14 @@ test('public menu creates admin links only after role verification and removes t
 
 test('personal notifications ignore an old inbox response after logout', async () => {
   let user={id:'admin-one'}, resolveRows;
-  const list=element(), status=element(), events={}, redirects=[];
+  const elements=Object.fromEntries([...read('messages.html').matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
+  const list=elements.messagesList,status=elements.messagesStatus,events={},redirects=[];
   const context={window:{BlogTheme:{setup(){}},BlogAuth:{ready:async()=>{},user:()=>user},BlogData:{
-    listNotifications:()=>new Promise(resolve=>{resolveRows=resolve;}),markNotificationsRead:async()=>assert.fail('stale inbox must not be marked read')}},
-    document:{getElementById:id=>id==='messagesList'?list:status,querySelectorAll:()=>[],addEventListener:(name,fn)=>{events[name]=fn;}},
-    location:{replace:href=>redirects.push(href)}};
+    listNotifications:()=>new Promise(resolve=>{resolveRows=resolve;}),notificationCount:async()=>0,markNotificationsRead:async()=>assert.fail('stale inbox must not be marked read')}},
+    document:{getElementById:id=>elements[id],querySelectorAll:()=>[],addEventListener:(name,fn)=>{events[name]=fn;}},
+    URLSearchParams,setInterval:()=>1,clearTimeout:()=>{},
+    location:{search:'',replace:href=>redirects.push(href)}};
+  context.window.MessageData={unread:async()=>0};context.window.PublicCards={node:()=>element()};
   vm.runInNewContext(read('js/messages.js'),context); await flush();
   user=null; events['blog-auth-change'](); await flush();
   resolveRows([{title:'Private old notification',read:false}]); await flush();

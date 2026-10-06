@@ -127,6 +127,7 @@ test('notification DOM: rejected reason is escaped, valid UUID links to re-edit,
  const d=await dom('messages.html','https://blog.invalid/messages.html'),w=d.window,id=randomUUID();
  w.BlogTheme={setup(){}};w.BlogAuth={ready:async()=>{},user:()=>({id:user})};w.BlogData={listNotifications:async()=>[
  {type:'content_rejected',revision_id:id,body:hostile,title:hostile},
- {type:'content_rejected',revision_id:'" onclick="alert(1)',body:hostile,title:'bad ID'}],markNotificationsRead:async()=>{}};
- try{w.eval(await read('js/messages.js'));await settle();const inbox=w.document.getElementById('messagesList');assert.equal(inbox.querySelector('script,[onerror],[onclick]'),null);const actions=inbox.querySelectorAll('a.btn');assert.equal(actions.length,1);assert.match(actions[0].href,new RegExp('account.html\\?revision='+id+'#content'));assert.equal(actions[0].rel,'nofollow');assert.ok(inbox.textContent.includes(hostile));}finally{d.window.close();}
+ {type:'content_rejected',revision_id:'" onclick="alert(1)',body:hostile,title:'bad ID'}],notificationCount:async()=>2,markNotificationsRead:async()=>{}};
+ w.MessageData={uuid:id=>/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id||''),unread:async()=>0};
+ try{w.eval(await read('js/public-cards.js'));w.eval(await read('js/messages.js'));await settle();const inbox=w.document.getElementById('messagesList');assert.equal(inbox.querySelector('script,[onerror],[onclick]'),null);const actions=inbox.querySelectorAll('a.btn');assert.equal(actions.length,1);assert.match(actions[0].href,new RegExp('account.html\\?revision='+id+'#content'));assert.equal(actions[0].rel,'nofollow');assert.ok(inbox.textContent.includes(hostile));}finally{d.window.close();}
 });
