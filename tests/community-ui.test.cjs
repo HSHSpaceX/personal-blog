@@ -29,13 +29,16 @@ function accountHarness(initialRole, deferred = false, deferredData = false) {
     change(nextRole) { role=nextRole; events['blog-auth-change'](); }};
 }
 
-test('account skeleton has every requested section, no submission/upload/private-message UI, and stays noindex', () => {
+test('account has all personal sections and Round 2 submission/upload controls, keeps private messages a placeholder and stays noindex', () => {
   const html = read('account.html');
   for (const id of ['overview','profile','content','assets','notifications','direct-messages','connections','security','review-center','review-policies']) {
     assert.match(html,new RegExp(`id="${id}"`));
   }
   assert.match(html,/<meta name="robots" content="noindex,follow">/);
-  assert.doesNotMatch(html,/href="admin\.html|<form|type="file"|contenteditable/);
+  assert.doesNotMatch(html,/href="admin\.html|contenteditable/);
+  assert.match(html,/id="communityUploadFile" type="file"/);
+  for (const type of ['article','moment','album']) assert.match(html,new RegExp(`data-new-content="${type}"`));
+  assert.match(html,/私信功能尚未开放/);
   assert.doesNotMatch(read('sitemap.xml'),/(?:account|messages|login|admin)(?:\.html)?<\/loc>/);
   for (const file of ['login.html','profile.html','messages.html','admin.html']) {
     assert.match(read(file),/href="account\.html"[^>]*rel="nofollow"/);

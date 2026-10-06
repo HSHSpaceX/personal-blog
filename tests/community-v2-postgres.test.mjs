@@ -22,8 +22,8 @@ function checks(db) {
   return { run, rows, denied, equal, item, revision, submit, review, report: label => console.log(`${label}: ${assertions} assertions passed.`) };
 }
 
-test('Community V2: private UUIDs, immutable revisions, atomic publication/rejection, roles and policy snapshots', options, async () => {
-  const db = await createDatabase();
+test('Round 1 migration history: private UUIDs, immutable revisions, atomic publication/rejection, roles and policy snapshots', options, async () => {
+  const db = await createDatabase({through:'202610060002_social_notifications.sql'});
   try {
     await seedActors(db);
     const c = checks(db);
@@ -125,8 +125,8 @@ test('Community V2: private UUIDs, immutable revisions, atomic publication/rejec
   } finally { await db.close(); }
 });
 
-test('Community V2: private asset registry, owner-only mutation and least privilege', options, async () => {
-  const db = await createDatabase();
+test('Round 1 migration history: private asset registry, owner-only mutation and least privilege', options, async () => {
+  const db = await createDatabase({through:'202610060002_social_notifications.sql'});
   try {
     await seedActors(db); const c = checks(db);
     const sql = "insert into public.user_assets(owner_id,object_path,original_name,mime_type,size_bytes) values ($1,$2,'image.png','image/png',12) returning id";

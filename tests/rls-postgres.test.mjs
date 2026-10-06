@@ -94,7 +94,10 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
       'is_admin', 'is_admin_id', 'on_auth_user_created', 'like_counts', 'follower_count', 'user_like_count',
       'notify_comment_approved', 'notify_comment_reply', 'notify_comment_like', 'notify_follow',
       'community_create_item', 'community_save_revision', 'community_submit_revision',
-      'community_review_revision', 'community_set_review_policy'
+      'community_review_revision', 'community_set_review_policy',
+      'community_set_user_review_threshold', 'community_review_policy_status',
+      'community_guard_registered_object', 'community_register_asset',
+      'community_check_revision_assets', 'community_notify_review_result'
     ].sort());
     for (const fn of functions.rows) assert.ok(fn.proconfig.includes('search_path=""')); assertions++;
     // Auth deletion must preserve legacy content and clear FK identities even

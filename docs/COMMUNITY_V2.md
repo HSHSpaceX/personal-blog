@@ -1,5 +1,7 @@
 # Community V2 Round 1
 
+本页保留 Round 1 历史语义；当前投稿、审核规则及私有 Storage 以 [Round 2](COMMUNITY_V2_ROUND2.md) 为准。
+
 本轮只建立数据与权限底座、账号中心入口及通知修正。现有静态文章、评论、点赞、关注、邀请制 Supabase Auth 和 GitHub 发布路径继续使用原实现。没有文章/动态/图册投稿、资源上传或私信 UI；现有静态内容也不会自动导入新表。
 
 ## 权限模型

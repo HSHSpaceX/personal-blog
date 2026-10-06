@@ -31,3 +31,5 @@ GitHub Actions 的静态站生成工作流在主分支文章变更时自动更�
 安全关键第三方资源固定版本并本地存放在 `assets/vendor/`，完整性由测试验证。上线前应用第三份安全加固迁移；真实 Supabase RLS 验收使用两个普通账号和一个 admin，执行 `scripts/check-supabase-rls.mjs`，具体准备、环境变量和本地 PostgreSQL 验证见 [Supabase 部署](docs/SUPABASE_SETUP.md#上线前安全验收)。未配置项目时不能确认真实 RLS、SMTP 和邀请/恢复邮件流程。
 
 Community V2 Round 1 的数据模型、权限、账号中心及独立测试项目验收见 [Community V2](docs/COMMUNITY_V2.md)。新增迁移尚需人工在测试项目验证；不自动修改生产 Supabase。
+
+Community V2 Round 2 的投稿/审核、按用户与类型阈值、私有 Storage 和原生 PostgreSQL/DOM CI 见 [Round 2](docs/COMMUNITY_V2_ROUND2.md)。仅新增迁移，部署前需在独立测试 Supabase 项目验收。

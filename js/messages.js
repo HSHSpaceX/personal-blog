@@ -28,6 +28,9 @@
       '</div>' +
       '<p class="comment-content">' + escapeHtml(item.title) + '</p>' +
       (item.body ? '<p class="comment-content muted">' + escapeHtml(item.body) + '</p>' : '') +
+      (/^content_(approved|rejected)$/.test(item.type) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.revision_id || '')
+        ? '<a class="btn" rel="nofollow" href="account.html?revision=' + encodeURIComponent(item.revision_id) + '#content">' +
+          (item.type === 'content_rejected' ? '查看原因并重新编辑' : '查看发布版本') + '</a>' : '') +
     '</article>';
   }
   async function load() {

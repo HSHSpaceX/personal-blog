@@ -17,6 +17,7 @@
   }
   function clear() {
     generation++;
+    if (window.CommunityUI) window.CommunityUI.clear();
     $('accountSections').hidden = true;
     $('accountIdentity').textContent = '';
     $('accountSummary').textContent = '';
@@ -42,6 +43,7 @@
       $('review-policies').hidden = false;
     }
     status('欢迎回到账号中心。', 'ok');
+    if (window.CommunityUI) window.CommunityUI.refresh();
     try {
       var values = await Promise.all([data.getProfile(user.id), data.notificationCount(), data.followerCount(user.id)]);
       if (generation !== attempt || !auth.user() || auth.user().id !== user.id) return;

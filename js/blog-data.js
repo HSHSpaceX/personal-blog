@@ -55,7 +55,7 @@
   async function listNotifications() {
     await auth.ready();
     if (!auth.user()) return [];
-    var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at')
+    var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at,revision_id')
       .eq('user_id', auth.user().id).order('created_at', { ascending: false }).limit(50));
     var actorIds = [...new Set(rows.map(function (row) { return row.actor_id; }).filter(Boolean))];
     var actors = {};

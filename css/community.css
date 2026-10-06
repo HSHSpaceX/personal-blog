@@ -1,0 +1,10 @@
+.community-row { border-bottom: 1px solid var(--line, #ddd); padding: 1rem 0; }
+.community-row p { overflow-wrap: anywhere; }
+.community-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+#communityEditor, #communityPreview { margin-top: 1.5rem; border-top: 1px solid var(--line, #ddd); padding-top: 1rem; }
+#communityAssetChoices { display: grid; gap: .6rem; max-height: 24rem; overflow-y: auto; }
+.community-asset-choice { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.community-asset-choice input[type=checkbox] { width: auto; }
+.community-asset-preview img { max-width: 100%; max-height: 24rem; object-fit: contain; }
+.community-asset-preview { margin: 1rem 0; }
+#communityPolicyRows { white-space: pre-wrap; }

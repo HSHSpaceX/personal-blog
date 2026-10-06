@@ -10,6 +10,7 @@
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/admin.css?v=2">
+  <link rel="stylesheet" href="css/community.css?v=1">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -50,15 +51,54 @@
       </section>
       <section class="admin-card wide" id="content">
         <h2>我的内容</h2>
-        <p class="hint">文章、动态和图册的个人内容入口将在下一轮开放，暂不支持投稿。</p>
+        <p>草稿仅本人可编辑。修改已发布内容时，旧版本在新版本通过审核前继续公开。</p>
+        <div class="admin-row">
+          <button class="btn" type="button" data-new-content="article">新建文章</button>
+          <button class="btn" type="button" data-new-content="moment">新建动态</button>
+          <button class="btn" type="button" data-new-content="album">新建图册</button>
+          <button class="btn" id="communityRefresh" type="button">刷新</button>
+        </div>
+        <p id="communityStatus" class="status-line" role="status" aria-live="polite"></p>
+        <div id="communityItems"></div>
+        <section id="communityEditor" hidden>
+          <h3 id="communityEditorHeading">编辑草稿</h3>
+          <p id="communityEditorState"></p>
+          <div class="field"><label for="communityTitle">标题</label><input id="communityTitle" maxlength="160" required></div>
+          <div class="field"><label for="communityText" id="communityTextLabel">正文（纯文本）</label><textarea id="communityText" rows="10" maxlength="100000"></textarea></div>
+          <div id="communityArticleFields">
+            <div class="field"><label for="communitySummary">摘要（最多 500 字）</label><textarea id="communitySummary" maxlength="500" rows="2"></textarea></div>
+            <div class="field"><label for="communityTags">标签（英文逗号分隔，最多 10 个）</label><input id="communityTags"></div>
+          </div>
+          <fieldset><legend id="communityAssetLegend">选择我的资源</legend><div id="communityAssetChoices"></div></fieldset>
+          <div class="admin-row">
+            <button class="btn" id="communitySave" type="button">保存新草稿版本</button>
+            <button class="btn primary" id="communitySubmit" type="button">保存并提交</button>
+            <button class="btn" id="communityTextPreview" type="button">安全文本预览</button>
+            <button class="btn" id="communityCloseEditor" type="button">关闭编辑</button>
+          </div>
+        </section>
+        <section id="communityPreview" hidden>
+          <h3 id="communityPreviewTitle"></h3><p id="communityPreviewState"></p>
+          <p id="communityPreviewReason" class="status-line err"></p>
+          <div id="communityPreviewBody" class="community-text"></div>
+          <div id="communityPreviewAssets"></div><div id="communityPreviewActions" class="admin-row"></div>
+          <div id="communityReviewControls" hidden>
+            <div class="field"><label for="communityRejectReason">驳回原因（必填，最多 2000 字）</label><textarea id="communityRejectReason" maxlength="2000" rows="3"></textarea></div>
+            <div class="admin-row"><button class="btn primary" id="communityApprove" type="button">通过</button><button class="btn danger" id="communityReject" type="button">拒绝</button></div>
+          </div>
+        </section>
       </section>
       <section class="admin-card wide" id="assets">
         <h2>我的资源</h2>
-        <p class="hint">个人资源管理正在准备中，暂不支持上传。</p>
+        <p>仅你本人和审核管理员可访问；展示链接 60 秒后失效。支持 JPG、PNG、WebP、MP4、PDF、TXT，最多 20 MiB。</p>
+        <div class="field"><label for="communityUploadFile">选择私有资源</label><input id="communityUploadFile" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf,text/plain"></div>
+        <button class="btn" id="communityUpload" type="button">上传私有资源</button>
+        <p id="communityAssetStatus" class="status-line" role="status" aria-live="polite"></p>
+        <div id="communityAssets"></div><div id="communityAssetViewer"></div>
       </section>
       <section class="admin-card wide" id="notifications">
         <h2>通知</h2>
-        <p>查看你的评论回复、点赞、关注及评论审核结果。</p>
+        <p>查看你的评论回复、点赞、关注及内容审核结果。</p>
         <a class="btn" href="messages.html" rel="nofollow">查看个人通知</a>
       </section>
       <section class="admin-card wide" id="direct-messages">
@@ -77,20 +117,31 @@
       </section>
       <section class="admin-card wide" id="review-center" hidden>
         <h2>审核中心</h2>
-        <p>审核工作与个人通知分开。Community V2 内容审核操作将在后续开放。</p>
+        <p>审核队列与个人通知分开。选择待审版本，预览后通过或填写原因拒绝。</p>
+        <button class="btn" id="communityRefreshReviews" type="button">刷新待审内容</button>
+        <div id="communityReviewQueue"></div>
         <div id="accountReviewLinks" class="admin-row"></div>
       </section>
       <section class="admin-card wide" id="review-policies" hidden>
         <h2>审核规则</h2>
-        <p class="hint">内容默认需要审核。规则管理界面将在后续开放。</p>
+        <p>默认为永远审核。阈值 N 只计算此用户、此类型人工通过的首次发布新内容；达到 N 后新内容可自动发布。普通用户修改已发布内容始终重新审核；管理员自身提交直接发布。</p>
+        <div class="field"><label for="communityPolicyUser">目标用户名或用户 UUID</label><input id="communityPolicyUser" autocomplete="off"></div>
+        <button class="btn" id="communityLoadPolicy" type="button">查询用户规则</button>
+        <p id="communityPolicyIdentity"></p><div id="communityPolicyRows"></div>
+        <div class="field"><label for="communityPolicyType">内容类型</label><select id="communityPolicyType"><option value="article">文章</option><option value="moment">动态</option><option value="album">图册</option></select></div>
+        <div class="field"><label for="communityPolicyThreshold">人工通过新内容数量 N（留空：永远审核，0：新内容直接发布）</label><input id="communityPolicyThreshold" type="number" min="0" max="10000" step="1"></div>
+        <button class="btn" id="communitySavePolicy" type="button">保存此用户与类型的规则</button>
       </section>
     </div>
   </main>
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=5"></script>
+  <script src="js/blog-data.js?v=6"></script>
   <script src="js/github-credentials.js?v=4"></script>
-  <script src="js/account.js?v=1"></script>
+  <script src="js/community-schema.js?v=1"></script>
+  <script src="js/community-data.js?v=1"></script>
+  <script src="js/community-ui.js?v=1"></script>
+  <script src="js/account.js?v=2"></script>
 </body>
 </html>
