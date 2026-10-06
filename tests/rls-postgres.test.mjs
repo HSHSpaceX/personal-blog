@@ -52,10 +52,11 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
     await rows('anon', null, 'select * from public.comments', 1);
     await rows('authenticated', user, `select * from public.comments where id='${pending}'`, 0);
     await rows('authenticated', other, `select * from public.comments where id='${pending}'`, 1);
-    await rows('authenticated', user, `update public.comments set status='approved' where id='${pending}' returning id`, 0);
-    await rows('authenticated', other, `update public.comments set status='approved' where id='${pending}' returning id`, 0);
+    await denied('authenticated', user, `update public.comments set status='approved' where id='${pending}'`);
+    await denied('authenticated', other, `update public.comments set status='approved' where id='${pending}'`);
     await rows('authenticated', user, `delete from public.comments where id='${approved}' returning id`, 0);
-    await rows('authenticated', admin, `update public.comments set status='approved' where id='${pending}' returning id`, 1);
+    await rows('authenticated', admin, `select public.community_moderate_comment('${pending}','approved',null)`, 1);
+    await denied('authenticated', admin, `update public.comments set status='approved' where id='${pending}'`);
     await rows('authenticated', admin, `delete from public.comments where id='${pending}' returning id`, 1);
     await denied('authenticated', user, `insert into public.comments(post_slug,user_id,content) values('audit','${other}','forged')`);
     await denied('authenticated', user, `insert into public.comments(post_slug,user_id,content,status) values('audit','${user}','forged','approved')`);
@@ -97,7 +98,12 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
       'community_review_revision', 'community_set_review_policy',
       'community_set_user_review_threshold', 'community_review_policy_status',
       'community_guard_registered_object', 'community_register_asset',
-      'community_check_revision_assets', 'community_notify_review_result'
+      'community_check_revision_assets', 'community_notify_review_result',
+      'profile_followers','profile_following','following_count','community_public_target','community_comment_context',
+      'profile_content','profile_recent_likes','community_like_target_visible','community_edit_comment',
+      'community_review_comment_edit','community_moderate_comment','community_my_comments','community_notify_comment_edit',
+      'community_assets_page','community_asset_references','community_rename_asset','community_orphan_assets',
+      'community_prepare_asset_delete','community_prepare_orphan_delete','community_guard_orphan_delete','community_clear_delete_intent'
     ].sort());
     for (const fn of functions.rows) assert.ok(fn.proconfig.includes('search_path=""')); assertions++;
     // Auth deletion must preserve legacy content and clear FK identities even

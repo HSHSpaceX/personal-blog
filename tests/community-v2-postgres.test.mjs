@@ -167,11 +167,11 @@ test('Social notifications: user and multiple admins retain all social powers, n
     const notifyCount = async (id, type) => (await c.rows(id,'select id from public.notifications where type=$1',[type],
       (await db.query('select count(*)::int as n from public.notifications where user_id=$1 and type=$2',[id,type])).rows[0].n)).length;
     const userComment = await comment(user,'User comment');
-    await c.run(admin,'update public.comments set status=$1 where id=$2',['approved',userComment]);
+    await c.run(admin,'select public.community_moderate_comment($2,$1,null)',['approved',userComment]);
     c.equal(await notifyCount(user,'comment_approved'),1);
     const adminComment = await comment(admin,'Admin social comment',null,'approved');
     const adminPending = await comment(admin,'Admin can also submit pending');
-    await c.run(admin2,'update public.comments set status=$1 where id=$2',['approved',adminPending]);
+    await c.run(admin2,'select public.community_moderate_comment($2,$1,null)',['approved',adminPending]);
     c.equal(await notifyCount(admin,'comment_approved'),1);
     await c.run(user,"insert into public.likes(user_id,target_type,target_id) values ($1,'comment',$2)",[user,adminComment]);
     await c.run(admin,"insert into public.likes(user_id,target_type,target_id) values ($1,'comment',$2)",[admin,userComment]);
@@ -185,9 +185,9 @@ test('Social notifications: user and multiple admins retain all social powers, n
     c.equal(await notifyCount(user,'follow'),1);
     const reply = await comment(user,'Pending reply to admin',adminComment);
     c.equal(await notifyCount(admin,'comment_reply'),0);
-    await c.run(admin2,'update public.comments set status=$1 where id=$2',['approved',reply]);
+    await c.run(admin2,'select public.community_moderate_comment($2,$1,null)',['approved',reply]);
     c.equal(await notifyCount(admin,'comment_reply'),1);
-    await c.run(admin2,'update public.comments set status=$1 where id=$2',['approved',reply]);
+    await c.run(admin2,'select public.community_moderate_comment($2,$1,null)',['approved',reply]);
     c.equal(await notifyCount(admin,'comment_reply'),1);
     await comment(admin,'Admin replies to user',userComment,'approved');
     c.equal(await notifyCount(user,'comment_reply'),1);
@@ -196,13 +196,13 @@ test('Social notifications: user and multiple admins retain all social powers, n
     await comment(admin,'Self reply',adminComment,'approved');
     await c.run(admin,"insert into public.likes(user_id,target_type,target_id) values ($1,'comment',$2)",[admin,adminComment]);
     const selfPending = await comment(admin,'Self approval');
-    await c.run(admin,'update public.comments set status=$1 where id=$2',['approved',selfPending]);
+    await c.run(admin,'select public.community_moderate_comment($2,$1,null)',['approved',selfPending]);
     c.equal((await db.query('select count(*)::int as n from public.notifications where actor_id=user_id')).rows[0].n,0);
     c.equal(await notifyCount(admin,'comment_reply'),2);
     c.equal(await notifyCount(admin,'comment_like'),2);
     c.equal(await notifyCount(admin,'comment_approved'),1);
     const rejected = await comment(user,'Rejected private reply',adminComment);
-    await c.run(admin,'update public.comments set status=$1 where id=$2',['rejected',rejected]);
+    await c.run(admin,'select public.community_moderate_comment($2,$1,null)',['rejected',rejected]);
     c.equal(await notifyCount(admin,'comment_reply'),2);
     await c.denied(null,'select * from public.notifications');
     await c.rows(admin,'select * from public.notifications where user_id=$1',[user],0);

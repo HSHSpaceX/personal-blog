@@ -33,3 +33,5 @@ GitHub Actions 的静态站生成工作流在主分支文章变更时自动更�
 Community V2 Round 1 的数据模型、权限、账号中心及独立测试项目验收见 [Community V2](docs/COMMUNITY_V2.md)。新增迁移尚需人工在测试项目验证；不自动修改生产 Supabase。
 
 Community V2 Round 2 的投稿/审核、按用户与类型阈值、私有 Storage 和原生 PostgreSQL/DOM CI 见 [Round 2](docs/COMMUNITY_V2_ROUND2.md)。仅新增迁移，部署前需在独立测试 Supabase 项目验收。
+
+Community V2 Round 3 的公开主页/RPC、评论编辑审核、完整个人资源中心和真实 Chromium 移动端测试见 [Round 3](docs/COMMUNITY_V2_ROUND3.md)。

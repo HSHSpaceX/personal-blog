@@ -1,5 +1,7 @@
 # Community V2 Round 2
 
+本页保留 Round 2 交付说明；已完成的后续个人主页、评论编辑与资源管理见 [Round 3](COMMUNITY_V2_ROUND3.md)。
+
 基于 `feature/community-v2` 的 Round 1 HEAD `3e8c5adedc905daed1bbdcfd61e3e1cdd433944f`。本轮完成邀请制登录用户的文章、动态、图册投稿和管理员审核，以及基础私有资源上传。没有合并 main，没有执行生产 Supabase 操作，也没有将 Community 内容写入静态 posts、sitemap 或现有 GitHub 发布流程。
 
 ## 迁移与审核语义

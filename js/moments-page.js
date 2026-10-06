@@ -143,6 +143,7 @@
       (item.parentNick ? '<p class="comment-parent-hint">回复 @' + escapeHtml(item.parentNick) + '</p>' : '') +
       '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
       '<div class="comment-foot">' + (window.CommentLikes && item.status === 'approved' && !item.legacy ? window.CommentLikes.button(String(item.id)) : '') +
+        (item.own&&!item.legacy?'<a class="btn" rel="nofollow" href="account.html?comment='+encodeURIComponent(item.id)+'#my-comments">编辑我的评论</a>':'') +
         '<button type="button" class="comment-reply-btn" data-mcreply="' + escapeHtml(item.id) + '" data-mcnick="' + escapeHtml(item.nick) + '">回复</button>' +
       '</div>' +
       (replies.length ? '<button type="button" class="comment-collapse-toggle" data-collapsed="true">展开 ' + replies.length + ' 条回复</button><div class="comment-replies" hidden>' + replies.map(function (reply) {
@@ -347,12 +348,15 @@
     list.innerHTML = sorted.map(function (item) {
       var liked = getLiked(item.id);
       var count = getCachedCount(item.id);
-      var displayName = item.author || 'HSH(站长)';
+      var author=item.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'};
+      var displayName=author.display_name||author.username||'作者';
+      var authorLink='profile.html?username='+encodeURIComponent(author.username||'');
+      var authorAvatar=window.PublicCards?window.PublicCards.avatar(author.avatar_url):'assets/icon.jpg';
       return '<article class="moment-card" id="moment-' + escapeHtml(item.id) + '">' +
-        '<img class="moment-avatar" src="assets/avatar-default.jpg" alt="">' +
+        '<a class="moment-avatar" href="'+escapeHtml(authorLink)+'"><img src="'+escapeHtml(authorAvatar)+'" alt=""></a>' +
         '<div class="moment-body">' +
           '<div class="moment-head">' +
-            '<span class="moment-name">' + escapeHtml(displayName) + '</span>' +
+            '<a class="moment-name" href="'+escapeHtml(authorLink)+'">'+escapeHtml(displayName)+' / @'+escapeHtml(author.username||'')+'</a>' +
             '<span class="moment-time" title="' + escapeHtml(item.time || '') + '">' + escapeHtml(timeAgo(item.time)) + '</span>' +
           '</div>' +
           (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +

@@ -73,12 +73,13 @@ const boot = siteSource.lastIndexOf('  if (window.BLOG_POSTS) {');
 assert.ok(boot > 0, 'Missing site.js boot boundary');
 const homeContext = { window: { BlogUrls: { postUrl: (slug) => `posts/${encodeURIComponent(slug)}.html` } } };
 vm.runInNewContext(siteSource.slice(0, boot) + '  window.homeCards = [renderPostCard, renderRailCard];\n})();', homeContext, { timeout: 1000 });
-for (const post of [...posts, { ...posts[0], title: '中文标题 😀 & "引号" <示例>' }]) {
+for (const post of [...posts, { ...posts[0], title: '中文标题 😀 & "引号" <示例>' }, { ...posts[0], author_profile: { username:'member_user', display_name:'成员 <文字>', avatar_url:'https://example.invalid/avatar.png' } }]) {
   for (const render of homeContext.window.homeCards) {
     const images = checkImages(render(post, 0), `homepage card: ${post.slug}`, true);
     assert.equal(images.length, 2, 'Homepage card must include a cover and author avatar');
     assert.equal(images[0].alt, post.title, 'Homepage cover alt must match the article title');
-    assert.equal(images[1].alt, 'HSH站长头像', 'Homepage author avatar needs a meaningful alt');
+    assert.equal(images[1].alt, post.author_profile ? post.author_profile.display_name+'的头像' : 'HSH站长头像', 'Homepage author avatar must identify the actual author');
+    assert.ok(render(post,0).includes('profile.html?username='+(post.author_profile ? post.author_profile.username : 'hshspacex')), 'Author must link to their public profile');
   }
 }
 for (const post of posts) {

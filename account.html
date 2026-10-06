@@ -10,7 +10,7 @@
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/admin.css?v=2">
-  <link rel="stylesheet" href="css/community.css?v=1">
+  <link rel="stylesheet" href="css/community.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -32,7 +32,7 @@
         <a class="btn" href="account.html#overview" rel="nofollow">概览</a>
         <a class="btn" href="account.html#profile" rel="nofollow">我的资料</a>
         <a class="btn" href="account.html#content" rel="nofollow">我的内容</a>
-        <a class="btn" href="account.html#assets" rel="nofollow">我的资源</a>
+        <a class="btn" href="account.html#assets" rel="nofollow">我的资源</a><a class="btn" href="account.html#my-comments" rel="nofollow">我的评论</a>
         <a class="btn" href="account.html#notifications" rel="nofollow">通知</a>
         <a class="btn" href="account.html#direct-messages" rel="nofollow">私信</a>
         <a class="btn" href="account.html#connections" rel="nofollow">关注与粉丝</a>
@@ -47,7 +47,7 @@
       <section class="admin-card wide" id="profile">
         <h2>我的资料</h2>
         <p>更新你的用户名、显示名称、简介和头像。</p>
-        <a class="btn" href="profile.html" rel="nofollow">编辑我的资料</a>
+        <a class="btn" href="profile.html?edit=1" rel="nofollow">公开主页 / 编辑资料</a>
       </section>
       <section class="admin-card wide" id="content">
         <h2>我的内容</h2>
@@ -78,7 +78,7 @@
           </div>
         </section>
         <section id="communityPreview" hidden>
-          <h3 id="communityPreviewTitle"></h3><p id="communityPreviewState"></p>
+          <div id="communityPreviewAuthor"></div><h3 id="communityPreviewTitle"></h3><p id="communityPreviewState"></p>
           <p id="communityPreviewReason" class="status-line err"></p>
           <div id="communityPreviewBody" class="community-text"></div>
           <div id="communityPreviewAssets"></div><div id="communityPreviewActions" class="admin-row"></div>
@@ -94,7 +94,20 @@
         <div class="field"><label for="communityUploadFile">选择私有资源</label><input id="communityUploadFile" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf,text/plain"></div>
         <button class="btn" id="communityUpload" type="button">上传私有资源</button>
         <p id="communityAssetStatus" class="status-line" role="status" aria-live="polite"></p>
-        <div id="communityAssets"></div><div id="communityAssetViewer"></div>
+        <div id="communityAssets" hidden></div><div id="communityAssetViewer"></div>
+        <div class="admin-row"><label>搜索文件名<input id="assetSearch" maxlength="120"></label><label>类型<select id="assetKind"><option value="all">全部</option><option value="image">图片</option><option value="video">视频</option><option value="document">文档</option></select></label><button class="btn" id="assetRefresh" type="button">搜索 / 刷新资源</button></div>
+        <p id="assetCenterStatus" role="status" aria-live="polite"></p><div id="assetCenterList"></div>
+        <div class="admin-row"><button class="btn" id="assetPrev" type="button" disabled>上一页资源</button><button class="btn" id="assetNext" type="button" disabled>下一页资源</button></div>
+        <h3>资源引用（包括所有历史版本）</h3><div id="assetReferenceList"></div>
+        <div class="admin-row"><button class="btn" id="assetReferencePrev" type="button" disabled>上一页引用</button><button class="btn" id="assetReferenceNext" type="button" disabled>下一页引用</button></div>
+        <h3>我的未登记对象</h3><p>只清理当前账号目录下没有资源登记的上传。若对象已经登记，清理将被拒绝。</p><div id="assetOrphanList"></div>
+        <div class="admin-row"><button class="btn" id="assetOrphanPrev" type="button" disabled>上一页未登记对象</button><button class="btn" id="assetOrphanNext" type="button" disabled>下一页未登记对象</button></div>
+      </section>
+      <section class="admin-card wide" id="my-comments">
+        <h2>我的评论 / 回复</h2><p>修改已公开评论时，原正文继续公开；新正文通过审核后替换。</p>
+        <p id="accountCommentsStatus" role="status" aria-live="polite"></p><div id="accountCommentsList"></div>
+        <div class="admin-row"><button class="btn" id="accountCommentsRefresh" type="button">刷新我的评论</button><button class="btn" id="accountCommentsPrev" type="button" disabled>上一页评论</button><button class="btn" id="accountCommentsNext" type="button" disabled>下一页评论</button></div>
+        <div id="accountCommentEditor" hidden><p id="accountCommentIdentity"></p><label for="accountCommentText">评论新正文</label><textarea id="accountCommentText" maxlength="2000" rows="5"></textarea><button class="btn" id="accountCommentSubmit" type="button">提交评论修改</button></div>
       </section>
       <section class="admin-card wide" id="notifications">
         <h2>通知</h2>
@@ -106,7 +119,7 @@
       </section>
       <section class="admin-card wide" id="connections">
         <h2>关注与粉丝</h2>
-        <p id="accountConnections">完整关注与粉丝列表将在后续开放。</p>
+        <p id="accountConnections">在公开主页查看关注与粉丝列表。</p>
         <a class="btn" href="profile.html" rel="nofollow">查看我的主页</a>
       </section>
       <section class="admin-card wide" id="security">
@@ -119,7 +132,7 @@
         <h2>审核中心</h2>
         <p>审核队列与个人通知分开。选择待审版本，预览后通过或填写原因拒绝。</p>
         <button class="btn" id="communityRefreshReviews" type="button">刷新待审内容</button>
-        <div id="communityReviewQueue"></div>
+        <div id="communityReviewQueue"></div><h3>评论编辑审核</h3><div id="accountCommentQueue"></div><div class="admin-row"><button class="btn" id="accountCommentQueuePrev" type="button" disabled>上一页编辑</button><button class="btn" id="accountCommentQueueNext" type="button" disabled>下一页编辑</button></div>
         <div id="accountReviewLinks" class="admin-row"></div>
       </section>
       <section class="admin-card wide" id="review-policies" hidden>
@@ -137,11 +150,12 @@
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=6"></script>
+  <script src="js/blog-data.js?v=7"></script>
   <script src="js/github-credentials.js?v=4"></script>
   <script src="js/community-schema.js?v=1"></script>
   <script src="js/community-data.js?v=1"></script>
-  <script src="js/community-ui.js?v=1"></script>
-  <script src="js/account.js?v=2"></script>
+  <script src="js/public-cards.js?v=1"></script><script src="js/community-ui.js?v=2"></script>
+  <script src="js/asset-center.js?v=1"></script><script src="js/comment-edit-data.js?v=1"></script><script src="js/account-comments.js?v=1"></script>
+  <script src="js/account.js?v=3"></script>
 </body>
 </html>

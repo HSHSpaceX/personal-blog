@@ -155,6 +155,7 @@
           menuBtn +
           '<div class="album-card-body">' +
             '<div class="album-card-title-row"><h3><a href="gallery.html?album=' + encodeURIComponent(album.id) + '">' + escapeHtml(album.title) + '</a></h3>' + badge + '</div>' +
+            (window.PublicCards?window.PublicCards.author(album.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'}).outerHTML:'<a href="profile.html?username=hshspacex">HSH(站长) / @hshspacex</a>') +
             '<div class="album-card-meta"><span>' + album.photos.length + ' 张照片</span><span>' + escapeHtml(album.created || '') + '</span></div>' +
           '</div>' +
         '</div>';

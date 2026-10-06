@@ -16,9 +16,11 @@ jobs:
           node-version: '22'
       - name: Install isolated PostgreSQL engines and DOM test runtime
         run: |
-          npm install --prefix /tmp/blog-rls --ignore-scripts --no-save --no-audit --no-fund @electric-sql/pglite@0.3.14 pg@8.16.3 @embedded-postgres/linux-x64@18.4.0-beta.17 jsdom@26.1.0
+          npm install --prefix /tmp/blog-rls --ignore-scripts --no-save --no-audit --no-fund @electric-sql/pglite@0.3.14 pg@8.16.3 @embedded-postgres/linux-x64@18.4.0-beta.17 jsdom@26.1.0 playwright-core@1.56.1
           cd /tmp/blog-rls/node_modules/@embedded-postgres/linux-x64
           node scripts/hydrate-symlinks.js
+      - name: Verify Chrome for actual mobile layout tests
+        run: /usr/bin/google-chrome --version
       - name: Generate and validate static site
         run: |
           node scripts/generate-site.mjs
@@ -32,4 +34,6 @@ jobs:
           PG_TEST_LIB: /tmp/blog-rls/node_modules/@embedded-postgres/linux-x64/native/lib
           PG_TEST_MODULE: file:///tmp/blog-rls/node_modules/pg/lib/index.js
           COMMUNITY_DOM_MODULE: file:///tmp/blog-rls/node_modules/jsdom/lib/api.js
+          BROWSER_TEST_MODULE: file:///tmp/blog-rls/node_modules/playwright-core/index.mjs
+          BROWSER_TEST_EXECUTABLE: /usr/bin/google-chrome
         run: node --test tests/*.test.cjs tests/*.test.mjs

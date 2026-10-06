@@ -379,17 +379,18 @@
     return '<div class="msg-item"><div class="msg-item-head"><strong>' + escapeHtml(item.legacy_author_name || item.user_id || '用户') +
       '</strong><span>' + escapeHtml(item.post_slug) + ' · ' + escapeHtml(item.created_at.slice(0, 10)) +
       '</span></div><p class="msg-item-content">' + escapeHtml(item.content) + '</p><div class="msg-item-actions">' +
+      '<label>拒绝原因（存在评论编辑时必填）<textarea maxlength="2000" data-comment-rejection="'+escapeHtml(item.id)+'"></textarea></label>' +
       '<button type="button" class="btn primary" data-approve-comment="' + escapeHtml(item.id) + '">通过</button>' +
       '<button type="button" class="btn" data-reject-comment="' + escapeHtml(item.id) + '">拒绝</button>' +
       '<button type="button" class="btn danger" data-delete-pending="' + escapeHtml(item.id) + '">删除</button></div></div>';
   }
   function refreshPendingList() { return refreshModeration(); }
   async function approvePendingItem(id) {
-    try { await window.BlogData.moderateComment(id, 'approved'); await refreshModeration(); setStatus($('msgStatus'), '评论已通过。', 'ok'); }
+    try { var item=moderationRows.find(function(r){return r.id===id;});await window.BlogData.moderateComment(id, 'approved',null,item&&item.content); await refreshModeration(); setStatus($('msgStatus'), '评论已通过。', 'ok'); }
     catch (error) { setStatus($('msgStatus'), error.message, 'err'); }
   }
   async function rejectPendingItem(id) {
-    try { await window.BlogData.moderateComment(id, 'rejected'); await refreshModeration(); setStatus($('msgStatus'), '评论已拒绝。', 'ok'); }
+    try { var reasonInput=document.querySelector('[data-comment-rejection="'+id+'"]');await window.BlogData.moderateComment(id, 'rejected',reasonInput&&reasonInput.value.trim(),(moderationRows.find(function(r){return r.id===id;})||{}).content); await refreshModeration(); setStatus($('msgStatus'), '评论已拒绝。', 'ok'); }
     catch (error) { setStatus($('msgStatus'), error.message, 'err'); }
   }
   async function deletePendingItem(id) {

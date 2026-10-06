@@ -55,7 +55,7 @@
   async function listNotifications() {
     await auth.ready();
     if (!auth.user()) return [];
-    var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at,revision_id')
+    var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at,revision_id,comment_edit_id')
       .eq('user_id', auth.user().id).order('created_at', { ascending: false }).limit(50));
     var actorIds = [...new Set(rows.map(function (row) { return row.actor_id; }).filter(Boolean))];
     var actors = {};
@@ -84,10 +84,10 @@
     if (!auth.user()) return;
     value(await db().from('notifications').update({ read: true }).eq('user_id', auth.user().id).eq('read', false));
   }
-  async function moderateComment(id, status) {
+  async function moderateComment(id, status, reason, expectedContent) {
     await auth.ready(); auth.requireAdmin();
     if (!['approved', 'rejected'].includes(status)) throw new Error('无效审核状态。');
-    value(await db().from('comments').update({ status: status }).eq('id', id));
+    value(await db().rpc('community_moderate_comment',{p_comment_id:id,p_decision:status,p_rejection_reason:reason||null,p_expected_content:expectedContent===undefined?null:expectedContent}));
   }
   async function deleteComment(id) {
     await auth.ready(); auth.requireAdmin();
@@ -96,7 +96,7 @@
   async function likes(type, ids) {
     await auth.ready();
     if (!auth.configured() || !ids.length) return {};
-    if (!['post', 'comment', 'moment'].includes(type)) throw new Error('无效点赞类型。');
+    if (!['post', 'comment', 'moment', 'album', 'content'].includes(type)) throw new Error('无效点赞类型。');
     var out = {};
     var uniqueIds = Array.from(new Set(ids.map(String)));
     for (var start = 0; start < uniqueIds.length; start += 100) {
@@ -133,22 +133,24 @@
   async function getProfile(id) {
     await auth.ready();
     if (!auth.configured()) return null;
-    return value(await db().from('profiles').select('*').eq('id', id).maybeSingle());
+    return value(await db().from('profiles').select('id,username,display_name,avatar_url,bio').eq('id', id).maybeSingle());
   }
-  async function saveProfile(changes) {
+  async function saveProfile(changes, expectedActor) {
     await auth.ready();
     var id = requireLogin();
+    if(expectedActor && id!==expectedActor)throw Error('账号已变化。');
     return value(await db().from('profiles').update(changes).eq('id', id).select().single());
   }
-  async function uploadAvatar(file) {
+  async function uploadAvatar(file, expectedActor) {
     await auth.ready();
     var id = requireLogin();
+    if(expectedActor && id!==expectedActor)throw Error('账号已变化。');
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) throw new Error('头像须为 2 MB 内的 JPG、PNG 或 WebP。');
     var ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
     var path = id + '/avatar-' + Date.now() + '.' + ext;
     value(await db().storage.from('avatars').upload(path, file, { contentType: file.type, upsert: false }));
     var url = db().storage.from('avatars').getPublicUrl(path).data.publicUrl;
-    await saveProfile({ avatar_url: url });
+    await saveProfile({ avatar_url: url }, id);
     return url;
   }
   async function following(targetId) {

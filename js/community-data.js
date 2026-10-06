@@ -29,8 +29,7 @@
     return save({id:id,content_type:type},title,body);
   }
   async function listAssets() {
-    return value(await (await client()).from('user_assets').select('id,owner_id,object_path,original_name,mime_type,size_bytes')
-      .eq('owner_id',auth.user().id).order('created_at',{ascending:false}).limit(100));
+    return rpc('community_assets_page',{p_search:'',p_kind:'all',p_limit:20,p_offset:0});
   }
   async function upload(file) {
     var db = await client(), actor = auth.requireUser().id;
@@ -70,7 +69,20 @@
     var user=value(await db.from('profiles').select('id,username,display_name').eq(schema.uuid(name)?'id':'username',name).maybeSingle());
     if (!user) throw Error('找不到该用户。'); return user;
   }
+  async function removePrivate(name,args) {
+    var db=await client(),actor=auth.requireUser().id;
+    var path=value(await db.rpc(name,args));
+    if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化；删除已取消。');
+    if(typeof path!=='string'||path.split('/')[0]!==actor||path.split('/').some(function(p){return p==='.'||p==='..';}))throw Error('无效资源路径。');
+    value(await db.storage.from('community-assets').remove([path]));
+  }
   window.CommunityData = {listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,
+    assetsPage:function(search,kind,offset){return rpc('community_assets_page',{p_search:search,p_kind:kind,p_limit:20,p_offset:offset});},
+    renameAsset:function(id,name){return rpc('community_rename_asset',{p_asset_id:id,p_name:name});},
+    assetReferences:function(id,offset){return rpc('community_asset_references',{p_asset_id:id,p_limit:20,p_offset:offset});},
+    deleteAsset:function(id){return removePrivate('community_prepare_asset_delete',{p_asset_id:id});},
+    orphans:function(offset){return rpc('community_orphan_assets',{p_limit:20,p_offset:offset});},
+    deleteOrphan:function(id){return removePrivate('community_prepare_orphan_delete',{p_object_id:id});},
     submit:function (id) {return rpc('community_submit_revision',{p_revision_id:id});},listReviews:listReviews,
     review:function (id,decision,reason) {auth.requireAdmin();return rpc('community_review_revision',{p_revision_id:id,p_decision:decision,p_rejection_reason:reason||null});},
     policyUser:policyUser,policyStatus:function (id) {auth.requireAdmin();return rpc('community_review_policy_status',{p_user_id:id});},

@@ -127,7 +127,10 @@ test('comment and like writes carry authenticated ID; admin moderation works', a
   assert.equal(reader.calls.find((call) => call.table === 'likes' && call.action === 'insert').payload.user_id, 'actor-uuid');
   const admin = dataHarness('admin');
   await admin.data.moderateComment('comment-id', 'approved');
-  assert.equal(admin.calls[0].payload.status, 'approved');
+  assert.equal(admin.calls[0].rpc, 'community_moderate_comment');
+  assert.equal(admin.calls[0].args.p_decision, 'approved');
+  assert.equal(admin.calls[0].args.p_comment_id, 'comment-id');
+  assert.ok(!admin.calls.some(call => call.table==='comments' && call.action==='update'));
   await admin.data.deleteComment('comment-id');
   assert.equal(admin.calls[1].action, 'delete');
 });

@@ -99,6 +99,13 @@
     return '<a class="post-category" href="' + categoryUrl(post.category) + '">' + escapeHtml(post.category) + '</a>';
   }
 
+  function postAuthor(post) {
+    var p=post.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'};
+    if(window.PublicCards)return window.PublicCards.author(p).outerHTML;
+    var username=/^[a-zA-Z0-9_]{3,30}$/.test(p.username||'')?p.username:'';
+    return '<a class="public-author" href="profile.html?username='+encodeURIComponent(username)+'"><img class="public-author-avatar" src="'+escapeHtml(/^https:\/\//.test(p.avatar_url||'')?p.avatar_url:(post.author_profile?'assets/avatar-default.jpg':'assets/icon.jpg'))+'" alt="'+escapeHtml(post.author_profile?(p.display_name||username||'用户')+'的头像':'HSH站长头像')+'"><span>'+escapeHtml(p.display_name||username||'作者')+' / @'+escapeHtml(username)+'</span></a>';
+  }
+
   function renderPostCard(post) {
     return '' +
       '<article class="post-card glass-card">' +
@@ -110,7 +117,7 @@
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="post-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="post-card-meta">' +
-            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt="HSH站长头像"><span>HSH(站长)</span></a>' +
+            postAuthor(post) +
             '<span class="post-date">' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -129,7 +136,7 @@
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="rail-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="rail-card-meta">' +
-            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt="HSH站长头像"><span>HSH(站长)</span></a>' +
+            postAuthor(post) +
             '<span>' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -143,7 +150,7 @@
         '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="lazy" decoding="async"></a>' +
       '<div class="archive-row-main">' + categoryChip(post) +
         '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
-        (post.excerpt ? '<p>' + escapeHtml(post.excerpt) + '</p>' : '') + '</div>' +
+        (post.excerpt ? '<p>' + escapeHtml(post.excerpt) + '</p>' : '') + postAuthor(post) + '</div>' +
       '<div class="archive-row-side"><div class="archive-row-tags">' + (post.tags || []).map(function (tag) {
         return '<a class="archive-tag-link" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
       }).join('') + '</div><time datetime="' + escapeHtml(post.date) + '">' + formatDate(post.date) + '</time>' +
@@ -865,6 +872,7 @@
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
         '<div class="comment-foot">' +
           (item.status === 'approved' && !item.legacy ? CommentLikes.button(String(item.id)) : '') +
+          (item.own&&!item.legacy?'<a class="btn" rel="nofollow" href="account.html?comment='+encodeURIComponent(item.id)+'#my-comments">编辑我的评论</a>':'') +
           '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button>' +
         '</div>' +
       '</div>';
@@ -902,14 +910,16 @@
     replyBanner.className = 'comment-reply-banner'; replyBanner.hidden = true;
     form.insertBefore(replyBanner, form.firstChild);
     function clearReply() { replyTarget = null; replyBanner.hidden = true; replyBanner.textContent = ''; }
+    var commentGeneration=0;
     async function refresh() {
+      var attempt=++commentGeneration;listEl.replaceChildren();
       try {
-        var all = await window.BlogData.listComments(slug);
+        var all = await window.BlogData.listComments(slug);if(attempt!==commentGeneration)return;
         listEl.innerHTML = all.length ? all.filter(function (item) { return !item.parentId; }).map(function (item) {
           return renderCommentTree(item, all);
         }).join('') : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
         CommentLikes.decorate(listEl);
-      } catch (error) { listEl.textContent = '评论加载失败：' + error.message; }
+      } catch (error) { if(attempt===commentGeneration)listEl.textContent = '评论加载失败：' + error.message; }
     }
     listEl.addEventListener('click', function (event) {
       var toggle = event.target.closest('.comment-collapse-toggle');

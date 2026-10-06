@@ -31,6 +31,8 @@
       (/^content_(approved|rejected)$/.test(item.type) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.revision_id || '')
         ? '<a class="btn" rel="nofollow" href="account.html?revision=' + encodeURIComponent(item.revision_id) + '#content">' +
           (item.type === 'content_rejected' ? '查看原因并重新编辑' : '查看发布版本') + '</a>' : '') +
+      (/^comment_edit_(approved|rejected)$/.test(item.type) && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.comment_edit_id||'')
+        ? '<a class="btn" rel="nofollow" href="account.html?edit='+encodeURIComponent(item.comment_edit_id)+'#my-comments">查看评论修改结果 / 重新编辑</a>':'') +
     '</article>';
   }
   async function load() {

@@ -8,3 +8,28 @@
 .community-asset-preview img { max-width: 100%; max-height: 24rem; object-fit: contain; }
 .community-asset-preview { margin: 1rem 0; }
 #communityPolicyRows { white-space: pre-wrap; }
+.public-author { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.public-author img { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+.public-content-card, .public-user-card { padding: 1rem 0; border-bottom: 1px solid var(--line, #ddd); min-width: 0; overflow-wrap: anywhere; }
+.public-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.profile-tabs { display: flex; flex-wrap: wrap; gap: .5rem; }
+.profile-tabs [aria-pressed=true] { outline: 2px solid var(--accent, #666); }
+.profile-summary > div { min-width: 0; overflow-wrap: anywhere; }
+.public-content-card input, .public-content-card textarea, #accountCommentEditor textarea { display: block; width: 100%; max-width: 100%; box-sizing: border-box; margin: .5rem 0; }
+.public-content-card .btn { margin: .25rem; }
+.asset-thumbnail { width: 80px; height: 80px; object-fit: contain; }
+.admin-row > label { min-width: 0; max-width: 100%; }
+#assetSearch { max-width: 100%; box-sizing: border-box; }
+@media (max-width: 480px) {
+ .header-inner, .header-actions { flex-wrap: wrap; gap: .5rem; }
+ .profile-summary { align-items: flex-start; }
+ .profile-summary img { width: 64px; height: 64px; flex-shrink: 0; }
+ .admin-main.container { width: auto; margin: 0 .75rem; padding-left: 0; padding-right: 0; }
+ .admin-card { padding: 1rem; min-width: 0; }
+ .admin-row { flex-wrap: wrap; }
+ .profile-tabs .btn { flex: 1 1 auto; }
+}
+a.moment-avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.admin-card { overflow-wrap: anywhere; }
+.community-asset-choice input { max-width: 100%; box-sizing: border-box; }
+.public-author span { min-width: 0; }
