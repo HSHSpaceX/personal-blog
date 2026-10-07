@@ -1066,7 +1066,6 @@
           });
       };
       fetchPage(1, [])
-        .then(function (res) { return res.json(); })
         .then(function (commits) {
           if (!Array.isArray(commits) || !commits.length) return;
           var byDate = {};
