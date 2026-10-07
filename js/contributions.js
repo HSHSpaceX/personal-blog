@@ -1,11 +1,10 @@
 (function () {
   'use strict';
 
+  var contributors = ['HSHSpaceX', 'aleistercrowleybeast666'];
   var state = {
     byAuthorDate: {},
     years: [],
-    contributorIndex: {},
-    contributorList: [],
     selectedAuthor: 'all',
     selectedYear: new Date().getFullYear(),
     loading: false
@@ -31,73 +30,21 @@
       || 'unknown';
   }
 
-  function contributorInfo(commit) {
-    var source = commit.author || commit.committer || {};
-    var rawAuthor = (commit.commit && (commit.commit.author || commit.commit.committer)) || {};
-    return {
-      login: source.login || '',
-      name: rawAuthor.name || '',
-      email: rawAuthor.email || '',
-      type: source.type || '',
-      avatar: source.avatar_url || (source.login ? 'https://github.com/' + encodeURIComponent(source.login) + '.png' : ''),
-      url: source.html_url || (source.login ? 'https://github.com/' + encodeURIComponent(source.login) : '')
-    };
-  }
-
-  function isIgnoredContributor(info) {
-    if (!info.login) return true;
-    var login = info.login.toLowerCase();
-    var search = [info.login, info.name, info.email].join(' ').toLowerCase();
-    var exact = ['github', 'githubbot', 'github-actions', 'github-actions[bot]', 'github-bot', 'web-flow', 'noreply', 'codex', 'copilot'];
-    var words = ['bot', 'codex', 'copilot', 'dependabot', 'renovate', 'semantic-release', 'all-contributors', 'codecov', 'codeql', 'imgbot', 'pre-commit-ci', 'github-actions'];
-    if (info.type === 'Bot') return true;
-    if (exact.indexOf(login) > -1) return true;
-    return words.some(function (word) { return search.indexOf(word) > -1; });
-  }
-
-  function escapeAttr(value) {
-    return String(value || '').replace(/[&<>"']/g, function (char) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
-    });
-  }
-
-  function rememberContributor(info) {
-    if (!info.login) return;
-    var item = state.contributorIndex[info.login];
-    if (!item) {
-      item = {
-        login: info.login,
-        name: info.name,
-        avatar: info.avatar,
-        url: info.url,
-        total: 0
-      };
-      state.contributorIndex[info.login] = item;
-      state.contributorList.push(item);
-    }
-    item.total += 1;
-  }
-
   function buildData(commits) {
     state.byAuthorDate = { all: {} };
     state.years = [];
-    state.contributorIndex = {};
-    state.contributorList = [];
     var earliestYear = null;
     commits.forEach(function (commit) {
-      var info = contributorInfo(commit);
-      if (isIgnoredContributor(info)) return;
       var value = commitDate(commit);
       if (!value) return;
       var date = value.slice(0, 10);
       var year = Number(date.slice(0, 4));
-      var author = info.login;
+      var author = commitAuthor(commit);
       state.byAuthorDate.all[date] = (state.byAuthorDate.all[date] || 0) + 1;
       state.byAuthorDate[author] = state.byAuthorDate[author] || {};
       state.byAuthorDate[author][date] = (state.byAuthorDate[author][date] || 0) + 1;
       if (state.years.indexOf(year) === -1) state.years.push(year);
       if (earliestYear === null || year < earliestYear) earliestYear = year;
-      rememberContributor(info);
     });
     var currentYear = new Date().getFullYear();
     if (earliestYear === null) earliestYear = currentYear;
@@ -105,10 +52,6 @@
       if (state.years.indexOf(year) === -1) state.years.push(year);
     }
     state.years.sort(function (a, b) { return b - a; });
-    state.contributorList.sort(function (a, b) {
-      return b.total - a.total || a.login.localeCompare(b.login);
-    });
-    if (!state.byAuthorDate[state.selectedAuthor]) state.selectedAuthor = 'all';
   }
 
   function renderYears() {
@@ -120,22 +63,9 @@
   }
 
   function renderPills() {
-    var wrap = document.getElementById('contribPills');
-    if (!wrap) return;
-    if (!state.contributorList.length) {
-      wrap.innerHTML = '<span class="contrib-empty">暂无真实贡献者</span>';
-      return;
-    }
-    wrap.innerHTML = state.contributorList.map(function (person) {
-      var active = person.login === state.selectedAuthor;
-      var avatar = person.avatar || 'assets/avatar-default.jpg';
-      return '<div class="contrib-pill' + (active ? ' is-active' : '') + '" data-author="' + escapeAttr(person.login) + '">' +
-        '<a class="contrib-pill-avatar-link" href="' + escapeAttr(person.url || 'https://github.com/' + person.login) + '" target="_blank" rel="noopener" aria-label="Open GitHub profile">' +
-          '<img class="contrib-pill-avatar" src="' + escapeAttr(avatar) + '" alt="' + escapeAttr(person.login) + '">' +
-        '</a>' +
-        '<button class="contrib-pill-name" type="button" data-author="' + escapeAttr(person.login) + '" aria-pressed="' + (active ? 'true' : 'false') + '">' + escapeAttr(person.login) + '</button>' +
-      '</div>';
-    }).join('');
+    document.querySelectorAll('.contrib-pill').forEach(function (pill) {
+      pill.classList.toggle('is-active', pill.dataset.author === state.selectedAuthor);
+    });
   }
 
   function renderChart() {
@@ -261,13 +191,9 @@
   }
 
   function init() {
-    var pills = document.getElementById('contribPills');
-    if (pills) {
-      pills.addEventListener('click', function (event) {
-        var name = event.target.closest('.contrib-pill-name');
-        if (name) setAuthor(name.dataset.author);
-      });
-    }
+    document.querySelectorAll('.contrib-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () { setAuthor(pill.dataset.author); });
+    });
     document.getElementById('contribYears').addEventListener('click', function (event) {
       var button = event.target.closest('.contrib-year-button');
       if (button) setYear(button.dataset.year);

@@ -3211,29 +3211,6 @@ a.tag-chip:hover {
   transition: border-color .18s ease, background .18s ease;
 }
 
-.contrib-pill {
-  cursor: default;
-}
-
-.contrib-pill-avatar-link {
-  display: inline-flex;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.contrib-pill-name {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.contrib-pill-name:hover {
-  text-decoration: underline;
-}
-
 .contrib-pill:hover,
 .contrib-pill.is-active {
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
