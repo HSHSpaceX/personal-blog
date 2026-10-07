@@ -1055,7 +1055,17 @@
 
     function build(wrap) {
       // 按日期聚合本站仓库的提交
-      fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/commits?per_page=100&since=' + new Date(Date.now() - 365 * 86400000).toISOString())
+      var fetchPage = function (page, collected) {
+        return fetch('https://api.github.com/repos/HSHSpaceX/personal-blog/commits?per_page=100&page=' + page)
+          .then(function (res) { return res.json(); })
+          .then(function (items) {
+            if (!Array.isArray(items) || !items.length) return collected;
+            collected = collected.concat(items);
+            if (items.length < 100 || page >= 50) return collected;
+            return fetchPage(page + 1, collected);
+          });
+      };
+      fetchPage(1, [])
         .then(function (res) { return res.json(); })
         .then(function (commits) {
           if (!Array.isArray(commits) || !commits.length) return;
@@ -1066,7 +1076,14 @@
           });
           var days = [];
           var today = new Date();
-          for (var i = 364; i >= 0; i--) {
+          var earliest = commits.reduce(function (date, commit) {
+            var value = commit.commit && commit.commit.committer && commit.commit.committer.date;
+            return value && (!date || value < date) ? value : date;
+          }, '');
+          var start = earliest ? new Date(earliest) : today;
+          start.setHours(0, 0, 0, 0);
+          var totalDays = Math.max(1, Math.round((today - start) / 86400000));
+          for (var i = totalDays; i >= 0; i--) {
             var dt = new Date(today.getTime() - i * 86400000);
             var ds = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
             days.push({ date: ds, count: byDate[ds] || 0 });

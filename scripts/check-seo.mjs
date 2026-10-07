@@ -92,7 +92,7 @@ for (const post of posts) {
     assert.ok((await read(listing)).includes(`href="${route}"`), `Missing raw article link in ${listing}`);
   }
 }
-for (const page of ['admin.html', 'login.html', 'profile.html', 'search.html', 'post.html', '404.html']) {
+for (const page of ['profile.html', 'search.html', 'post.html', '404.html']) {
   assert.match(await read(page), /<meta name="robots" content="noindex,follow">/, `Missing noindex: ${page}`);
 }
 for (const page of ['index.html', 'about.html', 'archive.html', 'timeline.html', 'gallery.html', 'moments.html', 'post.html', 'search.html', ...posts.map((post) => `posts/${post.slug}.html`)]) {

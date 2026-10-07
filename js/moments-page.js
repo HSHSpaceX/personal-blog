@@ -348,8 +348,11 @@
       var liked = getLiked(item.id);
       var count = getCachedCount(item.id);
       var displayName = item.author || 'HSH(站长)';
+      var avatar = item.avatar && /^https:\/\//.test(item.avatar)
+        ? item.avatar
+        : (displayName === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg');
       return '<article class="moment-card" id="moment-' + escapeHtml(item.id) + '">' +
-        '<img class="moment-avatar" src="assets/avatar-default.jpg" alt="">' +
+        '<img class="moment-avatar" src="' + escapeHtml(avatar) + '" alt="">' +
         '<div class="moment-body">' +
           '<div class="moment-head">' +
             '<span class="moment-name">' + escapeHtml(displayName) + '</span>' +

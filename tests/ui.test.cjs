@@ -75,7 +75,8 @@ test('shared theme switches both ways, persists, updates aria/title and works wi
 });
 
 test('login/profile/admin use identical sun/moon SVG and common local theme setup', () => {
-  const icon = file => read(file).match(/<button class="icon-btn" id="themeToggle"[\s\S]*?<\/button>/)[0];
+  const readHtml = file => read(file).replace(/\r\n/g, '\n');
+  const icon = file => readHtml(file).match(/<button class="icon-btn" id="themeToggle"[\s\S]*?<\/button>/)[0];
   assert.equal(icon('login.html'),icon('profile.html'));assert.equal(icon('login.html'),icon('admin.html'));assert.equal(icon('login.html'),icon('index.html'));
   for (const file of ['login.html','profile.html','admin.html','index.html']) {
     assert.match(read(file),/<script src="js\/theme\.js\?v=1"><\/script>/);

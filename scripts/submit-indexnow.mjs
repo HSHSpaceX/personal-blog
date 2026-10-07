@@ -11,6 +11,7 @@ const keyLocation = new URL(`${key}.txt`, base).href;
 assert.equal((await readFile(path.join(root, `${key}.txt`), 'utf8')).trim(), key);
 const sitemap = await readFile(path.join(root, 'sitemap.xml'), 'utf8');
 const urlList = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+urlList.push(new URL('admin', base).href, new URL('login', base).href);
 assert.ok(urlList.length, 'Sitemap has no URLs');
 for (const address of urlList) assert.equal(new URL(address).host, base.host, `Wrong host: ${address}`);
 const payload = { host: base.host, key, keyLocation, urlList };
