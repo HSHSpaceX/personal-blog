@@ -1,0 +1,31 @@
+/* Public snapshot helpers. User strings are text, never executable markup. */
+(function(root){
+ 'use strict';
+ var uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+ var ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','video/mp4':'mp4','application/pdf':'pdf','text/plain':'txt'};
+ function escape(value){return String(value||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+ function description(item){var text=String(item.body.summary||item.body.text||item.body.description||item.title).replace(/\s+/g,' ').trim();while(Array.from(text).length<25)text+=' · '+item.title+'，阅读作者分享的社区记录与生活思考。';return Array.from(text).slice(0,155).join('');}
+ function mediaURL(url,item,asset){try{var u=new URL(url);return u.protocol==='https:'&&!u.username&&!u.password&&!u.search&&!u.hash&&u.pathname==='/storage/v1/object/public/published-media/community/'+item.id+'/'+item.revision_id+'/'+asset.id+'.'+ext[asset.mime_type];}catch(e){return false;}}
+ function validate(snapshot){
+  if(!snapshot||snapshot.version!==1||!Array.isArray(snapshot.items)||Object.keys(snapshot).some(function(k){return !['version','items'].includes(k);}))throw Error('INVALID_SNAPSHOT');
+  var ids=new Set(),slugs=new Set();snapshot.items.forEach(function(i){
+   if(!uuid.test(i.id)||!uuid.test(i.revision_id)||ids.has(i.id)||!['article','moment','album'].includes(i.content_type)||!(/^[a-z0-9][a-z0-9-]{0,159}$/).test(i.slug)||typeof i.title!=='string'||!i.title.trim()||Array.from(i.title).length>160||typeof i.published_at!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(i.published_at)||isNaN(Date.parse(i.published_at))||!i.author||!(/^[a-zA-Z0-9_]{3,30}$/).test(i.author.username)||!Array.isArray(i.assets))throw Error('INVALID_SNAPSHOT');
+   if(Object.keys(i).some(function(k){return !['id','revision_id','content_type','slug','title','body','published_at','author','assets'].includes(k);})||Object.keys(i.author).some(function(k){return !['username','display_name','avatar_url'].includes(k);}))throw Error('INVALID_SNAPSHOT');
+   if(i.content_type==='article'&&slugs.has(i.slug))throw Error('INVALID_SNAPSHOT');slugs.add(i.content_type==='article'?i.slug:'');ids.add(i.id);
+   var assets=new Set();i.assets.forEach(function(a){if(!uuid.test(a.id)||assets.has(a.id)||!ext[a.mime_type]||typeof a.name!=='string'||!mediaURL(a.url,i,a)||Object.keys(a).some(function(k){return !['id','mime_type','name','url'].includes(k);}))throw Error('INVALID_SNAPSHOT');assets.add(a.id);});
+   var refs=i.content_type==='album'?(i.body.photos||[]).map(function(p){return p.asset_id;}):(i.body.asset_ids||[]);
+   if(refs.length!==assets.size||refs.some(function(id){return !assets.has(id);}))throw Error('INVALID_SNAPSHOT');
+  });return snapshot;
+ }
+ function target(item){return item.content_type==='article'?'posts/'+item.slug+'.html':item.content_type==='moment'?'moments.html#community-'+item.id:'gallery.html?community='+item.id;}
+ function attachments(item){return item.assets.map(function(a){var url=escape(a.url),name=escape(a.name);return a.mime_type.startsWith('image/')?'<figure><img src="'+url+'" alt="'+name+'" loading="lazy"></figure>':a.mime_type==='video/mp4'?'<video src="'+url+'" controls playsinline preload="metadata"></video>':'<p><a href="'+url+'" target="_blank" rel="noopener noreferrer">'+name+'</a></p>';}).join('');}
+ function articleHTML(item){return String(item.body.text).split(/\n\s*\n/).map(function(p){return '<p>'+escape(p).replace(/\n/g,'<br>')+'</p>';}).join('')+attachments(item);}
+ function authorHTML(author){var u=author.avatar_url||'',safe=/^https:\/\//.test(u)&&!/[<>"']/.test(u)&&!/[?&]token=/.test(u)?u:'assets/avatar-default.jpg';return '<a class="public-author" rel="nofollow" href="profile.html?username='+encodeURIComponent(author.username)+'"><img class="public-author-avatar" src="'+escape(safe)+'" alt="'+escape(author.display_name||author.username)+'的头像"><span>'+escape(author.display_name||author.username)+' / @'+escape(author.username)+'</span></a>';}
+ function snapshot(){return root.COMMUNITY_PUBLIC||{version:1,items:[]};}
+ function posts(data){return (data||snapshot()).items.filter(function(i){return i.content_type==='article';}).map(function(i){return {community:true,item_id:i.id,slug:i.slug,title:i.title,date:i.published_at.slice(0,10),published_at:i.published_at,category:i.body.category||'用户投稿',readingTime:Math.max(1,Math.ceil(Array.from(i.body.text).length/400)),featured:false,tags:i.body.tags||[],excerpt:description(i),content:articleHTML(i),cover:(i.assets.find(function(a){return a.mime_type.startsWith('image/');})||{}).url||'assets/icon.jpg',author_profile:i.author,public_item:i};});}
+ function moments(data){return (data||snapshot()).items.filter(function(i){return i.content_type==='moment';}).map(function(i){return {community:true,id:i.id,time:i.published_at,text:i.body.text,media:i.assets.map(function(a){return {type:a.mime_type,src:a.url,name:a.name};}),author_profile:i.author};});}
+ function albums(data){return (data||snapshot()).items.filter(function(i){return i.content_type==='album';}).map(function(i){return {community:true,id:i.id,title:i.title,description:i.body.description||'',created:i.published_at.slice(0,10),visibility:'public',author_profile:i.author,photos:i.body.photos.map(function(p){var a=i.assets.find(function(a){return a.id===p.asset_id;});return {src:a.url,caption:p.caption||''};})};});}
+ function mergePosts(legacy){var all=(legacy||[]).concat(posts());var seen=new Set();all.forEach(function(p){if(seen.has(p.slug))throw Error('Community/legacy slug collision');seen.add(p.slug);});return all;}
+ var api={validate:validate,escape:escape,description:description,target:target,articleHTML:articleHTML,authorHTML:authorHTML,posts:posts,moments:moments,albums:albums,mergePosts:mergePosts};
+ if(typeof module==='object'&&module.exports)module.exports=api;else root.CommunityPublic=api;
+})(typeof window==='object'?window:globalThis);

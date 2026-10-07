@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
   <title>登录 - 拾光手记</title>
   <meta name="description" content="拾光手记邀请制用户登录，支持邮箱密码登录、账号邀请及密码重置。">
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/community.css?v=5">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -20,7 +22,7 @@
         </span>
         <span class="brand-name">拾光手记</span>
       </a>
-      <div class="header-actions">
+      <div class="header-actions"><a class="btn" href="account.html" rel="nofollow">账号中心</a>
         <button class="icon-btn" id="themeToggle" type="button" aria-label="切换深色模式" title="切换深色模式">
           <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -53,8 +55,8 @@
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=3"></script>
+  <script src="js/blog-data.js?v=8"></script>
   <script src="js/github-credentials.js?v=4"></script>
-  <script src="js/login.js?v=4"></script>
+  <script src="js/login.js?v=5"></script>
 </body>
 </html>

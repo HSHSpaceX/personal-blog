@@ -1,0 +1,63 @@
+.community-row { border-bottom: 1px solid var(--line, #ddd); padding: 1rem 0; }
+.community-row p { overflow-wrap: anywhere; }
+.community-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+#communityEditor, #communityPreview { margin-top: 1.5rem; border-top: 1px solid var(--line, #ddd); padding-top: 1rem; }
+#communityAssetChoices { display: grid; gap: .6rem; max-height: 24rem; overflow-y: auto; }
+.community-asset-choice { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.community-asset-choice input[type=checkbox] { width: auto; }
+.community-asset-preview img { max-width: 100%; max-height: 24rem; object-fit: contain; }
+.community-asset-preview { margin: 1rem 0; }
+#communityPolicyRows { white-space: pre-wrap; }
+.public-author { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.public-author img { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+.public-content-card, .public-user-card { padding: 1rem 0; border-bottom: 1px solid var(--line, #ddd); min-width: 0; overflow-wrap: anywhere; }
+.public-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.profile-tabs { display: flex; flex-wrap: wrap; gap: .5rem; }
+.profile-tabs [aria-pressed=true] { outline: 2px solid var(--accent, #666); }
+.profile-summary > div { min-width: 0; overflow-wrap: anywhere; }
+.public-content-card input, .public-content-card textarea, #accountCommentEditor textarea { display: block; width: 100%; max-width: 100%; box-sizing: border-box; margin: .5rem 0; }
+.public-content-card .btn { margin: .25rem; }
+.asset-thumbnail { width: 80px; height: 80px; object-fit: contain; }
+.admin-row > label { min-width: 0; max-width: 100%; }
+#assetSearch { max-width: 100%; box-sizing: border-box; }
+@media (max-width: 480px) {
+ .header-inner, .header-actions { flex-wrap: wrap; gap: .5rem; }
+ .profile-summary { align-items: flex-start; }
+ .profile-summary img { width: 64px; height: 64px; flex-shrink: 0; }
+ .admin-main.container { width: auto; margin: 0 .75rem; padding-left: 0; padding-right: 0; }
+ .admin-card { padding: 1rem; min-width: 0; }
+ .admin-row { flex-wrap: wrap; }
+ .profile-tabs .btn { flex: 1 1 auto; }
+}
+a.moment-avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.admin-card { overflow-wrap: anywhere; }
+.community-asset-choice input { max-width: 100%; box-sizing: border-box; }
+.public-author span { min-width: 0; }
+.message-center { display: block; }
+.message-center .admin-card { margin-bottom: 1rem; }
+.message-tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.message-tabs [aria-pressed="true"] { border-color: var(--accent); }
+.message-tabs span { font-variant-numeric: tabular-nums; }
+.dm-layout { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 1rem; }
+.dm-layout > *, .dm-thread, .dm-chat, .dm-message, .dm-attachment { min-width: 0; overflow-wrap: anywhere; }
+.dm-thread { border-bottom: 1px solid var(--line); padding: .8rem 0; }
+.dm-thread p { margin: .4rem 0; }
+.dm-chat h2 { font-size: 1.1rem; }
+.dm-chat input, .dm-chat textarea { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+.dm-chat label { display: block; margin-top: .8rem; }
+.dm-message { max-width: 90%; padding: .7rem; margin: .7rem 0; border: 1px solid var(--line); border-radius: .8rem; }
+.dm-mine { margin-left: auto; background: var(--panel); border-color: var(--accent); }
+.dm-theirs { margin-right: auto; }
+.dm-message p { margin: .3rem 0; }
+.dm-image { display: block; width: auto; max-width: 100%; max-height: 350px; object-fit: contain; border-radius: .5rem; }
+.dm-attachment { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .5rem 0; }
+.dm-attachment span { max-width: 100%; }
+.dm-unsent { margin-top: 1.5rem; }
+@media (max-width: 650px) { .dm-layout { grid-template-columns: minmax(0, 1fr); } .dm-message { max-width: 100%; } }
+/* Published user text and media must fit narrow viewports. */
+#postTitle, #postContent, #postAuthor, .moment-text, .moment-name, .album-card-title-row, #albumTitle, #communityDiscussion { overflow-wrap: anywhere; min-width: 0; }
+#postContent img, #postContent video, .moment-media-item video { max-width: 100%; height: auto; }
+#communityDiscussion textarea { box-sizing: border-box; width: 100%; }
+#communityDiscussion .public-content-card p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.photo-item figcaption { padding: .65rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+.timeline-entry > .public-author { margin: .25rem 0 1rem; }

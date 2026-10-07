@@ -52,42 +52,41 @@
       .map(function (row) { return normalizeComment(row, profiles); });
   }
 
-  async function listNotifications() {
+  var personalGeneration = 0;
+  if (typeof document !== 'undefined') document.addEventListener('blog-auth-change', function () { personalGeneration++; });
+  async function personalRpc(name, args) {
+    var actor = auth.user(), token = personalGeneration;
     await auth.ready();
-    if (!auth.user() || (typeof auth.isAdmin === 'function' && auth.isAdmin())) return [];
-    var rows = value(await db().from('notifications').select('id,actor_id,type,title,body,read,created_at')
-      .eq('user_id', auth.user().id).order('created_at', { ascending: false }).limit(50));
-    var actorIds = [...new Set(rows.map(function (row) { return row.actor_id; }).filter(Boolean))];
-    var actors = {};
-    if (actorIds.length) {
-      value(await db().from('profiles').select('id,username,display_name,avatar_url').in('id', actorIds))
-        .forEach(function (profile) { actors[profile.id] = profile; });
-    }
-    return rows.map(function (row) {
-      var actor = row.actor_id && actors[row.actor_id];
-      return Object.assign({}, row, {
-        actorName: actor && (actor.display_name || actor.username),
-        actorUsername: actor && actor.username,
-        actorAvatar: actor && actor.avatar_url
-      });
-    });
+    if (actor && (!auth.user() || actor.id !== auth.user().id || token !== personalGeneration)) throw Error('账号已变化。');
+    actor = auth.requireUser(); token = personalGeneration;
+    var result = value(await db().rpc(name, args));
+    if (!auth.user() || auth.user().id !== actor.id || token !== personalGeneration) throw Error('账号已变化。');
+    return result;
   }
-
-  async function notificationCount() {
-    await auth.ready();
-    if (!auth.user() || (typeof auth.isAdmin === 'function' && auth.isAdmin())) return 0;
-    return value(await db().from('notifications').select('id').eq('user_id', auth.user().id).eq('read', false)).length;
+  async function listNotifications(offset, limit) {
+    await auth.ready(); if (!auth.user()) return [];
+    return personalRpc('notifications_page', { p_limit: limit || 20, p_offset: offset || 0 });
   }
-
-  async function markNotificationsRead() {
-    await auth.ready();
-    if (!auth.user() || (typeof auth.isAdmin === 'function' && auth.isAdmin())) return;
-    value(await db().from('notifications').update({ read: true }).eq('user_id', auth.user().id).eq('read', false));
+  async function notificationCount(includeDM) {
+    await auth.ready(); if (!auth.user()) return 0;
+    return Number(await personalRpc('notification_unread_count', { p_include_dm: includeDM !== false }));
   }
-  async function moderateComment(id, status) {
+  async function markNotificationsRead(id) {
+    await auth.ready(); if (!auth.user()) return;
+    await personalRpc('notification_mark_read', { p_id: id || null });
+  }
+  async function dmUnreadCount() {
+    await auth.ready(); if (!auth.user()) return 0;
+    return Number(await personalRpc('dm_unread_count', {}));
+  }
+  async function messageUnreadCount() {
+    var values = await Promise.all([notificationCount(false), dmUnreadCount()]);
+    return values[0] + values[1];
+  }
+  async function moderateComment(id, status, reason, expectedContent) {
     await auth.ready(); auth.requireAdmin();
     if (!['approved', 'rejected'].includes(status)) throw new Error('无效审核状态。');
-    value(await db().from('comments').update({ status: status }).eq('id', id));
+    value(await db().rpc('community_moderate_comment',{p_comment_id:id,p_decision:status,p_rejection_reason:reason||null,p_expected_content:expectedContent===undefined?null:expectedContent}));
   }
   async function deleteComment(id) {
     await auth.ready(); auth.requireAdmin();
@@ -96,7 +95,7 @@
   async function likes(type, ids) {
     await auth.ready();
     if (!auth.configured() || !ids.length) return {};
-    if (!['post', 'comment', 'moment'].includes(type)) throw new Error('无效点赞类型。');
+    if (!['post', 'comment', 'moment', 'album', 'content'].includes(type)) throw new Error('无效点赞类型。');
     var out = {};
     var uniqueIds = Array.from(new Set(ids.map(String)));
     for (var start = 0; start < uniqueIds.length; start += 100) {
@@ -133,22 +132,24 @@
   async function getProfile(id) {
     await auth.ready();
     if (!auth.configured()) return null;
-    return value(await db().from('profiles').select('*').eq('id', id).maybeSingle());
+    return value(await db().from('profiles').select('id,username,display_name,avatar_url,bio').eq('id', id).maybeSingle());
   }
-  async function saveProfile(changes) {
+  async function saveProfile(changes, expectedActor) {
     await auth.ready();
     var id = requireLogin();
+    if(expectedActor && id!==expectedActor)throw Error('账号已变化。');
     return value(await db().from('profiles').update(changes).eq('id', id).select().single());
   }
-  async function uploadAvatar(file) {
+  async function uploadAvatar(file, expectedActor) {
     await auth.ready();
     var id = requireLogin();
+    if(expectedActor && id!==expectedActor)throw Error('账号已变化。');
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) throw new Error('头像须为 2 MB 内的 JPG、PNG 或 WebP。');
     var ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
     var path = id + '/avatar-' + Date.now() + '.' + ext;
     value(await db().storage.from('avatars').upload(path, file, { contentType: file.type, upsert: false }));
     var url = db().storage.from('avatars').getPublicUrl(path).data.publicUrl;
-    await saveProfile({ avatar_url: url });
+    await saveProfile({ avatar_url: url }, id);
     return url;
   }
   async function following(targetId) {
@@ -167,7 +168,7 @@
   }
   window.BlogData = { listComments: listComments, addComment: addComment, listModeration: listModeration,
     listLatestComments: listLatestComments,
-    listNotifications: listNotifications, notificationCount: notificationCount, markNotificationsRead: markNotificationsRead,
+    listNotifications: listNotifications, notificationCount: notificationCount, markNotificationsRead: markNotificationsRead, dmUnreadCount: dmUnreadCount, messageUnreadCount: messageUnreadCount,
     moderateComment: moderateComment, deleteComment: deleteComment, likes: likes, toggleLike: toggleLike,
     followerCount: followerCount, userLikeCount: userLikeCount,
     getProfile: getProfile, saveProfile: saveProfile, uploadAvatar: uploadAvatar, following: following, toggleFollow: toggleFollow };

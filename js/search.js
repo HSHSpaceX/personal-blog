@@ -30,7 +30,9 @@
   }
   function resultUrl(hit) {
     if (hit.type === 'post') return window.BlogUrls.postUrl(hit.slug);
-    if (hit.type === 'moment') return 'moments.html#moment-' + encodeURIComponent(hit.id);
+    if (hit.type === 'moment') return 'moments.html#'+(hit.community?'community-':'moment-') + encodeURIComponent(hit.id);
+    if(hit.slug&&hit.slug.startsWith('community-')&&window.COMMUNITY_PUBLIC){var i=window.COMMUNITY_PUBLIC.items.find(function(i){return 'community-'+i.id===hit.slug;});return i?window.CommunityPublic.target(i):'moments.html';}
+    if(hit.slug&&hit.slug.startsWith('album-'))return 'gallery.html?album='+encodeURIComponent(hit.slug.slice(6));
     if (hit.slug === 'about') return 'about.html#commentsSection';
     if (hit.slug && hit.slug.indexOf('moment-') === 0) return 'moments.html#' + encodeURIComponent(hit.slug);
     return window.BlogUrls.postUrl(hit.slug) + '#commentsSection';
@@ -83,7 +85,10 @@
         });
       }
     } catch (error) { comments = {}; }
-    index = core.createIndex(window.BLOG_POSTS || [], window.BLOG_MOMENTS || [], comments);
+    var posts=window.CommunityPublic?window.CommunityPublic.mergePosts(window.BLOG_POSTS):window.BLOG_POSTS||[],moments=(window.BLOG_MOMENTS||[]).concat(window.CommunityPublic?window.CommunityPublic.moments():[]);
+    var allowed=new Set(['about'].concat(posts.map(function(p){return p.community?'community-'+p.item_id:p.slug;}),moments.map(function(m){return (m.community?'community-':'moment-')+m.id;}),(window.SITE_ALBUMS||[]).filter(function(a){return a.visibility!=='private';}).map(function(a){return 'album-'+a.id;}),(window.COMMUNITY_PUBLIC?window.COMMUNITY_PUBLIC.items:[]).filter(function(i){return i.content_type==='album';}).map(function(i){return 'community-'+i.id;})));
+    Object.keys(comments).forEach(function(slug){if(!allowed.has(slug))delete comments[slug];});
+    index = core.createIndex(posts, moments, comments);
     ready = true;
     render();
   }
@@ -108,6 +113,6 @@
     input.focus();
   });
   document.getElementById('year').textContent = new Date().getFullYear();
-  if (window.BLOG_POSTS && window.BLOG_MOMENTS && window.SITE_COMMENTS) initialize();
+  if ((!window.CommunityPublic || window.COMMUNITY_PUBLIC) && window.BLOG_POSTS && window.BLOG_MOMENTS && window.SITE_COMMENTS) initialize();
   else document.addEventListener('posts-ready', initialize, { once: true });
 })();

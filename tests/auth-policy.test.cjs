@@ -16,6 +16,7 @@ function dataHarness(role = 'guest') {
   const follows = new Set();
   const client = { rpc(name, args) {
     calls.push({ rpc: name, args });
+    if (name === 'notifications_page') return Promise.resolve({ data: [], error: null });
     if (name === 'like_counts') return Promise.resolve({ data: args.p_target_ids.filter((id) => likes.has(id)).map((id) => ({ target_id: id, like_count: 1 })), error: null });
     if (name === 'user_like_count') return Promise.resolve({ data: likes.size, error: null });
     return Promise.resolve({ data: 0, error: null });
@@ -23,7 +24,7 @@ function dataHarness(role = 'guest') {
     const query = { table, action: '', payload: null, filters: {},
       select() { if (!this.action) this.action = 'select'; return this; },
       eq(key, value) { this.filters[key] = value; return this; },
-      in() { return this; }, order() { return this; }, maybeSingle() { return this; }, single() { return this; },
+      limit() { return this; }, in() { return this; }, order() { return this; }, maybeSingle() { return this; }, single() { return this; },
       insert(payload) { this.action = 'insert'; this.payload = payload; return this; },
       update(payload) { this.action = 'update'; this.payload = payload; return this; },
       delete() { this.action = 'delete'; return this; },
@@ -45,6 +46,7 @@ function dataHarness(role = 'guest') {
   } };
   const auth = { ready: async () => {}, configured: () => true, client: () => client, user: () => actor,
     requireUser() { if (!actor) throw new Error('login required'); return actor; },
+    isAdmin: () => role === 'admin',
     requireAdmin() { if (role !== 'admin') throw new Error('admin required'); }
   };
   const context = { window: { BlogAuth: auth } };
@@ -126,20 +128,24 @@ test('comment and like writes carry authenticated ID; admin moderation works', a
   assert.equal(reader.calls.find((call) => call.table === 'likes' && call.action === 'insert').payload.user_id, 'actor-uuid');
   const admin = dataHarness('admin');
   await admin.data.moderateComment('comment-id', 'approved');
-  assert.equal(admin.calls[0].payload.status, 'approved');
+  assert.equal(admin.calls[0].rpc, 'community_moderate_comment');
+  assert.equal(admin.calls[0].args.p_decision, 'approved');
+  assert.equal(admin.calls[0].args.p_comment_id, 'comment-id');
+  assert.ok(!admin.calls.some(call => call.table==='comments' && call.action==='update'));
   await admin.data.deleteComment('comment-id');
   assert.equal(admin.calls[1].action, 'delete');
 });
 
-test('PAT stays in memory, is validated, and disappears after reload/logout', async () => {
+test('PAT validates repository access, restores only in the same account session, and clears on logout', async () => {
   const localWrites = [], sessionWrites = [], sessionReads = [], sessionRemovals = [], urls = [];
   const listeners = [];
+  const session = new Map();
   let admin = true;
   const actor = { id: 'admin-id' };
   const context = {
     window: { BlogConfig: { GITHUB_OWNER: 'HSHSpaceX', GITHUB_REPO: 'personal-blog' }, BlogAuth: { requireAdmin() { if (!admin) throw new Error('admin required'); }, requireUser: () => actor, isAdmin: () => admin, user: () => admin ? actor : null }, addEventListener(name, listener) { listeners.push({ name, listener }); } },
     localStorage: { removeItem() {}, setItem(...args) { localWrites.push(args); } },
-    sessionStorage: { getItem(...args) { sessionReads.push(args); return ''; }, setItem(...args) { sessionWrites.push(args); }, removeItem(...args) { sessionRemovals.push(args); } },
+    sessionStorage: { getItem(key) { sessionReads.push([key]); return session.get(key) || ''; }, setItem(key, value) { sessionWrites.push([key,value]); session.set(key,value); }, removeItem(key) { sessionRemovals.push([key]); session.delete(key); } },
     document: { querySelectorAll: () => [], addEventListener(name, listener) { listeners.push({ name, listener }); } },
     fetch: async (url) => { urls.push(url); return { ok: true, json: async () => url.endsWith('/user') ? { login: 'owner' } : { permissions: { push: true } } }; }
   };
@@ -148,16 +154,21 @@ test('PAT stays in memory, is validated, and disappears after reload/logout', as
   assert.deepEqual(urls, ['https://api.github.com/user', 'https://api.github.com/repos/HSHSpaceX/personal-blog']);
   assert.equal(context.window.GitHubCredentials.get(), 'test-token');
   assert.equal(localWrites.length, 0);
-  assert.equal(sessionWrites.length, 0);
+  assert.deepEqual(sessionWrites, [['blog-gh-pat-temp','test-token'], ['blog-gh-pat-owner','admin-id']]);
   assert.equal(sessionReads.length, 0);
-  assert.equal(sessionRemovals.length, 1, 'old session PAT must be purged');
+  assert.ok(sessionRemovals.some(([key]) => key === 'blog-gh-pat-session'), 'legacy session key must be purged');
+  vm.runInNewContext(read('js/github-credentials.js'), context);
+  assert.equal(context.window.GitHubCredentials.get(), 'test-token', 'same-account navigation preserves the existing session workflow');
   admin = false;
   listeners.find((entry) => entry.name === 'blog-auth-change').listener();
   assert.equal(context.window.GitHubCredentials.get(), '', 'logout clears memory');
   admin = true;
   await context.window.GitHubCredentials.connect('test-token');
   vm.runInNewContext(read('js/github-credentials.js'), context);
-  assert.equal(context.window.GitHubCredentials.get(), '', 'reload does not restore PAT');
+  assert.equal(context.window.GitHubCredentials.get(), 'test-token', 'only the matching account session restores PAT');
+  session.set('blog-gh-pat-owner', 'other-admin');
+  vm.runInNewContext(read('js/github-credentials.js'), context);
+  assert.equal(context.window.GitHubCredentials.get(), '', 'a different account cannot restore the session token');
   context.window.GitHubCredentials.clear();
   assert.equal(context.window.GitHubCredentials.get(), '');
 });
@@ -202,7 +213,7 @@ function credentialsHarness() {
     release:()=>release(), change:(next, isAdmin = true)=>{actor=next;admin=isAdmin;events['blog-auth-change']();}};
 }
 
-test('logout/clear during PAT validation cannot restore token; demotion/account change/pagehide purge memory and inputs', async () => {
+test('logout/clear during PAT validation cannot restore token; demotion/account change purge memory and inputs', async () => {
   for (const change of [(h)=>h.change(null), (h)=>h.credentials.clear(), (h)=>h.change({id:'admin-one'},false)]) {
     const h = credentialsHarness();
     const pending = h.credentials.connect('test-token');
@@ -211,7 +222,7 @@ test('logout/clear during PAT validation cannot restore token; demotion/account 
     assert.equal(h.credentials.get(), '');
     assert.equal(h.inputs[0].value, '');
   }
-  for (const change of [(h)=>h.change({id:'admin-two'}),(h)=>h.events.pagehide()]) {
+  for (const change of [(h)=>h.change({id:'admin-two'}),(h)=>h.credentials.clear()]) {
     const h = credentialsHarness();
     const pending=h.credentials.connect('test-token'); h.release(); await pending;
     assert.equal(h.credentials.get(),'test-token');
@@ -273,4 +284,28 @@ test('overlapping SDK initial session event shares verified initialization befor
   assert.equal(h.getUserCount(),1,'concurrent callers must share the same verification');
   release(); await ready;
   assert.equal(h.auth.isAdmin(),true,'ready must not resolve as guest before the admin lookup completes');
+});
+
+test('admin retains user comment/like/follow/profile and personal notification capabilities', async () => {
+  for (const role of ['user','admin']) {
+    const h = dataHarness(role);
+    await h.data.addComment('post','social comment');
+    assert.equal(h.calls[0].payload.status,role==='admin'?'approved':'pending');
+    assert.equal(await h.data.toggleLike('post','social-post'),true);
+    assert.equal(await h.data.toggleFollow('another-user'),true);
+    await h.data.saveProfile({bio:'Social profile'});
+    await h.data.listNotifications();
+    await h.data.notificationCount();
+    await h.data.markNotificationsRead();
+    const calls = h.calls.filter(call=>['notifications_page','notification_unread_count','notification_mark_read'].includes(call.rpc));
+    assert.equal(calls.length,3,'both users and admins use their personal inbox');
+    assert.deepEqual(calls.map(call=>call.rpc),['notifications_page','notification_unread_count','notification_mark_read']);
+    assert.equal(calls[0].args.p_limit,20);
+    assert.equal(calls[2].args.p_id,null);
+  }
+  const guest=dataHarness();
+  assert.equal((await guest.data.listNotifications()).length,0);
+  assert.equal(await guest.data.notificationCount(),0);
+  await guest.data.markNotificationsRead();
+  assert.equal(guest.calls.length,0);
 });
