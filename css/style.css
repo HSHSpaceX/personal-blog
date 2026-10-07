@@ -3316,6 +3316,27 @@ a.tag-chip:hover {
   pointer-events: none;
 }
 
+.contrib-tooltip {
+  position: fixed;
+  z-index: 1000;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity .12s ease, transform .12s ease;
+}
+
+.contrib-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Social icon */
 .social-icon {
   width: 18px;

@@ -93,12 +93,52 @@
         return '<div class="contrib-day" data-level="' + level(day.count) + '" data-tip="' + day.date + '：' + day.count + ' 次提交"></div>';
       }).join('') + '</div>';
     }).join('');
+    bindTooltips(wrap);
   }
 
   function render() {
     renderYears();
     renderPills();
     renderChart();
+  }
+
+  function tooltip() {
+    var tip = document.querySelector('.contrib-tooltip');
+    if (tip) return tip;
+    tip = document.createElement('div');
+    tip.className = 'contrib-tooltip';
+    document.body.appendChild(tip);
+    return tip;
+  }
+
+  function positionTip(event, tip) {
+    var left = event.clientX + 12;
+    var top = event.clientY - 36;
+    var rect = tip.getBoundingClientRect();
+    if (left + rect.width + 12 > window.innerWidth) left = window.innerWidth - rect.width - 12;
+    if (top < 8) top = event.clientY + 14;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+
+  function bindTooltips(wrap) {
+    if (wrap.dataset.tooltipBound === '1') return;
+    wrap.dataset.tooltipBound = '1';
+    var tip = tooltip();
+    wrap.addEventListener('mouseover', function (event) {
+      var cell = event.target.closest('.contrib-day[data-tip]');
+      if (!cell) return;
+      tip.textContent = cell.dataset.tip;
+      tip.classList.add('is-visible');
+      positionTip(event, tip);
+    });
+    wrap.addEventListener('mousemove', function (event) {
+      if (!tip.classList.contains('is-visible')) return;
+      positionTip(event, tip);
+    });
+    wrap.addEventListener('mouseleave', function () {
+      tip.classList.remove('is-visible');
+    });
   }
 
   function setAuthor(author) {
