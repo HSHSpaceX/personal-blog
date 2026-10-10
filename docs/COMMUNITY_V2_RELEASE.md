@@ -1,10 +1,10 @@
 # Community V2 最终发布 / RC 清单
 
-这是 operator 执行手册，不是已经完成的生产操作。Round 5 开发结束后冻结功能，只修 RC 验收问题。当前开发分支保持 feature/community-v2；不得在未验收前自动合并或执行生产 SQL。相关设计见 [Round 5](COMMUNITY_V2_ROUND5.md)、[Auth](AUTH_SETUP.md)、[Supabase](SUPABASE_SETUP.md)。记录环境、时间、操作者、commit、实际 HTTP 状态与截图，失败项必须关闭再继续。
+这是 operator 执行手册，不是已经完成的生产操作。Community V2 统一 GUI 已整合，当前只修收尾验收问题。最终待合并分支为 integration/community-v2，对应现有 PR #4；不得在未验收前自动合并或执行生产 SQL。相关设计见 [Round 5](COMMUNITY_V2_ROUND5.md)、[Auth](AUTH_SETUP.md)、[Supabase](SUPABASE_SETUP.md)。记录环境、时间、操作者、commit、实际 HTTP 状态与截图，失败项必须关闭再继续。
 
 ## A. migration 正式顺序
 
-先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复手工执行。新测试/RC 项目按下列顺序完整执行；生产仅补尚未执行者（Round 5 只有最后两项新增）：
+当前共 18 个 migration。先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复执行。新测试/RC 项目按下列顺序完整执行；生产库只执行尚未应用的 migration，不能重新运行已经执行过的历史 migration。
 
 1. 202609300001_invite_auth.sql
 2. 202609300002_private_reactions.sql
@@ -23,6 +23,11 @@
 15. 202610070002_direct_messages.sql
 16. 202610070003_publication_bridge.sql
 17. 202610070004_category_raw_length.sql
+18. 202610100001_safe_content_document.sql
+
+第 18 项必须在 202610070004_category_raw_length.sql 之后执行，用于统一富文本编辑器的安全结构化正文 `body.document = { version: 1, blocks: [...] }`。未应用时，新版 Community 富文本保存可能失败；前端错误提示不能代替迁移，也不能通过放松 RLS 修复。
+
+在独立 RC 项目实际检查文档结构白名单验证、链接协议限制、封面资源归属与图片 MIME 验证，并确认旧纯文本 revision 仍兼容。使用普通用户测试投稿、管理员审核、拒绝重编和静态发布，再核对资源引用与公开版本。CI 全绿不代表真实 Supabase Storage/Auth 已验收；真实 HTTP、邀请登录与 Cloudflare 配置仍须按以下步骤验收。service_role 凭据不得放进前端、公开仓库或日志。
 
 检查 function 固定 search_path、表/列 grants、RLS、restrictive policies。service_role 是 Supabase 已有数据库角色。不要开启客户端 service_role 权限。
 
@@ -56,7 +61,7 @@ where singleton;
 
 ## G. Cloudflare Preview
 
-部署 feature commit 到独立 Preview，前端采用 RC public config。人工核对正式 canonical（Preview 不生成自己的 SEO canonical）、noindex 功能页、375px 与 desktop、JS cache version、CORS、公用媒体可读取。fixture 可生成测试站，真实 RC approved 数据仅经 RC 仓库 main publisher。核对 GITHUB_TOKEN bot push 是否触发 Pages 部署及部署完成时间；published 状态不替代 Cloudflare build success。
+部署 integration/community-v2 / PR #4 commit 到独立 Preview，前端采用 RC public config。人工核对正式 canonical（Preview 不生成自己的 SEO canonical）、noindex 功能页、375px 与 desktop、JS cache version、CORS、公用媒体可读取。fixture 可生成测试站，真实 RC approved 数据仅经 RC 仓库 main publisher。核对 GITHUB_TOKEN bot push 是否触发 Pages 部署及部署完成时间；published 状态不替代 Cloudflare build success。
 
 ## H. A/B/C + 两 admin
 
@@ -94,9 +99,9 @@ A 分别 article/moment/album；draft/pending/rejected 不能出 snapshot/Storag
 
 核对正式 sitemap/feed/robots，Bing live inspection 抓取无 internal noindex 警告来源；搜索平台刷新有延迟。Pages 部署完成后手工运行既有 IndexNow workflow，仅提交 sitemap 正式 URL。静态 generator 不调用搜索引擎。
 
-## P. merge feature/community-v2 → main
+## P. 验收 integration/community-v2 / PR #4 → main
 
-RC A–O 记录完成且负责人确认后才创建/审查正式合并 PR；检查 migration 历史 hash 和完整 CI 全绿、配置备份、回滚点。该开发任务不执行 merge。正式 secrets/迁移/配置就绪后，由操作者按发布窗口合并；main schedule 从此激活，每 5 分钟只是兜底频率，GitHub schedule 可能延迟。
+RC A–O 记录完成且负责人确认后才审查现有 PR #4；检查 migration 历史 hash 和完整 CI 全绿、配置备份、回滚点。该开发任务不执行 merge。正式 secrets/迁移/配置就绪后，由操作者按发布窗口合并；main schedule 从此激活，每 5 分钟只是兜底频率，GitHub schedule 可能延迟。
 
 ## Q. Production smoke
 

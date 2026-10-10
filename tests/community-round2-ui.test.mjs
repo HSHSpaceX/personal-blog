@@ -58,7 +58,7 @@ test('real DOM: article/moment/album authoring, immutable drafts, safe previews 
  await h.click('communitySave');const saved=[...h.revs.values()].at(-1);assert.equal(saved.status,'draft');assert.equal(saved.content_items.content_type,type);assert.match(h.w.location.search,/revision=/);
  await h.click('communityTextPreview');assert.ok(h.$('communityPreviewBody').textContent.includes(hostile));assert.equal(h.$('communityPreviewBody').querySelector('script,img,svg,a'),null);assert.equal(h.w.compromised,undefined);
  if(type==='album'){assert.equal(h.$('communityPreviewAssets').querySelector('img').alt,hostile);assert.equal(h.$('communityPreviewAssets').querySelector('[onerror]'),null);}
- await h.click('communitySubmit');const submitted=[...h.revs.values()].at(-1);assert.equal(submitted.status,'pending');assert.notEqual(submitted.id,saved.id);assert.equal(h.revs.get(saved.id).status,'draft');assert.match(h.$('communityPreviewState').textContent,/pending/);
+ h.$('communityText').value=hostile+' updated';await h.click('communitySubmit');const submitted=[...h.revs.values()].at(-1);assert.equal(submitted.status,'pending');assert.notEqual(submitted.id,saved.id);assert.equal(h.revs.get(saved.id).status,'draft');assert.match(h.$('communityPreviewState').textContent,/pending/);
  }
  assert.equal(h.calls.filter(c=>c[0]==='submit').length,3);assert.equal(h.$('communityReviewControls').hidden,true);
  h.timers.forEach(fn=>fn());assert.equal(h.$('communityPreviewAssets').querySelector('a,img'),null);

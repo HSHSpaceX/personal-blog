@@ -67,7 +67,7 @@
     editor.addEventListener('drop',function(e){e.preventDefault();});
     return {setBody:Editor_SetBody,getDocument:Editor_ReadDocument,clear:function(){editor.replaceChildren();lastText='';savedRange=null;if(text)text.value='';},
       getHTML:function(){return options.sourceMode&&options.sourceMode()?text.value:editor.innerHTML;},setHTML:function(html){if(!legacy)throw Error('Community 不接受 HTML。');savedRange=null;editor.innerHTML=html||'<p></p>';if(text)text.value=html||'<p></p>';},
-      insertAsset:function(id){if(!schema.uuid(id))throw Error('无效资源 UUID。');Editor_RestoreSelection();var block=document.createElement('p');block.dataset.contentAsset=id;block.contentEditable='false';block.textContent='附件 · '+id;var anchor=savedRange&&savedRange.startContainer;while(anchor&&anchor.parentNode!==editor)anchor=anchor.parentNode;if(anchor&&anchor.parentNode===editor)editor.insertBefore(block,anchor.nextSibling);else editor.appendChild(block);savedRange=null;Editor_SyncText();},
+      insertAsset:function(id){if(!schema.uuid(id))throw Error('无效资源 UUID。');Editor_RestoreSelection();var block=document.createElement('p');block.dataset.contentAsset=id;block.contentEditable='false';block.textContent='附件 · '+id;var anchor=savedRange&&savedRange.startContainer;while(anchor&&anchor.parentNode!==editor)anchor=anchor.parentNode;if(anchor&&anchor.parentNode===editor)editor.insertBefore(block,anchor.nextSibling);else editor.appendChild(block);savedRange=null;Editor_SyncText();if(options.onChange)options.onChange();},
       insertHTML:function(html){if(!legacy)throw Error('Community 不接受 HTML。');Editor_RestoreSelection();document.execCommand('insertHTML',false,html);if(options.onChange)options.onChange();}};
   }
   window.ContentEditor={create:Editor_Create};

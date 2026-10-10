@@ -5,7 +5,7 @@
   var initialized = false;
   var generation = 0;
   var $ = function (id) { return document.getElementById(id); };
-  var workspace = window.AccountWorkspace ? window.AccountWorkspace.create({root:$('accountSections'),nav:$('accountDirectory'),toggle:$('directoryToggle'),backdrop:$('directoryBackdrop')}) : null;
+  var workspace = window.AccountWorkspace ? window.AccountWorkspace.create({root:$('accountSections'),nav:$('accountDirectory'),toggle:$('directoryToggle'),backdrop:$('directoryBackdrop'),beforeLeave:function(){return !window.CommunityUI||window.CommunityUI.confirmLeave();}}) : null;
   if (workspace) window.AccountRoute = workspace;
   window.BlogTheme.setup();
   function status(text, kind) {

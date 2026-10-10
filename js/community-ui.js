@@ -4,7 +4,30 @@
   var $=function(id){return document.getElementById(id);};
   var names={article:'文章',moment:'动态',album:'图册'}, states={draft:'draft · 草稿',pending:'pending · 待审',approved:'approved · 已审核，等待站点同步',rejected:'rejected · 已驳回'};
   var generation=0, draft=null, preview=null, assets=[], policyTarget=null, timers=[], busy=false, selection=[], itemRows=[], contentType='article', pickerOffset=0, pickerGeneration=0, viewMode='list';
-  var editor=window.ContentEditor?window.ContentEditor.create({editor:$('communityRichEditor'),toolbar:$('communityToolbar'),textarea:$('communityText'),onError:function(text){message(text,true);},onTool:function(){Community_OpenPicker();}}):null;
+  var baseline='', editSession=0, savedRevisionId=null;
+  var editor=window.ContentEditor?window.ContentEditor.create({editor:$('communityRichEditor'),toolbar:$('communityToolbar'),textarea:$('communityText'),onChange:Community_UpdateDirty,onError:function(text){message(text,true);Community_UpdateDirty();},onTool:function(){Community_OpenPicker();}}):null;
+  function Community_Snapshot() {
+    if(!draft)return '';
+    var documentValue;try{documentValue=editor?editor.getDocument():$('communityText').value;}catch(error){documentValue={invalid:$('communityRichEditor').innerHTML};}
+    return JSON.stringify({title:$('communityTitle').value,document:documentValue,category:$('communityCategory').value,summary:$('communitySummary').value,tags:$('communityTags').value,cover:$('communityCover')?$('communityCover').value:'',assets:Array.from($('communityAssetChoices').querySelectorAll('[data-asset-choice]:checked')).map(function(el){var caption=Array.from($('communityAssetChoices').querySelectorAll('[data-asset-caption]')).find(function(c){return c.dataset.assetCaption===el.value;});return {id:el.value,caption:caption?caption.value:''};})});
+  }
+  function Community_IsDirty() { return !!draft && Community_Snapshot()!==baseline; }
+  function Community_UpdateDirty() { $('communityEditor').dataset.dirty=String(Community_IsDirty()); }
+  function Community_DiscardEditor() {
+    editSession++;draft=null;preview=null;selection=[];baseline='';savedRevisionId=null;viewMode='list';pickerGeneration++;
+    if(editor)editor.clear();
+    ['communityTitle','communityText','communityCategory','communitySummary','communityTags','communityCover'].forEach(function(id){if($(id))$(id).value='';});
+    ['communityAssetChoices','communityPreviewBody','communityPreviewAssets','communityPreviewActions','communityPreviewAuthor'].forEach(function(id){$(id).replaceChildren();});
+    timers.forEach(clearTimeout);timers=[];
+    if($('communityResourcePicker')&&$('communityResourcePicker').open)$('communityResourcePicker').close();
+    $('communityEditor').hidden=true;$('communityPreview').hidden=true;$('communityItems').hidden=false;Community_UpdateDirty();
+  }
+  function Community_ConfirmLeave(internal) {
+    if(!internal&&busy&&draft){message('正在保存或提交，请等待操作结束。',true);return false;}
+    if(!Community_IsDirty())return true;
+    if(!window.confirm('有未保存的修改，确定离开并丢弃这些修改？'))return false;
+    Community_DiscardEditor();return true;
+  }
   function node(tag,text,cls){var n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
   function message(text,error,id){var el=$(id||'communityStatus');el.textContent=text;el.className='status-line '+(error?'err':'ok');}
   function active(token){return token===generation&&!!auth.user();}
@@ -14,13 +37,16 @@
     try{auth.requireUser();await fn(token);}catch(e){if(active(token))message(e.message,true);}finally{busy=false;if(control)control.disabled=false;}
   }
   function clear(){
+    baseline='';editSession++;savedRevisionId=null;
     generation++;pickerGeneration++;draft=null;preview=null;assets=[];selection=[];itemRows=[];viewMode='list';policyTarget=null;busy=false;
     if(editor)editor.clear();if($('communityResourcePicker')&&$('communityResourcePicker').open)$('communityResourcePicker').close();
     timers.forEach(clearTimeout);timers=[];
     ['communityItems','communityAssets','communityAssetChoices','communityAssetViewer','communityPreviewBody','communityPreviewAssets','communityPreviewActions','communityPreviewAuthor','communityReviewQueue','communityPolicyRows'].forEach(function(id){$(id).replaceChildren();});
     ['communityTitle','communityText','communityCategory','communitySummary','communityTags','communityRejectReason','communityPolicyUser','communityPolicyThreshold','communityUploadFile'].forEach(function(id){$(id).value='';});
     ['communityStatus','communityAssetStatus','communityPreviewTitle','communityPreviewState','communityPreviewReason','communityPolicyIdentity'].forEach(function(id){$(id).textContent='';});
-    $('communityEditor').hidden=true;$('communityPreview').hidden=true;$('communityReviewControls').hidden=true;
+    if($('communityCover'))$('communityCover').replaceChildren();
+    if($('resourcePickerList'))$('resourcePickerList').replaceChildren();
+    $('communityEditor').hidden=true;$('communityPreview').hidden=true;$('communityReviewControls').hidden=true;Community_UpdateDirty();
   }
   function revisionItem(row){return row.content_items;}
   function renderItems(items){
@@ -51,7 +77,7 @@
       var label=node('label',undefined,'community-asset-choice'), check=node('input');check.type='checkbox';check.value=asset.id;check.checked=selected.has(asset.id);check.dataset.assetChoice='';
       label.appendChild(check);label.appendChild(node('span',asset.original_name));
       if(draft&&draft.item.content_type==='album'){var caption=node('input');caption.type='text';caption.maxLength=200;caption.value=selected.get(asset.id)||'';caption.dataset.assetCaption=asset.id;caption.setAttribute('aria-label',asset.original_name+' 图片说明');label.appendChild(caption);}
-      if(selected.has(asset.id)){['前移','后移'].forEach(function(text,index){button(label,text,function(){captureChoices();var at=selection.findIndex(function(p){return p.asset_id===asset.id;}),to=at+(index?1:-1);if(to>=0&&to<selection.length){var part=selection.splice(at,1)[0];selection.splice(to,0,part);choices();}});});}
+      if(selected.has(asset.id)){['前移','后移'].forEach(function(text,index){button(label,text,function(){captureChoices();var at=selection.findIndex(function(p){return p.asset_id===asset.id;}),to=at+(index?1:-1);if(to>=0&&to<selection.length){var part=selection.splice(at,1)[0];selection.splice(to,0,part);choices();Community_UpdateDirty();}});});}
       $('communityAssetChoices').appendChild(label);
     });
     if(!visible.length)$('communityAssetChoices').appendChild(node('p','请先在“我的资源”上传文件。'));
@@ -65,10 +91,12 @@
   }
   function openEditor(item,row){
     if(item.author_id&&item.author_id!==auth.requireUser().id)throw Error('只能编辑自己的内容。');
+    if(Community_IsDirty()&&!Community_ConfirmLeave(true))return;
+    editSession++;savedRevisionId=row?row.id:null;
     viewMode='edit';draft={item:item,source:row};preview=null;$('communityPreview').hidden=true;$('communityReviewControls').hidden=true;
     $('communityEditor').hidden=false;var body=row?row.body:{};
     $('communityItems').hidden=true;
-    if(window.AccountRoute)window.AccountRoute.navigate(item.content_type==='moment'?'moments':item.content_type==='album'?'albums':'articles');
+    if(window.AccountRoute)window.AccountRoute.navigate(item.content_type==='moment'?'moments':item.content_type==='album'?'albums':'articles',true);
     $('communityEditorHeading').textContent='编辑'+names[item.content_type]+'草稿';
     $('communityEditorState').textContent=row?'保存会建立新的不可变草稿版本。':'新内容 · 保存后可继续编辑或提交。';
     $('communityTitle').value=row?row.title:'';$('communityText').value=body.text||body.description||'';
@@ -80,7 +108,7 @@
     $('communityArticleFields').hidden=item.content_type!=='article';
     $('communityAssetLegend').textContent=item.content_type==='album'?'选择图片并填写说明':'选择我的资源';
     selection=item.content_type==='album'?(body.photos||[]):(body.asset_ids||[]).map(function(id){return{asset_id:id};});
-    choices();if($('communityCover'))$('communityCover').value=body.cover_asset_id||'';$('communityTitle').focus();
+    choices();if($('communityCover'))$('communityCover').value=body.cover_asset_id||'';baseline=Community_Snapshot();Community_UpdateDirty();$('communityTitle').focus();
   }
   function editorBody(){
     var type=draft.item.content_type, selected=Array.from($('communityAssetChoices').querySelectorAll('[data-asset-choice]:checked')).map(function(el){return el.value;});
@@ -94,17 +122,28 @@
     schema.validate(type,$('communityTitle').value,body);return body;
   }
   async function saveEditor(token,submit){
-    if(!draft)throw Error('请先打开草稿。');var item=draft.item, title=$('communityTitle').value,body=editorBody();
-    var rid=item.id?await data.save(item,title,body):await data.create(item.content_type,'c-'+crypto.randomUUID(),title,body);
-    if(!active(token))return;
+    if(!draft)throw Error('请先打开草稿。');var session=editSession;
+    if(savedRevisionId&&!draft.item.id){var previous=await data.getRevision(savedRevisionId);if(!active(token)||session!==editSession)return;draft.item=revisionItem(previous);draft.source=previous;}
+    var item=draft.item, title=$('communityTitle').value,body=editorBody(),snapshot=Community_Snapshot();
+    var rid=!Community_IsDirty()&&draft.source&&draft.source.status==='draft'?draft.source.id:item.id?await data.save(item,title,body):await data.create(item.content_type,'c-'+crypto.randomUUID(),title,body);
+    if(!active(token)||session!==editSession)return;
+    if(!schema.uuid(rid))throw Error('后端未返回有效草稿版本，保存未确认。');
     // Preserve the successfully saved revision even if submission/network fails.
-    var saved=await data.getRevision(rid);if(!active(token))return;
-    openEditor(revisionItem(saved),saved);setRevisionUrl(rid);
+    savedRevisionId=rid;baseline=snapshot;Community_UpdateDirty();
+    var saved;try{saved=await data.getRevision(rid);}catch(error){if(active(token)&&session===editSession)message('草稿已保存；暂无法读取保存版本：'+error.message,true);return;}
+    if(!active(token)||session!==editSession)return;
+    draft.item=revisionItem(saved);draft.source=saved;setRevisionUrl(rid);
+    $('communityEditorState').textContent='正文已保存为草稿，尚未提交审核。';
     message('草稿已保存。');
-    if(submit){await data.submit(rid);if(!active(token))return;$('communityEditor').hidden=true;await openRevision(rid,token);message('提交成功，请查看版本状态。');}
-    await refreshLists(token);
+    if(submit){
+      try{await data.submit(rid);}catch(error){if(active(token)&&session===editSession){$('communityEditorState').textContent='正文已保存为草稿；审核提交失败，可重试提交。';message('草稿已保存；提交审核失败：'+error.message,true);}return;}
+      if(!active(token)||session!==editSession)return;
+      if(Community_IsDirty())message('原正文已保存并提交；后续修改尚未保存。');
+      else {await openRevision(rid,token,true);if(!active(token))return;message('提交成功，请查看版本状态。');}
+    }
+    if(active(token))await refreshLists(token);
   }
-  function setRevisionUrl(id,type){var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState({},'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
+  function setRevisionUrl(id,type){var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
   async function showAsset(id,container,token,caption){
     var result=await data.signedAsset(id);if(!active(token))return;
     var block=node('div',undefined,'community-asset-preview');
@@ -139,7 +178,7 @@
     var target=$('communityPreviewAssets');
     for(var photo of list){try{await showAsset(photo.asset_id,target,token,photo.caption);}catch(e){if(active(token))target.appendChild(node('p','资源不可预览：'+e.message));}}
   }
-  async function openRevision(id,token){var row=await data.getRevision(id);if(!active(token))return;$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
+  async function openRevision(id,token,internal){if(!internal&&!Community_ConfirmLeave(true))return;var session=editSession,row=await data.getRevision(id);if(!active(token)||session!==editSession)return;if(!auth.isAdmin()&&revisionItem(row).author_id!==auth.user().id)throw Error('此版本不存在或你没有访问权限。');draft=null;baseline='';Community_UpdateDirty();$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
   async function refreshLists(token){
     var rows=await data.listItems();if(!active(token))return;renderItems(rows);
     assets=await data.listAssets();if(!active(token))return;$('communityAssets').replaceChildren();
@@ -147,7 +186,7 @@
     if(!assets.length)$('communityAssets').appendChild(node('p','暂无私有资源。'));
     if(auth.isAdmin()){var queue=await data.listReviews();if(!active(token)||!auth.isAdmin())return;$('communityReviewQueue').replaceChildren();queue.forEach(function(row){var entry=node('div',undefined,'community-row');entry.appendChild(node('p',row.title+' · '+names[revisionItem(row).content_type]+' · 作者 '+revisionItem(row).author_id));button(entry,'预览与审核',function(t){return openRevision(row.id,t);});$('communityReviewQueue').appendChild(entry);});if(!queue.length)$('communityReviewQueue').appendChild(node('p','暂无待审内容。'));}
   }
-  async function refresh(){var token=++generation;try{auth.requireUser();await refreshLists(token);if(!active(token))return;var params=new URLSearchParams(location.search),id=params.get('revision')||(schema.uuid(params.get('edit'))?params.get('edit'):null);if(id&&!draft)await openRevision(id,token);}catch(e){if(active(token))message(e.message,true);}}
+  async function refresh(){var token=++generation;try{auth.requireUser();await refreshLists(token);if(!active(token))return;var params=new URLSearchParams(location.search),id=params.get('revision')||(schema.uuid(params.get('edit'))?params.get('edit'):null);if(id&&!draft&&(!window.AccountRoute||!location.hash||['#content','#articles','#moments','#albums'].includes(location.hash)))await openRevision(id,token);}catch(e){if(active(token))message(e.message,true);}}
   async function decision(token,choice){auth.requireAdmin();if(!preview||preview.status!=='pending')throw Error('请先选择待审版本。');var reason=choice==='rejected'?$('communityRejectReason').value.trim():null;if(choice==='rejected'&&!reason)throw Error('拒绝必须填写原因。');var id=preview.id;await data.review(id,choice,reason);if(active(token)){await openRevision(id,token);await refreshLists(token);message('审核决策已保存。');}}
   async function loadPolicy(token){auth.requireAdmin();var target=await data.policyUser($('communityPolicyUser').value.trim());var rows=await data.policyStatus(target.id);if(!active(token)||!auth.isAdmin())return;policyTarget=target;$('communityPolicyIdentity').textContent=target.username+' · '+target.id;$('communityPolicyRows').textContent=rows.map(function(r){return names[r.content_type]+'：'+(r.manual_approvals_required===null?'永远审核':'N='+r.manual_approvals_required)+'，已人工通过新内容 '+r.approved_new_count;}).join('\n');}
   document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){operation(function(){openEditor({content_type:b.dataset.newContent,author_id:auth.requireUser().id},null);},b);});});
@@ -157,7 +196,10 @@
     ['communitySavePolicy',async function(t){auth.requireAdmin();if(!policyTarget)throw Error('请先查询目标用户。');var raw=$('communityPolicyThreshold').value.trim(),n=raw===''?null:Number(raw);if(n!==null&&(!Number.isInteger(n)||n<0||n>10000))throw Error('阈值须为 0–10000 的整数或留空。');await data.setThreshold(policyTarget.id,$('communityPolicyType').value,n);if(active(t)){await loadPolicy(t);message('用户审核阈值已更新。');}}],
     ['communityUpload',async function(t){var file=$('communityUploadFile').files[0];if(!file)throw Error('请选择文件。');if(draft)captureChoices();message('正在上传…',false,'communityAssetStatus');await data.upload(file);if(active(t)){message('私有资源已上传。',false,'communityAssetStatus');$('communityUploadFile').value='';await refreshLists(t);if(active(t)&&draft)choices();if(active(t)&&window.AssetCenter)window.AssetCenter.refresh();}}]
   ].forEach(function(entry){$(entry[0]).addEventListener('click',function(){operation(entry[1],$(entry[0]));});});
-  $('communityCloseEditor').addEventListener('click',function(){viewMode='list';$('communityEditor').hidden=true;$('communityPreview').hidden=true;$('communityItems').hidden=false;});
+  $('communityCloseEditor').addEventListener('click',function(){if(Community_ConfirmLeave())Community_DiscardEditor();});
+  $('communityEditor').addEventListener('input',Community_UpdateDirty);
+  $('communityEditor').addEventListener('change',function(event){if(event.target.matches('[data-asset-choice]')){captureChoices();choices();}Community_UpdateDirty();});
+  window.addEventListener('beforeunload',function(event){if(Community_IsDirty()){event.preventDefault();event.returnValue='';}});
   if($('communityChooseAssets'))$('communityChooseAssets').addEventListener('click',Community_OpenPicker);
   async function Community_LoadPicker() {
     var token=generation,attempt=++pickerGeneration;
@@ -169,7 +211,7 @@
     $('resourcePickerRefresh').addEventListener('click',function(){pickerOffset=0;Community_LoadPicker();});$('resourcePickerPrev').addEventListener('click',function(){pickerOffset=Math.max(0,pickerOffset-20);Community_LoadPicker();});$('resourcePickerNext').addEventListener('click',function(){pickerOffset+=20;Community_LoadPicker();});
   }
   window.addEventListener('workspace-route-change',function(event){var type=event.detail.type;if(event.detail.panel==='content'&&type){contentType=type;if($('communityListHeading'))$('communityListHeading').textContent='我的'+names[type];document.querySelectorAll('[data-new-content]').forEach(function(b){b.hidden=b.dataset.newContent!==type;});renderItems(itemRows);var editing=draft&&draft.item.content_type===type&&['edit','edit-preview'].includes(viewMode),previewing=preview&&revisionItem(preview).content_type===type&&['preview','edit-preview'].includes(viewMode);$('communityEditor').hidden=!editing;$('communityPreview').hidden=!previewing;$('communityItems').hidden=editing||previewing;}});
-  window.addEventListener('community-asset-selected',function(event){if(!draft||!auth.user())return;var a=event.detail;if(draft.item.content_type==='album'&&!/^image\/(jpeg|png|webp)$/.test(a.mime_type)){message('图册只能选择图片。',true);return;}captureChoices();if(!assets.some(function(x){return x.id===a.id;}))assets.push(a);if(!selection.some(function(x){return x.asset_id===a.id;}))selection.push({asset_id:a.id,caption:''});choices();});
-  window.addEventListener('popstate',function(){if(auth.user())refresh();});
-  window.CommunityUI={clear:clear,refresh:refresh};
+  window.addEventListener('community-asset-selected',function(event){if(!draft||!auth.user())return;var a=event.detail;if(draft.item.content_type==='album'&&!/^image\/(jpeg|png|webp)$/.test(a.mime_type)){message('图册只能选择图片。',true);return;}captureChoices();if(!assets.some(function(x){return x.id===a.id;}))assets.push(a);if(!selection.some(function(x){return x.asset_id===a.id;}))selection.push({asset_id:a.id,caption:''});choices();Community_UpdateDirty();});
+  window.addEventListener('popstate',function(){if(auth.user()&&!draft)refresh();});
+  window.CommunityUI={clear:clear,refresh:refresh,confirmLeave:Community_ConfirmLeave};
 })();
