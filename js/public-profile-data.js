@@ -2,7 +2,7 @@
   'use strict';
   var auth=window.BlogAuth;
   var fields='id,username,display_name,avatar_url,bio';
-  function value(r){if(r.error)throw r.error;return r.data;}
+  function value(r){if(r.error){var error=new Error(window.BlogData&&window.BlogData.errorMessage?window.BlogData.errorMessage(r.error):r.error.message);error.code=r.error.code;throw error;}return r.data;}
   async function client(){await auth.ready();if(!auth.configured())throw Error('用户资料暂不可用：Supabase 尚未配置。');return auth.client();}
   async function rpc(name,args){return value(await (await client()).rpc(name,args));}
   async function profile(query){

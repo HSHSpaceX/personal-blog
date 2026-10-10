@@ -2,7 +2,8 @@
   'use strict';
   var auth = window.BlogAuth;
   function db() { return auth.client(); }
-  function value(result) { if (result.error) throw result.error; return result.data; }
+  function Backend_FormatError(error) { return error && (['PGRST202','PGRST205','42883','42P01'].includes(error.code) || /Could not find (?:the function|the table).*schema cache/i.test(error.message||'')) ? '当前 Supabase 环境缺少所需表或 RPC，请站长核对项目配置、执行 migrations 并刷新 schema cache。操作未完成。' : error.message; }
+  function value(result) { if (result.error) {var error=new Error(Backend_FormatError(result.error));error.code=result.error.code;throw error;} return result.data; }
   function requireLogin() { return auth.requireUser().id; }
   function normalizeComment(row, profiles) {
     var profile = row.user_id && profiles[row.user_id];
@@ -166,7 +167,7 @@
     else value(await db().from('follows').insert({ follower_id: id, target_id: targetId }));
     return !has;
   }
-  window.BlogData = { listComments: listComments, addComment: addComment, listModeration: listModeration,
+  window.BlogData = { errorMessage:Backend_FormatError, listComments: listComments, addComment: addComment, listModeration: listModeration,
     listLatestComments: listLatestComments,
     listNotifications: listNotifications, notificationCount: notificationCount, markNotificationsRead: markNotificationsRead, dmUnreadCount: dmUnreadCount, messageUnreadCount: messageUnreadCount,
     moderateComment: moderateComment, deleteComment: deleteComment, likes: likes, toggleLike: toggleLike,

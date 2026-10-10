@@ -98,7 +98,7 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
       'community_review_revision', 'community_set_review_policy',
       'community_set_user_review_threshold', 'community_review_policy_status',
       'community_guard_registered_object', 'community_register_asset',
-      'community_check_revision_assets', 'community_notify_review_result',
+      'community_check_revision_assets', 'community_check_document_cover', 'community_notify_review_result',
       'profile_followers','profile_following','following_count','community_public_target','community_comment_context',
       'profile_content','profile_recent_likes','community_like_target_visible','community_edit_comment',
       'community_review_comment_edit','community_moderate_comment','community_my_comments','community_notify_comment_edit',
@@ -111,6 +111,10 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
       'community_publication_changed','community_publication_export','community_publication_result','community_sync_legacy_targets'
     ].sort());
     for (const fn of functions.rows) assert.ok(fn.proconfig.includes('search_path=""')); assertions++;
+    for (const role of ['anon','authenticated']) {
+      const privileges=await db.query("select has_function_privilege($1,'public.community_check_document_cover()','EXECUTE') allowed",[role]);
+      assert.equal(privileges.rows[0].allowed,false); assertions++;
+    }
     // Auth deletion must preserve legacy content and clear FK identities even
     // when the account has a reply to its own pending comment.
     await db.exec(`begin; set local role authenticated;

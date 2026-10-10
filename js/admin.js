@@ -25,19 +25,8 @@
   var dirty = false;
   var previewMode = new URLSearchParams(window.location.search).has('preview');
   var sourceMode = false;
-  var tools = [
-    { label: 'H2', block: 'h2', snippet: '<h2>小标题</h2>\n' },
-    { label: '粗体', cmd: 'bold', snippet: '<strong>加粗文字</strong>' },
-    { label: '斜体', cmd: 'italic', snippet: '<em>斜体文字</em>' },
-    { label: '引用', block: 'blockquote', snippet: '<blockquote><p>引用的话</p></blockquote>' },
-    { label: '列表', cmd: 'insertUnorderedList', snippet: '<ul>\n  <li>列表项</li>\n</ul>' },
-    { label: '代码', block: 'pre', snippet: '<pre><code>code here</code></pre>' },
-    { label: '链接', cmd: 'createLink', snippet: '<a href="https://example.com">链接文字</a>' },
-    { label: '图片', cmd: 'insertLocalImage', snippet: '<img src="assets/posts/xxx.jpg" alt="插图">' },
-    { label: '视频', cmd: 'insertLocalVideo', snippet: '<video controls playsinline webkit-playsinline preload="metadata" src="assets/videos/xxx.mp4"></video>' },
-    { label: '资源', cmd: 'insertLocalFile', snippet: '<p><a href="assets/files/xxx.zip" download>资源下载</a></p>' },
-    { label: '公式', cmd: 'insertFormula', snippet: '$$公式$$' }
-  ];
+  var sharedEditor = null;
+  var legacyWorkspace = null;
 
   var moderationRows = [];
 
@@ -346,6 +335,7 @@
   }
 
   function showOnly(panelId) {
+    if($('legacyDirectory'))$('legacyDirectory').querySelectorAll('button,a').forEach(function(control){var selected=panelId==='appPanel'&&control.id==='legacyListBtn'||panelId==='editorPanel'&&control.id==='newPostBtn'||panelId==='pagePanel'&&control.id==='pageBtn'||panelId==='messagePanel'&&control.id==='messageBtn';if(selected)control.setAttribute('aria-current','page');else control.removeAttribute('aria-current');});
     ['authPanel', 'appPanel', 'editorPanel', 'pagePanel', 'messagePanel'].forEach(function (pid) {
       var el = $(pid);
       if (el) el.hidden = pid !== panelId;
@@ -574,13 +564,12 @@
   }
 
   function getEditorContent() {
-    return sourceMode ? $('postContent').value : $('richEditor').innerHTML;
+    return sharedEditor.getHTML();
   }
 
   function setEditorContent(html) {
     var content = html && String(html).trim() ? html : '<p></p>';
-    $('richEditor').innerHTML = content;
-    $('postContent').value = content;
+    sharedEditor.setHTML(content);
   }
 
   function toggleSourceMode() {
@@ -602,27 +591,12 @@
   }
 
   function setupToolbar() {
-    try {
-      document.execCommand('styleWithCSS', false, 'false');
-    } catch (e) {
-      /* 忽略 */
-    }
-    var toolbar = $('contentToolbar');
-    toolbar.innerHTML = tools.map(function (tool, index) {
-      return '<button type="button" class="btn" data-tool="' + index + '">' + escapeHtml(tool.label) + '</button>';
-    }).join('');
-    toolbar.addEventListener('click', function (event) {
-      var button = event.target.closest('button[data-tool]');
-      if (!button) return;
-      runTool(tools[Number(button.dataset.tool)]);
-    });
+    sharedEditor=window.ContentEditor.create({editor:$('richEditor'),toolbar:$('contentToolbar'),textarea:$('postContent'),legacy:true,sourceMode:function(){return sourceMode;},onTool:runTool,onChange:function(){dirty=true;},onError:function(text){setStatus($('editorStatus'),text,'err');}});
+    legacyWorkspace=window.AccountWorkspace.create({root:$('legacyWorkspace'),nav:$('legacyDirectory'),toggle:$('legacyDirectoryToggle'),backdrop:$('legacyBackdrop'),key:'legacy-directory'});
+    legacyWorkspace.setEnabled(true);
   }
 
   function runTool(tool) {
-    if (sourceMode) {
-      insertAtCursor($('postContent'), tool.snippet);
-      return;
-    }
     var editor = $('richEditor');
     editor.focus();
     if (tool.cmd === 'insertLocalImage') {
@@ -660,15 +634,6 @@
       document.execCommand('insertText', false, tool.snippet);
       dirty = true;
       return;
-    } else if (tool.cmd === 'createLink') {
-      var url = window.prompt('链接地址：', 'https://');
-      if (!url) return;
-      document.execCommand('createLink', false, url);
-    } else if (tool.block) {
-      var current = String(document.queryCommandValue('formatBlock') || '').toLowerCase();
-      document.execCommand('formatBlock', false, current === tool.block ? '<p>' : '<' + tool.block + '>');
-    } else {
-      document.execCommand(tool.cmd, false, false);
     }
     dirty = true;
   }
@@ -737,9 +702,7 @@
     if (sourceMode) {
       insertAtCursor($('postContent'), html);
     } else {
-      var editor = $('richEditor');
-      editor.focus();
-      document.execCommand('insertHTML', false, html);
+      sharedEditor.insertHTML(html);
     }
     dirty = true;
   }
@@ -797,6 +760,7 @@
     });
     $('reviewWithoutPat').addEventListener('click', openMessageBox);
 
+    $('legacyListBtn').addEventListener('click',function(){if(readToken()||previewMode)showList();else showAuth();});
     $('newPostBtn').addEventListener('click', function () {
       openEditor(-1);
     });
@@ -937,12 +901,12 @@
     $('repoInfo').textContent = OWNER + '/' + REPO + ' · ' + BRANCH;
     $('pageBtn').disabled = previewMode;
     $('messageBtn').disabled = previewMode;
-    if (location.hash === '#messages') openMessageBox();
+
     if (previewMode) {
       showList();
       setStatus($('listStatus'), '本地预览模式：保存和上传功能未启用。', 'err');
     } else {
-      showList();
+      if(location.hash==='#messages')openMessageBox();else if(location.hash==='#pages')openPagePanel();else showList();
     }
   }
 
@@ -970,6 +934,9 @@
     posts = window.BLOG_POSTS || [];
     start();
   }
+
+  window.addEventListener('hashchange',function(){if(!isAuthed())return;if(location.hash==='#messages')openMessageBox();else if(location.hash==='#pages'){if(readToken())openPagePanel();else showAuth();}});
+  document.addEventListener('blog-auth-change',function(){if(!isAuthed()){dirty=false;posts=[];postsSha=null;if(sharedEditor)sharedEditor.clear();showAuth();window.location.replace(window.BlogAuth.user()?'account.html':'login.html?next=admin.html');}});
 
   window.addEventListener('pageshow', function (event) {
     if (event.persisted && isAuthed() && !readToken()) showAuth('页面已恢复，请重新连接 GitHub PAT。');

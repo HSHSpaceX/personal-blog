@@ -35,7 +35,10 @@ test('account has all personal sections and Round 2 submission/upload controls, 
     assert.match(html,new RegExp(`id="${id}"`));
   }
   assert.match(html,/<meta name="robots" content="noindex,follow">/);
-  assert.doesNotMatch(html,/href="admin\.html|contenteditable/);
+  assert.doesNotMatch(html,/href="admin\.html/);
+  assert.match(html,/id="communityRichEditor"[^>]*contenteditable="true"/);
+  assert.match(html,/src="js\/content-editor\.js/);
+  assert.match(html,/data-workspace-panel/);
   assert.match(html,/id="communityUploadFile" type="file"/);
   for (const type of ['article','moment','album']) assert.match(html,new RegExp(`data-new-content="${type}"`));
   assert.match(html,/id="accountDMCount"/);
@@ -69,7 +72,7 @@ test('account gives admin the same social overview plus review links and purges 
   assert.match(h.elements.accountConnections.textContent,/4 位关注者/);
   assert.equal(h.elements['review-center'].hidden,false);
   assert.equal(h.elements['review-policies'].hidden,false);
-  assert.equal(h.elements.accountAdminNav.children.length,2);
+  assert.equal(h.elements.accountAdminNav.children.length,4);
   assert.equal(h.elements.accountReviewLinks.children[0].href,'admin.html#messages');
   assert.ok(h.elements.accountReviewLinks.children.every(link=>link.rel==='nofollow'));
   h.change('user'); await flush();

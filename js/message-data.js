@@ -2,7 +2,7 @@
   'use strict';
   var auth = window.BlogAuth, generation = 0;
   var uuid = function (id) { return /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id || ''); };
-  function value(result) { if (result.error) throw result.error; return result.data; }
+  function value(result) { if (result.error) {var error=new Error(window.BlogData&&window.BlogData.errorMessage?window.BlogData.errorMessage(result.error):result.error.message);error.code=result.error.code;throw error;} return result.data; }
   function snapshot() { return { id: auth.requireUser().id, generation: generation }; }
   function check(actor) {
     if (generation !== actor.generation || !auth.user() || auth.user().id !== actor.id) throw Error('账号已变化，请重试。');

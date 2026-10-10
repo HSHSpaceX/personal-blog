@@ -10,8 +10,9 @@
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/admin.css?v=2">
-  <link rel="stylesheet" href="css/community.css?v=5">
+  <link rel="stylesheet" href="css/community.css?v=6">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+  <link rel="stylesheet" href="css/workspace.css?v=1">
 </head>
 <body>
   <a class="skip-link" href="account.html#main" rel="nofollow">跳到账号中心</a>
@@ -22,35 +23,34 @@
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button></div>
   </div></header>
-  <main id="main" class="admin-main container">
-    <section class="admin-card wide">
+  <main id="main" class="admin-main container workspace-main">
+    <section class="workspace-intro">
       <h1>账号中心</h1>
       <p id="accountStatus" class="status-line" role="status" aria-live="polite">正在确认登录状态…</p>
     </section>
-    <div id="accountSections" hidden>
-      <nav class="admin-card wide admin-row" aria-label="账号中心导航">
-        <a class="btn" href="account.html#overview" rel="nofollow">概览</a>
-        <a class="btn" href="account.html#profile" rel="nofollow">我的资料</a>
-        <a class="btn" href="account.html#content" rel="nofollow">我的内容</a>
-        <a class="btn" href="account.html#assets" rel="nofollow">我的资源</a><a class="btn" href="account.html#my-comments" rel="nofollow">我的评论</a>
-        <a class="btn" href="account.html#notifications" rel="nofollow">通知</a>
-        <a class="btn" href="account.html#direct-messages" rel="nofollow">私信</a>
-        <a class="btn" href="account.html#connections" rel="nofollow">关注与粉丝</a>
-        <a class="btn" href="account.html#security" rel="nofollow">账号安全</a>
-        <span id="accountAdminNav"></span>
-      </nav>
-      <section class="admin-card wide" id="overview">
+    <div id="accountSections" class="workspace-layout" hidden>
+      <button class="directory-backdrop" id="directoryBackdrop" type="button" aria-label="关闭目录" hidden></button>
+      <aside class="workspace-directory"><button id="directoryToggle" class="directory-toggle" type="button" aria-expanded="false" aria-controls="accountDirectory"><span>目录</span><span aria-hidden="true">⇄</span></button>
+      <nav class="directory-menu" id="accountDirectory" aria-label="账号中心目录">
+        <h2>账号</h2><a href="account.html#overview" data-workspace-route="overview" rel="nofollow"><span data-menu-icon aria-hidden="true">⌂</span>概览</a><a href="account.html#profile" data-workspace-route="profile" rel="nofollow"><span data-menu-icon aria-hidden="true">◉</span>我的资料</a>
+        <h2>我的创作</h2><a href="account.html#articles" data-workspace-route="articles" rel="nofollow"><span data-menu-icon aria-hidden="true">▤</span>我的文章</a><a href="account.html#moments" data-workspace-route="moments" rel="nofollow"><span data-menu-icon aria-hidden="true">◷</span>我的动态</a><a href="account.html#albums" data-workspace-route="albums" rel="nofollow"><span data-menu-icon aria-hidden="true">▧</span>我的图册</a><a href="account.html#my-comments" data-workspace-route="my-comments" rel="nofollow"><span data-menu-icon aria-hidden="true">☷</span>评论 / 回复</a><a href="account.html#assets" data-workspace-route="assets" rel="nofollow"><span data-menu-icon aria-hidden="true">▦</span>资源中心</a>
+        <h2>交流</h2><a href="account.html#notifications" data-workspace-route="notifications" rel="nofollow"><span data-menu-icon aria-hidden="true">♧</span>通知</a><a href="account.html#direct-messages" data-workspace-route="direct-messages" rel="nofollow"><span data-menu-icon aria-hidden="true">✉</span>私信</a><a href="account.html#connections" data-workspace-route="connections" rel="nofollow"><span data-menu-icon aria-hidden="true">♙</span>关注与粉丝</a>
+        <h2>设置</h2><a href="account.html#security" data-workspace-route="security" rel="nofollow"><span data-menu-icon aria-hidden="true">⚙</span>账号设置</a>
+        <div id="accountAdminNav" data-admin-group></div>
+      </nav></aside><div class="workspace-body">
+      <section class="admin-card wide" id="overview" data-workspace-panel hidden>
         <h2>概览</h2>
         <p id="accountIdentity"></p>
         <p id="accountSummary"></p>
       </section>
-      <section class="admin-card wide" id="profile">
+      <section class="admin-card wide" id="profile" data-workspace-panel hidden>
         <h2>我的资料</h2>
         <p>更新你的用户名、显示名称、简介和头像。</p>
         <a class="btn" href="profile.html?edit=1" rel="nofollow">公开主页 / 编辑资料</a>
+      <iframe class="account-frame" data-account-frame="profile.html?edit=1&amp;workspace=1" title="我的资料" loading="lazy"></iframe>
       </section>
-      <section class="admin-card wide" id="content">
-        <h2>我的内容</h2>
+      <section class="admin-card wide" id="content" data-workspace-panel hidden>
+        <h2 id="communityListHeading">我的文章</h2>
         <p>草稿仅本人可编辑。修改已发布内容时，旧版本在新版本通过审核前继续公开。</p>
         <div class="admin-row">
           <button class="btn" type="button" data-new-content="article">新建文章</button>
@@ -64,24 +64,25 @@
           <h3 id="communityEditorHeading">编辑草稿</h3>
           <p id="communityEditorState"></p>
           <div class="field"><label for="communityTitle">标题</label><input id="communityTitle" maxlength="160" required></div>
-          <div class="field"><label for="communityText" id="communityTextLabel">正文（纯文本）</label><textarea id="communityText" rows="10" maxlength="100000"></textarea></div>
+          <div class="field"><label for="communityRichEditor" id="communityTextLabel">正文</label><div id="communityToolbar" class="content-toolbar"></div><div id="communityRichEditor" class="community-rich-body" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea></div>
           <div id="communityArticleFields">
             <div class="field"><label for="communityCategory">分类（纯文本，1–40 字）</label><input id="communityCategory" maxlength="40" value="用户投稿"></div>
             <div class="field"><label for="communitySummary">摘要（最多 500 字）</label><textarea id="communitySummary" maxlength="500" rows="2"></textarea></div>
+            <div class="field"><label for="communityCover">封面（从已选图片中选择）</label><select id="communityCover"><option value="">自动选择首张图片</option></select></div>
             <div class="field"><label for="communityTags">标签（英文逗号分隔，最多 10 个）</label><input id="communityTags"></div>
           </div>
-          <fieldset><legend id="communityAssetLegend">选择我的资源</legend><div id="communityAssetChoices"></div></fieldset>
+          <button class="btn" id="communityChooseAssets" type="button">打开我的资源选择器</button><fieldset><legend id="communityAssetLegend">选择我的资源</legend><div id="communityAssetChoices"></div></fieldset>
           <div class="admin-row">
             <button class="btn" id="communitySave" type="button">保存新草稿版本</button>
             <button class="btn primary" id="communitySubmit" type="button">保存并提交</button>
-            <button class="btn" id="communityTextPreview" type="button">安全文本预览</button>
-            <button class="btn" id="communityCloseEditor" type="button">关闭编辑</button>
+            <button class="btn" id="communityTextPreview" type="button">预览</button>
+            <button class="btn" id="communityCloseEditor" type="button">返回内容列表</button>
           </div>
         </section>
         <section id="communityPreview" hidden>
           <div id="communityPreviewAuthor"></div><h3 id="communityPreviewTitle"></h3><p id="communityPreviewState"></p>
           <p id="communityPreviewReason" class="status-line err"></p>
-          <div id="communityPreviewBody" class="community-text"></div>
+          <div id="communityPreviewBody" class="community-text community-preview-rich"></div>
           <div id="communityPreviewAssets"></div><div id="communityPreviewActions" class="admin-row"></div>
           <div id="communityReviewControls" hidden>
             <div class="field"><label for="communityRejectReason">驳回原因（必填，最多 2000 字）</label><textarea id="communityRejectReason" maxlength="2000" rows="3"></textarea></div>
@@ -89,7 +90,7 @@
           </div>
         </section>
       </section>
-      <section class="admin-card wide" id="assets">
+      <section class="admin-card wide" id="assets" data-workspace-panel hidden>
         <h2>我的资源</h2>
         <p>仅你本人和审核管理员可访问；展示链接 60 秒后失效。支持 JPG、PNG、WebP、MP4、PDF、TXT，最多 20 MiB。</p>
         <div class="field"><label for="communityUploadFile">选择私有资源</label><input id="communityUploadFile" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf,text/plain"></div>
@@ -104,39 +105,42 @@
         <h3>我的未登记对象</h3><p>只清理当前账号目录下没有资源登记的上传。若对象已经登记，清理将被拒绝。</p><div id="assetOrphanList"></div>
         <div class="admin-row"><button class="btn" id="assetOrphanPrev" type="button" disabled>上一页未登记对象</button><button class="btn" id="assetOrphanNext" type="button" disabled>下一页未登记对象</button></div>
       </section>
-      <section class="admin-card wide" id="my-comments">
+      <section class="admin-card wide" id="my-comments" data-workspace-panel hidden>
         <h2>我的评论 / 回复</h2><p>修改已公开评论时，原正文继续公开；新正文通过审核后替换。</p>
         <p id="accountCommentsStatus" role="status" aria-live="polite"></p><div id="accountCommentsList"></div>
         <div class="admin-row"><button class="btn" id="accountCommentsRefresh" type="button">刷新我的评论</button><button class="btn" id="accountCommentsPrev" type="button" disabled>上一页评论</button><button class="btn" id="accountCommentsNext" type="button" disabled>下一页评论</button></div>
         <div id="accountCommentEditor" hidden><p id="accountCommentIdentity"></p><label for="accountCommentText">评论新正文</label><textarea id="accountCommentText" maxlength="2000" rows="5"></textarea><button class="btn" id="accountCommentSubmit" type="button">提交评论修改</button></div>
       </section>
-      <section class="admin-card wide" id="notifications">
+      <section class="admin-card wide" id="notifications" data-workspace-panel hidden>
         <h2>通知</h2>
         <p id="accountNotificationCount">正在读取未读通知…</p>
         <a class="btn" href="messages.html" rel="nofollow">查看个人通知</a>
+      <iframe class="account-frame" data-account-frame="messages.html?workspace=1" title="个人通知" loading="lazy"></iframe>
       </section>
-      <section class="admin-card wide" id="direct-messages">
+      <section class="admin-card wide" id="direct-messages" data-workspace-panel hidden>
         <h2>私信</h2><p id="accountDMCount">正在读取未读私信…</p><a class="btn" href="messages.html?tab=dm" rel="nofollow">打开私信</a>
+      <iframe class="account-frame" data-account-frame="messages.html?tab=dm&amp;workspace=1" title="私信" loading="lazy"></iframe>
       </section>
-      <section class="admin-card wide" id="connections">
+      <section class="admin-card wide" id="connections" data-workspace-panel hidden>
         <h2>关注与粉丝</h2>
         <p id="accountConnections">在公开主页查看关注与粉丝列表。</p>
         <a class="btn" href="profile.html" rel="nofollow">查看我的主页</a>
+      <iframe class="account-frame" data-account-frame="profile.html?tab=followers&amp;workspace=1" title="关注与粉丝" loading="lazy"></iframe>
       </section>
-      <section class="admin-card wide" id="security">
+      <section class="admin-card wide" id="security" data-workspace-panel hidden>
         <h2>账号安全</h2>
         <p>本站采用邀请制，无公开注册。请通过邮箱重置密码。</p>
         <button class="btn" id="accountResetPassword" type="button">发送密码重置邮件</button>
         <button class="btn" id="accountLogout" type="button">退出登录</button>
       </section>
-      <section class="admin-card wide" id="review-center" hidden>
+      <section class="admin-card wide" id="review-center" data-workspace-panel data-admin-panel="true" hidden hidden>
         <h2>审核中心</h2>
         <p>审核队列与个人通知分开。选择待审版本，预览后通过或填写原因拒绝。</p>
         <button class="btn" id="communityRefreshReviews" type="button">刷新待审内容</button>
         <div id="communityReviewQueue"></div><h3>评论编辑审核</h3><div id="accountCommentQueue"></div><div class="admin-row"><button class="btn" id="accountCommentQueuePrev" type="button" disabled>上一页编辑</button><button class="btn" id="accountCommentQueueNext" type="button" disabled>下一页编辑</button></div>
         <div id="accountReviewLinks" class="admin-row"></div>
       </section>
-      <section class="admin-card wide" id="review-policies" hidden>
+      <section class="admin-card wide" id="review-policies" data-workspace-panel data-admin-panel="true" hidden hidden>
         <h2>审核规则</h2>
         <p>默认为永远审核。阈值 N 只计算此用户、此类型人工通过的首次发布新内容；达到 N 后新内容可自动发布。普通用户修改已发布内容始终重新审核；管理员自身提交直接发布。</p>
         <div class="field"><label for="communityPolicyUser">目标用户名或用户 UUID</label><input id="communityPolicyUser" autocomplete="off"></div>
@@ -146,17 +150,18 @@
         <div class="field"><label for="communityPolicyThreshold">人工通过新内容数量 N（留空：永远审核，0：新内容直接发布）</label><input id="communityPolicyThreshold" type="number" min="0" max="10000" step="1"></div>
         <button class="btn" id="communitySavePolicy" type="button">保存此用户与类型的规则</button>
       </section>
-    </div>
+    </div></div>
   </main>
+  <dialog class="resource-picker" id="communityResourcePicker" aria-labelledby="resourcePickerTitle"><h2 id="resourcePickerTitle">选择我的私有资源</h2><p>选择后返回当前编辑器；资源仍保留在私有存储中。</p><label>搜索文件<input id="resourcePickerSearch" maxlength="120"></label><div class="admin-row"><button class="btn" id="resourcePickerRefresh" type="button">搜索</button><button class="btn" id="resourcePickerClose" type="button">返回编辑器</button></div><p id="resourcePickerStatus" role="status"></p><div id="resourcePickerList"></div><div class="admin-row"><button class="btn" id="resourcePickerPrev" type="button">上一页</button><button class="btn" id="resourcePickerNext" type="button">下一页</button></div></dialog>
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=8"></script>
-  <script src="js/github-credentials.js?v=4"></script>
-  <script src="js/community-schema.js?v=9"></script>
-  <script src="js/community-data.js?v=9"></script>
-  <script src="js/public-cards.js?v=1"></script><script src="js/community-ui.js?v=9"></script>
-  <script src="js/asset-center.js?v=1"></script><script src="js/comment-edit-data.js?v=2"></script><script src="js/account-comments.js?v=2"></script>
-  <script src="js/account.js?v=3"></script>
+  <script src="js/blog-data.js?v=10"></script>
+  <script src="js/github-credentials.js?v=10"></script>
+  <script src="js/community-schema.js?v=10"></script>
+  <script src="js/community-data.js?v=10"></script>
+  <script src="js/public-cards.js?v=1"></script><script src="js/content-editor.js?v=1"></script><script src="js/workspace.js?v=1"></script><script src="js/community-ui.js?v=10"></script>
+  <script src="js/asset-center.js?v=1"></script><script src="js/comment-edit-data.js?v=10"></script><script src="js/account-comments.js?v=2"></script>
+  <script src="js/account.js?v=4"></script>
 </body>
 </html>

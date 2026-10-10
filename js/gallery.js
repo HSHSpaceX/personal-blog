@@ -203,7 +203,7 @@
     $('albumTitle').textContent = album.title;
     $('albumMeta').innerHTML = (window.PublicCards?window.PublicCards.author(album.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'}).outerHTML:'')+album.photos.length + ' 张照片 · ' + (album.visibility === 'private' ? '仅我可见' : '公开');
 
-    if(album.description){var description=document.createElement('p');description.className='public-text';description.textContent=album.description;$('albumMeta').appendChild(description);}
+    if(album.description){var description=document.createElement('p');description.className='public-text';if(album.public_item&&album.public_item.body.document&&window.CommunityPublic){description=document.createElement('div');description.className='public-text prose';description.innerHTML=window.CommunityPublic.bodyHTML(album.public_item);}else description.textContent=album.description;$('albumMeta').appendChild(description);}
     var actions = $('albumActions');
     actions.innerHTML = '';
     actions.hidden = !canEdit() || album.community;

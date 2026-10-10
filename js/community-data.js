@@ -3,7 +3,8 @@
   var auth = window.BlogAuth, schema = window.CommunitySchema;
   var itemFields = 'id,author_id,content_type,slug,published_revision_id';
   var revisionFields = '*,content_items!content_revisions_item_id_fkey(' + itemFields + ')';
-  function value(result) { if (result.error) throw result.error; return result.data; }
+  function Community_FormatError(error) { return error && (['PGRST202','PGRST205','42883','42P01'].includes(error.code) || /Could not find (?:the function|the table).*schema cache/i.test(error.message||'')) ? '当前连接的 Supabase 环境尚未部署所需表或 RPC。请站长核对项目配置、按顺序执行 migrations 并刷新 schema cache；此操作未完成。' : error.message; }
+  function value(result) { if (result.error) { var error=new Error(Community_FormatError(result.error));error.code=result.error.code;throw error; } return result.data; }
   async function client() { await auth.ready(); auth.requireUser(); return auth.client(); }
   async function rpc(name, args) { return value(await (await client()).rpc(name, args)); }
   async function listItems() {
@@ -76,7 +77,7 @@
     if(typeof path!=='string'||path.split('/')[0]!==actor||path.split('/').some(function(p){return p==='.'||p==='..';}))throw Error('无效资源路径。');
     value(await db.storage.from('community-assets').remove([path]));
   }
-  window.CommunityData = {listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,
+  window.CommunityData = {errorMessage:Community_FormatError,listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,
     assetsPage:function(search,kind,offset){return rpc('community_assets_page',{p_search:search,p_kind:kind,p_limit:20,p_offset:offset});},
     renameAsset:function(id,name){return rpc('community_rename_asset',{p_asset_id:id,p_name:name});},
     assetReferences:function(id,offset){return rpc('community_asset_references',{p_asset_id:id,p_limit:20,p_offset:offset});},

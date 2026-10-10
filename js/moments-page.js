@@ -365,7 +365,7 @@
             '<a class="moment-name" href="'+escapeHtml(authorLink)+'">'+escapeHtml(displayName)+' / @'+escapeHtml(author.username||'')+'</a>' +
             '<span class="moment-time" title="' + escapeHtml(item.time || '') + '">' + escapeHtml(timeAgo(item.time)) + '</span>' +
           '</div>' +
-          (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +
+          (item.document&&window.CommunityPublic ? '<div class="moment-text prose">'+window.CommunityPublic.bodyHTML(item.public_item)+'</div>' : (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '')) +
           (item.media && item.media.length
             ? '<div class="moment-media-grid moment-media-' + Math.min(item.media.length, 4) + '">' + item.media.map(function (m, i) {
                 if (m.type && m.type.indexOf('video/') === 0) {

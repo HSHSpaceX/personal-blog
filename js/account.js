@@ -5,6 +5,8 @@
   var initialized = false;
   var generation = 0;
   var $ = function (id) { return document.getElementById(id); };
+  var workspace = window.AccountWorkspace ? window.AccountWorkspace.create({root:$('accountSections'),nav:$('accountDirectory'),toggle:$('directoryToggle'),backdrop:$('directoryBackdrop')}) : null;
+  if (workspace) window.AccountRoute = workspace;
   window.BlogTheme.setup();
   function status(text, kind) {
     $('accountStatus').textContent = text;
@@ -21,6 +23,7 @@
     if (window.AssetCenter) window.AssetCenter.clear();
     if (window.AccountComments) window.AccountComments.clear();
     $('accountSections').hidden = true;
+    if (workspace) workspace.setEnabled(false);
     $('accountIdentity').textContent = '';
     $('accountSummary').textContent = '';
     $('accountNotificationCount').textContent='';$('accountDMCount').textContent='';
@@ -40,22 +43,29 @@
     if (auth.isAdmin()) {
       link($('accountAdminNav'), 'account.html#review-center', '审核中心');
       link($('accountAdminNav'), 'account.html#review-policies', '审核规则');
+      link($('accountAdminNav'), 'admin.html#pages', '站点页面管理');
+      link($('accountAdminNav'), 'admin.html', 'Legacy 内容管理');
       link($('accountReviewLinks'), 'admin.html#messages', '现有评论审核');
       link($('accountReviewLinks'), 'admin.html', '管理后台');
-      $('review-center').hidden = false;
-      $('review-policies').hidden = false;
+      if (!workspace) { $('review-center').hidden = false; $('review-policies').hidden = false; }
+    }
+    if (workspace) {
+      $('accountAdminNav').querySelectorAll('a').forEach(function(a){a.className='';var route=a.hash.slice(1);if(a.pathname.endsWith('/account.html'))a.dataset.workspaceRoute=route;var icon=document.createElement('span');icon.dataset.menuIcon='';icon.setAttribute('aria-hidden','true');icon.textContent='◇';a.prepend(icon);});
+      workspace.setEnabled(true);
     }
     status('欢迎回到账号中心。', 'ok');
     if (window.CommunityUI) window.CommunityUI.refresh();
     if (window.AssetCenter) window.AssetCenter.refresh();
     if (window.AccountComments) window.AccountComments.refresh();
     try {
-      var values = await Promise.all([data.getProfile(user.id), data.notificationCount(), data.followerCount(user.id), data.dmUnreadCount()]);
+      var results = await Promise.allSettled([data.getProfile(user.id), data.notificationCount(), data.followerCount(user.id), data.dmUnreadCount()]);
       if (generation !== attempt || !auth.user() || auth.user().id !== user.id) return;
+      var values=results.map(function(r){return r.status==='fulfilled'?r.value:null;});
       var profile = values[0];
-      $('accountSummary').textContent = (profile && (profile.display_name || profile.username) || '用户') + ' · ' + values[1] + ' 条未读通知 · ' + values[3] + ' 条未读私信';
-      $('accountNotificationCount').textContent=values[1]+' 条未读通知';$('accountDMCount').textContent=values[3]+' 条未读私信';
-      $('accountConnections').textContent = values[2] + ' 位关注者。在公开主页查看关注与粉丝列表。';
+      $('accountSummary').textContent = (profile && (profile.display_name || profile.username) || '用户') + ' · ' + (values[1]===null?'通知暂不可用':values[1]+' 条未读通知') + ' · ' + (values[3]===null?'私信暂不可用':values[3]+' 条未读私信');
+      $('accountNotificationCount').textContent=values[1]===null?'通知暂不可用':values[1]+' 条未读通知';$('accountDMCount').textContent=values[3]===null?'私信暂不可用':values[3]+' 条未读私信';
+      $('accountConnections').textContent = values[2]===null?'关注信息暂不可用':values[2] + ' 位关注者。在公开主页查看关注与粉丝列表。';
+      var failed=results.find(function(r){return r.status==='rejected';});if(failed)status('部分功能暂不可用：'+(window.CommunityData&&window.CommunityData.errorMessage?window.CommunityData.errorMessage(failed.reason):failed.reason.message),'err');
     } catch (error) {
       if (generation === attempt) status('账号概览暂不可用：' + error.message, 'err');
     }
@@ -63,6 +73,10 @@
   document.addEventListener('blog-auth-change', function () {
     clear();
     if (initialized) render();
+  });
+  if (workspace) window.addEventListener('message',function(event){
+    if(event.origin!==location.origin || !event.data || event.data.type!=='account-frame-height' || !Number.isFinite(event.data.height))return;
+    document.querySelectorAll('iframe[data-account-frame]').forEach(function(frame){if(frame.contentWindow===event.source)frame.style.height=Math.max(480,Math.min(12000,event.data.height+24))+'px';});
   });
   $('accountResetPassword').addEventListener('click', async function () {
     try {

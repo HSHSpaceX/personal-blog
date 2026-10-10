@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var auth=window.BlogAuth;
-  function value(r){if(r.error)throw r.error;return r.data;}
+  function value(r){if(r.error){var error=new Error(window.BlogData&&window.BlogData.errorMessage?window.BlogData.errorMessage(r.error):r.error.message);error.code=r.error.code;throw error;}return r.data;}
   async function client(){await auth.ready();auth.requireUser();return auth.client();}
   async function rpc(name,args){return value(await (await client()).rpc(name,args));}
   async function getEdit(id){if(!window.CommunitySchema.uuid(id))throw Error('无效编辑链接。');var db=await client();
