@@ -9,7 +9,7 @@
 - `like_counts` 只检查数组第一维，二维输入可绕过总量限制。003 使用 cardinality、维度、类型、null 和每项长度校验。
 - 回复触发器检查每次 UPDATE，会阻止删除拥有 pending 回复的 Auth 用户时 user_id 的 FK SET NULL。003 仅对插入或 parent_id/post_slug 更新验证；账号删除保留无身份旧内容的回归已通过。
 - 访客 `getUser()` 的 AuthSessionMissingError 被当作初始化失败；SDK 初始事件可使并发 ready/角色查询提前以 guest 完成。现在安全识别无 session，验证身份的并发请求共享同一 Promise；role 只信任数据库结果。
-- PAT 校验期间退出/清除后仍可能写回凭证，后台还缓存了第二份 PAT。现在统一内存访问，连接绑定用户和请求代次，退出/失去 admin/切换账号/pagehide 清除凭证与输入；晚到校验不能重新保存。退出的身份清除先于网络请求，失败也不恢复本页权限。PAT 不写 localStorage/sessionStorage。
+- PAT 校验期间退出/清除后仍可能写回凭证，后台还缓存了第二份 PAT。现在统一内存访问，连接绑定用户和请求代次，退出/失去 admin/切换账号清除凭证与输入；晚到校验不能重新保存。退出的身份清除先于网络请求，失败也不恢复本页权限。当前按 main 的同标签页复用策略使用临时 sessionStorage，关闭标签页失效；不写 localStorage。
 - 安全页面可从 CDN 运行第三方 JS。SDK 2.117.2、KaTeX 0.16.11 及其 CSS/字体/许可证固定存于 assets/vendor，带 npm 包完整性与文件 SHA256，保留上游原始字节（SDK 模板字符串内行末空白按 .gitattributes 保留）；SDK 更新支持 publishable key。已更新网页脚本缓存版本。
 - 真实验收脚本将 publishable key 当作匿名 Bearer JWT，可能把认证失败误认为 RLS 正常。现在匿名只发 apikey，先验证账号/角色/公开资料，并预先建立另一用户的关系记录再验证隐私。
 

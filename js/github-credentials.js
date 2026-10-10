@@ -5,7 +5,7 @@
   var generation = 0;
   var SESSION_KEY = 'blog-gh-pat-temp';
   var SESSION_OWNER_KEY = 'blog-gh-pat-owner';
-  // Erase plaintext PATs left by earlier versions. New PATs stay in memory only.
+  // Erase plaintext PATs left by earlier versions. Validated PATs use this tab’s temporary sessionStorage; never localStorage.
   try { localStorage.removeItem('blog-gh-token'); } catch (e) { /* storage unavailable */ }
   try { sessionStorage.removeItem('blog-gh-pat-session'); } catch (e) { /* storage unavailable */ }
   function clear() {

@@ -1,0 +1,61 @@
+/* Scoped workspaces keep the site's glass surfaces and generous central layout. */
+.workspace-main { padding: 24px 0 80px; }
+.workspace-intro { padding: 0 12px 16px; }
+.workspace-intro h1 { font-size: 24px; margin: 0 0 8px; }
+.workspace-intro .status-line { margin: 0; overflow-wrap: anywhere; }
+.workspace-layout { position: relative; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 24px; align-items: start; }
+.workspace-layout.directory-open { grid-template-columns: 236px minmax(0,1fr); }
+.workspace-directory { position: sticky; top: 116px; border: 1px solid var(--glass-border); border-radius: 24px; background: var(--glass-strong); backdrop-filter: var(--blur); box-shadow: var(--shadow-lg); padding: 8px; max-height: calc(100dvh - 140px); overflow-y: auto; }
+.directory-toggle { width: 100%; display: flex; justify-content: center; gap: 8px; align-items: center; padding: 14px 4px; border: 0; border-radius: 16px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; min-height: 48px; }
+.workspace-layout:not(.directory-open) .directory-toggle { writing-mode: vertical-rl; min-height: 112px; }
+.workspace-layout:not(.directory-open) .directory-menu { display: none; }
+.directory-menu { display: grid; gap: 4px; padding-top: 10px; }
+.directory-menu h2 { font-size: 12px; color: var(--muted); font-weight: 500; padding: 14px 14px 4px; margin: 0; }
+.directory-menu a,.directory-menu > button,.directory-menu [data-admin-group] > a,.directory-menu [data-admin-group] > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border-radius: 14px; border: 0; background: transparent; color: var(--ink); text-decoration: none; text-align: left; font: inherit; font-size: 14px; min-height: 44px; cursor: pointer; white-space: normal; }
+.directory-menu a:hover,.directory-menu button:hover { background: var(--glass); }
+.directory-menu [aria-current=page] { background: var(--accent); color: white; }
+.directory-menu [data-menu-icon] { display: inline-flex; width: 20px; justify-content: center; flex-shrink: 0; }
+.workspace-layout :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.workspace-body,.workspace-body > *, .workspace-body .field, .workspace-body fieldset { min-width: 0; max-width: 100%; }
+.workspace-body .admin-card { max-width: none; padding: 28px; margin: 0; }
+.workspace-body > section > h2 { margin: 0 0 16px; }
+.workspace-body .admin-row { margin: 18px 0; gap: 12px; }
+.workspace-body .community-row { padding: 20px 0; }
+.workspace-body .community-row .btn { margin: 8px 8px 0 0; }
+.workspace-body input,.workspace-body textarea,.workspace-body select { max-width: 100%; box-sizing: border-box; }
+.workspace-body p,.workspace-body h3,.workspace-body a { overflow-wrap: anywhere; }
+.workspace-body .admin-list { margin-top: 0; }
+.workspace-body .editor-topbar { position: static; }
+.workspace-body .rich-editor { min-height: 300px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.workspace-body .rich-editor p { margin: 0 0 16px; }
+.workspace-body .rich-editor [data-content-asset] { border: 1px dashed var(--glass-border); padding: 12px; font-size: 13px; color: var(--muted); }
+.workspace-body .content-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 0; }
+.workspace-body .content-toolbar .btn { min-height: 40px; padding: 8px 14px; }
+.workspace-body .editor-shell { max-width: none; }
+.workspace-body .community-rich-body { border: 1px solid var(--glass-border); border-radius: 16px; background: var(--glass); padding: 20px; }
+.workspace-body .community-preview-rich { white-space: normal; }
+.workspace-body .community-preview-rich p,.workspace-body .community-preview-rich li { white-space: pre-wrap; }
+.workspace-body .account-frame { display: block; border: 0; width: 100%; min-height: 660px; background: transparent; }
+.resource-picker { padding: 24px; border-radius: 24px; width: min(720px,calc(100vw - 32px)); max-height: 85dvh; overflow-y: auto; color: var(--ink); background: var(--bg); border: 1px solid var(--glass-border); box-shadow: var(--shadow-lg); }
+.resource-picker::backdrop { background: rgba(0,0,0,.35); backdrop-filter: blur(8px); }
+.resource-picker .community-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.directory-backdrop { display: none; }
+body.workspace-embedded .site-header,body.workspace-embedded .skip-link { display: none; }
+body.workspace-embedded .admin-main { padding-top: 0; width: 100%; margin: 0; }
+body.workspace-embedded { background: transparent; }
+@media (min-width: 701px) { .workspace-layout.directory-open .workspace-directory { width: 236px; } }
+@media (max-width: 1024px) { .workspace-layout { gap: 16px; } .workspace-body .admin-card { padding: 24px; } }
+@media (max-width: 700px) {
+ .workspace-main.container { width: auto; margin: 0 12px; padding-inline: 0; }
+ .workspace-layout,.workspace-layout.directory-open { display: block; padding-top: 58px; }
+ .workspace-directory { position: absolute; top: 0; left: 0; width: 100%; overflow: visible; padding: 0; border: 0; background: transparent; box-shadow: none; }
+ .directory-toggle,.workspace-layout:not(.directory-open) .directory-toggle { width: auto; min-height: 44px; writing-mode: horizontal-tb; padding: 10px 16px; background: var(--glass-strong); border: 1px solid var(--glass-border); }
+ .directory-open .workspace-directory { position: fixed; z-index: 110; inset: 12px auto 12px 12px; width: min(280px,calc(100vw - 48px)); max-height: none; overflow-y: auto; background: var(--bg); border-radius: 24px; padding: 12px; box-shadow: var(--shadow-lg); }
+ .directory-open .directory-backdrop { display: block; position: fixed; z-index: 105; inset: 0; border: 0; background: rgba(0,0,0,.3); backdrop-filter: blur(4px); }
+ .workspace-body .admin-card { padding: 20px; border-radius: 22px; }
+ .workspace-body .editor-topbar .tb-row { flex-wrap: wrap; }
+ .workspace-body .title-input { width: 100%; min-width: 0; flex-basis: 100%; }
+ .workspace-body .topbar-actions { flex-wrap: wrap; }
+ .workspace-body .rich-editor { padding: 16px; min-height: 280px; }
+ .workspace-body .account-frame { min-height: 800px; }
+}

@@ -2,11 +2,9 @@
 // PGLITE_MODULE=file:///tmp/.../package/dist/index.js node tests/rls-postgres.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
-const modulePath = process.env.PGLITE_MODULE;
+import { createDatabase, modulePath } from './helpers/postgres.mjs';
 test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePath && 'Set PGLITE_MODULE; live Supabase acceptance is a separate check.' }, async () => {
-  const { PGlite } = await import(modulePath);
-  const db = new PGlite();
+  const db = await createDatabase();
   const user = '00000001-0000-4000-8000-000000000001';
   const other = '00000002-0000-4000-8000-000000000002';
   const admin = '00000003-0000-4000-8000-000000000003';
@@ -26,29 +24,6 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
     assert.equal((await actor(role, id, sql)).rows.length, count); assertions++;
   }
   try {
-    await db.exec(`
-      create role anon nologin; create role authenticated nologin;
-      create schema auth; create schema storage;
-      grant usage on schema public, auth, storage to anon, authenticated;
-      -- Emulate Supabase's broad defaults to detect privileges RLS cannot cover.
-      alter default privileges in schema public grant all on tables to anon, authenticated;
-      alter default privileges in schema public grant all on functions to anon, authenticated;
-      create function auth.uid() returns uuid language sql stable as
-        $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-      create table auth.users(id uuid primary key, raw_user_meta_data jsonb default '{}');
-      create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-      create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text);
-      alter table storage.objects enable row level security;
-      grant select, insert, update, delete on storage.objects to anon, authenticated;
-      create function storage.foldername(name text) returns text[] language sql immutable as
-        $$ select string_to_array(name, '/') $$;
-    `);
-    for (const name of (await readdir(new URL('../supabase/migrations/', import.meta.url))).sort()) {
-      // gen_random_uuid is built into this PostgreSQL build; pgcrypto isn't bundled.
-      const sql = (await readFile(new URL('../supabase/migrations/' + name, import.meta.url), 'utf8'))
-        .replace('create extension if not exists pgcrypto;', '');
-      await db.exec(sql);
-    }
     await db.exec(`insert into auth.users(id,raw_user_meta_data) values
       ('${user}','{"role":"admin"}'), ('${other}','{}'), ('${admin}','{}');
       update public.user_roles set role='admin' where user_id='${admin}';
@@ -77,10 +52,11 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
     await rows('anon', null, 'select * from public.comments', 1);
     await rows('authenticated', user, `select * from public.comments where id='${pending}'`, 0);
     await rows('authenticated', other, `select * from public.comments where id='${pending}'`, 1);
-    await rows('authenticated', user, `update public.comments set status='approved' where id='${pending}' returning id`, 0);
-    await rows('authenticated', other, `update public.comments set status='approved' where id='${pending}' returning id`, 0);
+    await denied('authenticated', user, `update public.comments set status='approved' where id='${pending}'`);
+    await denied('authenticated', other, `update public.comments set status='approved' where id='${pending}'`);
     await rows('authenticated', user, `delete from public.comments where id='${approved}' returning id`, 0);
-    await rows('authenticated', admin, `update public.comments set status='approved' where id='${pending}' returning id`, 1);
+    await rows('authenticated', admin, `select public.community_moderate_comment('${pending}','approved',null)`, 1);
+    await denied('authenticated', admin, `update public.comments set status='approved' where id='${pending}'`);
     await rows('authenticated', admin, `delete from public.comments where id='${pending}' returning id`, 1);
     await denied('authenticated', user, `insert into public.comments(post_slug,user_id,content) values('audit','${other}','forged')`);
     await denied('authenticated', user, `insert into public.comments(post_slug,user_id,content,status) values('audit','${user}','forged','approved')`);
@@ -115,8 +91,30 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
     await denied('authenticated', other, `update storage.objects set name='${user}/moved.png' where name='${other}/audit.png'`);
     await rows('authenticated', other, `delete from storage.objects where name='${other}/audit.png' returning id`, 1);
     const functions = await db.query("select proname,proconfig from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and prosecdef");
-    assert.equal(functions.rows.length, 5);
+    assert.deepEqual(functions.rows.map(fn => fn.proname).sort(), [
+      'is_admin', 'is_admin_id', 'on_auth_user_created', 'like_counts', 'follower_count', 'user_like_count',
+      'notify_comment_approved', 'notify_comment_reply', 'notify_comment_like', 'notify_follow',
+      'community_create_item', 'community_save_revision', 'community_submit_revision',
+      'community_review_revision', 'community_set_review_policy',
+      'community_set_user_review_threshold', 'community_review_policy_status',
+      'community_guard_registered_object', 'community_register_asset',
+      'community_check_revision_assets', 'community_check_document_cover', 'community_notify_review_result',
+      'profile_followers','profile_following','following_count','community_public_target','community_comment_context',
+      'profile_content','profile_recent_likes','community_like_target_visible','community_edit_comment',
+      'community_review_comment_edit','community_moderate_comment','community_my_comments','community_notify_comment_edit',
+      'community_assets_page','community_asset_references','community_rename_asset','community_orphan_assets',
+      'community_prepare_asset_delete','community_prepare_orphan_delete','community_guard_orphan_delete','community_clear_delete_intent',
+      'community_public_comments','notification_content_owner','notify_initial_comment_result','notification_unread_count','notification_mark_read',
+      'dm_can_read_object','dm_guard_object','dm_clear_delete_intent','dm_get_or_create_thread','dm_threads','dm_messages',
+      'dm_register_asset','dm_send_message','dm_mark_thread_read','dm_unread_count','dm_unsent_assets','dm_orphan_assets',
+      'dm_prepare_asset_delete','dm_prepare_orphan_delete','notifications_page',
+      'community_publication_changed','community_publication_export','community_publication_result','community_sync_legacy_targets'
+    ].sort());
     for (const fn of functions.rows) assert.ok(fn.proconfig.includes('search_path=""')); assertions++;
+    for (const role of ['anon','authenticated']) {
+      const privileges=await db.query("select has_function_privilege($1,'public.community_check_document_cover()','EXECUTE') allowed",[role]);
+      assert.equal(privileges.rows[0].allowed,false); assertions++;
+    }
     // Auth deletion must preserve legacy content and clear FK identities even
     // when the account has a reply to its own pending comment.
     await db.exec(`begin; set local role authenticated;

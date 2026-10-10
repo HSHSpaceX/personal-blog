@@ -1,7 +1,9 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import {createRequire} from 'node:module';
+const community=createRequire(import.meta.url)('../js/community-public.js');
 import assert from 'node:assert/strict';
 import { SITE_BASE_URL } from '../site.config.mjs';
 
@@ -11,7 +13,8 @@ const full = (route = '') => new URL(route, SITE_BASE_URL).href;
 const baseHost = new URL(SITE_BASE_URL).host;
 const postsContext = { window: {} };
 vm.runInNewContext(await read('js/posts.js'), postsContext, { filename: 'js/posts.js', timeout: 1000 });
-const posts = Array.from(postsContext.window.BLOG_POSTS || []);
+const snapshot=community.validate(JSON.parse(await read('data/community-public.json')));
+const posts = Array.from(postsContext.window.BLOG_POSTS || []).concat(community.posts(snapshot));
 assert.ok(posts.length, 'No real posts found');
 
 // Count decoded Unicode code points, not UTF-16 units or HTML entity bytes.
@@ -73,27 +76,42 @@ const boot = siteSource.lastIndexOf('  if (window.BLOG_POSTS) {');
 assert.ok(boot > 0, 'Missing site.js boot boundary');
 const homeContext = { window: { BlogUrls: { postUrl: (slug) => `posts/${encodeURIComponent(slug)}.html` } } };
 vm.runInNewContext(siteSource.slice(0, boot) + '  window.homeCards = [renderPostCard, renderRailCard];\n})();', homeContext, { timeout: 1000 });
-for (const post of [...posts, { ...posts[0], title: '中文标题 😀 & "引号" <示例>' }]) {
+for (const post of [...posts, { ...posts[0], title: '中文标题 😀 & "引号" <示例>' }, { ...posts[0], author_profile: { username:'member_user', display_name:'成员 <文字>', avatar_url:'https://example.invalid/avatar.png' } }]) {
   for (const render of homeContext.window.homeCards) {
     const images = checkImages(render(post, 0), `homepage card: ${post.slug}`, true);
     assert.equal(images.length, 2, 'Homepage card must include a cover and author avatar');
     assert.equal(images[0].alt, post.title, 'Homepage cover alt must match the article title');
-    assert.equal(images[1].alt, 'HSH站长头像', 'Homepage author avatar needs a meaningful alt');
+    assert.equal(images[1].alt, post.author_profile ? post.author_profile.display_name+'的头像' : 'HSH站长头像', 'Homepage author avatar must identify the actual author');
+    assert.ok(render(post,0).includes('profile.html?username='+(post.author_profile ? post.author_profile.username : 'hshspacex')), 'Author must link to their public profile');
   }
 }
 for (const post of posts) {
   const route = `posts/${post.slug}.html`;
   const page = await read(route);
-  assert.ok(page.includes(`<h1 id="postTitle">${post.title}</h1>`), `Missing raw title: ${route}`);
+  assert.ok(page.includes(`<h1 id="postTitle">${community.escape(post.title)}</h1>`), `Missing raw title: ${route}`);
   const body = page.match(/<div id="postContent" class="prose">([\s\S]*?)<\/div>/)?.[1] || '';
-  assert.ok(body.replace(/<[^>]+>/g, '').trim().length > 30, `Empty raw article body: ${route}`);
-  for (const value of [post.date, post.category, ...post.tags]) assert.ok(page.includes(value), `Missing post metadata ${value}: ${route}`);
+  assert.ok(body.replace(/<[^>]+>/g, '').trim().length > (post.community?0:30), `Empty raw article body: ${route}`);
+  for (const value of [post.date, post.category, ...post.tags]) assert.ok(page.includes(community.escape(value)), `Missing post metadata ${value}: ${route}`);
   for (const listing of ['index.html', 'archive.html', 'timeline.html']) {
     assert.ok((await read(listing)).includes(`href="${route}"`), `Missing raw article link in ${listing}`);
   }
 }
-for (const page of ['profile.html', 'search.html', 'post.html', '404.html']) {
+for (const page of ['admin.html', 'login.html', 'account.html', 'messages.html', 'profile.html', 'search.html', 'post.html', '404.html']) {
   assert.match(await read(page), /<meta name="robots" content="noindex,follow">/, `Missing noindex: ${page}`);
+  assert.ok(!urls.some(address => new URL(address).pathname.replace(/\.html$/, '') === '/' + page.replace(/\.html$/, '')), `Functional page in sitemap: ${page}`);
+}
+// Keep private workflow links out of static crawl paths, including post templates.
+for (const page of [...(await readdir(root)).filter(name => name.endsWith('.html')), ...posts.map(post => `posts/${post.slug}.html`)]) {
+  const contents = await read(page);
+  for (const [tag] of contents.matchAll(/<a\b[^>]*>/gi)) {
+    const attrs = attributes(tag);
+    const href = attrs.href || '';
+    assert.ok(!/^admin\.html(?:[?#]|$)/.test(href), `Static admin link: ${page}`);
+    if (/^(?:login|account|messages|admin|profile)\.html(?:[?#]|$)/.test(href)) {
+      assert.ok((attrs.rel || '').split(/\s+/).includes('nofollow'), `Missing functional-link nofollow: ${page} (${href})`);
+    }
+    assert.ok(!(href === 'login.html' && (attrs.class || '').split(/\s+/).includes('footer-link')), `Footer login management link: ${page}`);
+  }
 }
 for (const page of ['index.html', 'about.html', 'archive.html', 'timeline.html', 'gallery.html', 'moments.html', 'post.html', 'search.html', ...posts.map((post) => `posts/${post.slug}.html`)]) {
   const contents = await read(page);

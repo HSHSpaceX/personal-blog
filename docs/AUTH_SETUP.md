@@ -4,7 +4,7 @@
 
 先按 [Supabase 部署步骤](SUPABASE_SETUP.md) 创建项目、关闭公开注册并执行迁移。`JOIN_REQUEST_URL` 可指向站长自己的公开申请表单；留空时不显示“申请加入”链接。邮件重置必须将站点域名加入 Supabase redirect allowlist。不要在浏览器代码中调用 admin API、使用 service_role 或自动创建账号。
 
-后台文章/动态/图库仍通过 GitHub Contents API 发布，因此 admin 登录后另需一个只授权 `HSHSpaceX/personal-blog`、Contents Read and write 的 Fine-grained PAT。连接时验证 GitHub `/user` 和目标仓库的 `permissions.push`。PAT **仅保存在当前页面的 JS 内存中**；刷新、关闭或离开页面后必须重新输入，退出登录也立即清除。后台、动态、图库各有本页连接入口。旧版 localStorage 和 sessionStorage 明文 PAT 条目在新脚本加载时清除；没有“记住本机”功能，也没有使用 Supabase 密码加密 PAT。已有 Classic PAT 可兼容，但不推荐新建。不要把 PAT 粘贴到 issue、PR、README 或配置文件。
+后台文章/动态/图库仍通过 GitHub Contents API 发布，因此 admin 登录后另需一个只授权 `HSHSpaceX/personal-blog`、Contents Read and write 的 Fine-grained PAT。连接时验证 GitHub `/user` 和目标仓库的 `permissions.push`。PAT **仅保存在当前标签页临时 sessionStorage 与 JS 内存中**；刷新/同标签页跳转可恢复，退出登录、失去 admin 权限或切换账号后立即清除，关闭标签页后会话存储失效。旧 localStorage 和旧 sessionStorage 键会清理；无跨标签页“记住本机”功能，也不使用 Supabase 密码加密 PAT。网站身份由 Supabase 验证，PAT 只验证 GitHub Legacy 写权限。已有 Classic PAT 可兼容，但不推荐新建。不要把 PAT 粘贴到 issue、PR、README 或配置文件。
 
 原始 `likes` 和 `follows` 行仅本人可读，匿名访客无法枚举谁点赞或关注了谁。公开数量由只返回计数的 SQL RPC 提供；资料页“已点赞 X 次”指该用户点出的赞。
 

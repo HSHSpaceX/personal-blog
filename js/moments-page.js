@@ -7,6 +7,8 @@
   var MOMENTS_PATH = 'js/moments.js';
 
   var moments = [];
+  function allMoments(){return moments.concat(window.CommunityPublic?window.CommunityPublic.moments():[]);}
+  function isCommunity(id){return allMoments().some(function(m){return m.id===id&&m.community;});}
   var pendingMedia = [];
   var booted = false;
 
@@ -75,18 +77,18 @@
   }
   async function refreshLikeCounts() {
     try {
-      likeState = await window.BlogData.likes('moment', moments.map(function (m) { return m.id; }));
-      moments.forEach(function (m) { updateLikeUI(m.id, likeState[m.id] || { liked: false, count: 0 }); });
+      var groups=await Promise.all([window.BlogData.likes('moment',moments.map(function(m){return m.id;})),window.BlogData.likes('content',allMoments().filter(function(m){return m.community;}).map(function(m){return m.id;}))]);likeState=Object.assign({},groups[0],groups[1]);
+      allMoments().forEach(function (m) { updateLikeUI(m.id, likeState[m.id] || { liked: false, count: 0 }); });
     } catch (error) { /* offline */ }
   }
   async function toggleMomentLike(id) {
     if (!window.BlogAuth.user()) { location.href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash); return; }
-    try { await window.BlogData.toggleLike('moment', id); await refreshLikeCounts(); }
+    try { await window.BlogData.toggleLike(isCommunity(id)?'content':'moment', id); await refreshLikeCounts(); }
     catch (error) { alert(error.message); }
   }
 
   function momentShareUrl(id) {
-    return location.origin + location.pathname.replace(/[^/]*$/, '') + 'moments.html#moment-' + id;
+    return location.origin + location.pathname.replace(/[^/]*$/, '') + 'moments.html#'+(isCommunity(id)?'community-':'moment-') + id;
   }
 
   function flashCopied(btn) {
@@ -123,7 +125,7 @@
   }
 
   function commentSlug(id) {
-    return 'moment-' + id;
+    return (isCommunity(id)?'community-':'moment-') + id;
   }
 
   var commentCache = {};
@@ -143,6 +145,7 @@
       (item.parentNick ? '<p class="comment-parent-hint">回复 @' + escapeHtml(item.parentNick) + '</p>' : '') +
       '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
       '<div class="comment-foot">' + (window.CommentLikes && item.status === 'approved' && !item.legacy ? window.CommentLikes.button(String(item.id)) : '') +
+        (item.own&&!item.legacy?'<a class="btn" rel="nofollow" href="account.html?comment='+encodeURIComponent(item.id)+'#my-comments">编辑我的评论</a>':'') +
         '<button type="button" class="comment-reply-btn" data-mcreply="' + escapeHtml(item.id) + '" data-mcnick="' + escapeHtml(item.nick) + '">回复</button>' +
       '</div>' +
       (replies.length ? '<button type="button" class="comment-collapse-toggle" data-collapsed="true">展开 ' + replies.length + ' 条回复</button><div class="comment-replies" hidden>' + replies.map(function (reply) {
@@ -336,34 +339,39 @@
   function renderFeed() {
     var list = $('momentList');
     if (!list) return;
-    if (!moments.length) {
+    if (!allMoments().length) {
       list.innerHTML = '<p class="empty-state">还没有动态' + (isAuthed() ? ',写下第一条吧。' : '。') + '</p>';
       return;
     }
-    var sorted = moments.slice().sort(function (a, b) {
+    var sorted = allMoments().slice().sort(function (a, b) {
       return String(b.time || '').localeCompare(String(a.time || ''));
     });
     var authed = isAuthed();
     list.innerHTML = sorted.map(function (item) {
       var liked = getLiked(item.id);
       var count = getCachedCount(item.id);
-      var displayName = item.author || 'HSH(站长)';
-      var avatar = item.avatar && /^https:\/\//.test(item.avatar)
-        ? item.avatar
-        : (displayName === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg');
-      return '<article class="moment-card" id="moment-' + escapeHtml(item.id) + '">' +
-        '<img class="moment-avatar" src="' + escapeHtml(avatar) + '" alt="">' +
+      var author=item.author_profile||{
+        username:'hshspacex',
+        display_name:item.author||'HSH(站长)',
+        avatar_url:item.avatar&&/^https:\/\//.test(item.avatar)?item.avatar:'assets/icon.jpg'
+      };
+      var displayName=author.display_name||author.username||'作者';
+      var authorLink='profile.html?username='+encodeURIComponent(author.username||'');
+      var authorAvatar=window.PublicCards?window.PublicCards.avatar(author.avatar_url):'assets/icon.jpg';
+      return '<article class="moment-card" id="' + (item.community?'community-':'moment-') + escapeHtml(item.id) + '">' +
+        '<a class="moment-avatar" href="'+escapeHtml(authorLink)+'"><img src="'+escapeHtml(authorAvatar)+'" alt=""></a>' +
         '<div class="moment-body">' +
           '<div class="moment-head">' +
-            '<span class="moment-name">' + escapeHtml(displayName) + '</span>' +
+            '<a class="moment-name" href="'+escapeHtml(authorLink)+'">'+escapeHtml(displayName)+' / @'+escapeHtml(author.username||'')+'</a>' +
             '<span class="moment-time" title="' + escapeHtml(item.time || '') + '">' + escapeHtml(timeAgo(item.time)) + '</span>' +
           '</div>' +
-          (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '') +
+          (item.document&&window.CommunityPublic ? '<div class="moment-text prose">'+window.CommunityPublic.bodyHTML(item.public_item)+'</div>' : (item.text ? '<p class="moment-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</p>' : '')) +
           (item.media && item.media.length
             ? '<div class="moment-media-grid moment-media-' + Math.min(item.media.length, 4) + '">' + item.media.map(function (m, i) {
                 if (m.type && m.type.indexOf('video/') === 0) {
                   return '<div class="moment-media-item moment-media-video"><video src="' + escapeHtml(m.src) + '" controls playsinline preload="metadata"></video></div>';
                 }
+                if(m.type&&!m.type.startsWith('image/'))return '<p><a href="'+escapeHtml(m.src)+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(m.name||'附件')+'</a></p>';
                 return '<div class="moment-media-item moment-media-img"><img src="' + escapeHtml(m.src) + '" alt="配图' + (i + 1) + '" loading="eager" decoding="async"></div>';
               }).join('') + '</div>'
             : (item.image ? '<div class="moment-media-grid moment-media-1"><div class="moment-media-item moment-media-img"><img src="' + escapeHtml(item.image) + '" alt="动态配图" loading="eager" decoding="async"></div></div>' : '')) +
@@ -380,10 +388,10 @@
               '<span class="moment-action-count moment-comment-count">' + commentCount(item.id) + '</span>' +
             '</button>' +
             '<div class="moment-actions-right">' +
-            (authed ? '<button class="moment-delete" type="button" data-delete="' + escapeHtml(item.id) + '" aria-label="删除这条动态" title="删除">' +
+            (authed && !item.community ? '<button class="moment-delete" type="button" data-delete="' + escapeHtml(item.id) + '" aria-label="删除这条动态" title="删除">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
               '</button>' : '') +
-            (authed ? '<button class="moment-edit-btn" type="button" data-edit="' + escapeHtml(item.id) + '" aria-label="编辑这条动态" title="编辑">' +
+            (authed && !item.community ? '<button class="moment-edit-btn" type="button" data-edit="' + escapeHtml(item.id) + '" aria-label="编辑这条动态" title="编辑">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
               '</button>' : '') +
             '</div>' +
@@ -393,7 +401,7 @@
       '</article>';
     }).join('');
     refreshLikeCounts();
-    moments.forEach(function (m) { window.BlogData.listComments(commentSlug(m.id)).then(function (rows) { commentCache[m.id] = rows; updateCommentCount(m.id); }).catch(function () {}); });
+    allMoments().forEach(function (m) { window.BlogData.listComments(commentSlug(m.id)).then(function (rows) { commentCache[m.id] = rows; updateCommentCount(m.id); }).catch(function () {}); });
     if (window.SiteLightbox) window.SiteLightbox.watch(list);
   }
 
@@ -708,7 +716,7 @@
     document.addEventListener('blog-auth-change', function () { syncPanels(); renderFeed(); });
   }
 
-  if (window.BLOG_MOMENTS) {
+  if (window.BLOG_MOMENTS && (!window.CommunityPublic || window.COMMUNITY_PUBLIC)) {
     boot();
   } else {
     document.addEventListener('posts-ready', boot, { once: true });

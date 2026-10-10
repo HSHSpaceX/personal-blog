@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var posts = window.BLOG_POSTS || [];
+  var posts = (window.CommunityPublic ? window.CommunityPublic.mergePosts(window.BLOG_POSTS) : window.BLOG_POSTS || []);
   var postUrl = window.BlogUrls.postUrl;
   var SITE_NAME = '拾光手记';
   function isAuthed() { return window.BlogAuth && window.BlogAuth.isAdmin(); }
@@ -10,7 +10,20 @@
     var logged = !!auth.user();
     document.querySelectorAll('.btn-login').forEach(function (el) { el.hidden = logged; });
     document.querySelectorAll('.user-menu-wrap').forEach(function (el) { el.hidden = !logged; });
-    document.querySelectorAll('[data-admin]').forEach(function (el) { el.hidden = !auth.isAdmin(); });
+    document.querySelectorAll('[data-admin-links]').forEach(function (slot) {
+      slot.replaceChildren();
+      if (!logged || !auth.isAdmin()) return;
+      [['account.html#review-center', '审核中心'], ['admin.html#messages', '评论审核'], ['admin.html', '管理后台']].forEach(function (entry) {
+        var link = document.createElement('a');
+        link.className = 'user-menu-item'; link.href = entry[0]; link.rel = 'nofollow';
+        link.textContent = entry[1];
+        if (entry[0] === 'admin.html#messages') {
+          var badge = document.createElement('span'); badge.className = 'menu-badge'; badge.hidden = true;
+          link.appendChild(badge);
+        }
+        slot.appendChild(link);
+      });
+    });
     if (!logged) closeUserMenus();
     if (logged) window.BlogData.getProfile(auth.user().id).then(function (profile) {
       if (profile && profile.avatar_url) document.querySelectorAll('.user-avatar img').forEach(function (img) { img.src = profile.avatar_url; });
@@ -38,6 +51,7 @@
     });
     document.addEventListener('click', function (event) { if (!event.target.closest('.user-menu-wrap')) closeUserMenus(); });
     document.addEventListener('blog-auth-change', function () { applyAuthUi(); refreshPendingBadge(); refreshNotificationBadge(); });
+    document.addEventListener('blog-messages-change', refreshNotificationBadge);
   }
 
   function updateFavicon() {
@@ -86,6 +100,13 @@
     return '<a class="post-category" href="' + categoryUrl(post.category) + '">' + escapeHtml(post.category) + '</a>';
   }
 
+  function postAuthor(post) {
+    var p=post.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'};
+    if(window.PublicCards)return window.PublicCards.author(p).outerHTML;
+    var username=/^[a-zA-Z0-9_]{3,30}$/.test(p.username||'')?p.username:'';
+    return '<a class="public-author" href="profile.html?username='+encodeURIComponent(username)+'"><img class="public-author-avatar" src="'+escapeHtml(/^https:\/\//.test(p.avatar_url||'')?p.avatar_url:(post.author_profile?'assets/avatar-default.jpg':'assets/icon.jpg'))+'" alt="'+escapeHtml(post.author_profile?(p.display_name||username||'用户')+'的头像':'HSH站长头像')+'"><span>'+escapeHtml(p.display_name||username||'作者')+' / @'+escapeHtml(username)+'</span></a>';
+  }
+
   function renderPostCard(post) {
     return '' +
       '<article class="post-card glass-card">' +
@@ -97,7 +118,7 @@
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="post-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="post-card-meta">' +
-            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt="HSH站长头像"><span>HSH(站长)</span></a>' +
+            postAuthor(post) +
             '<span class="post-date">' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -116,7 +137,7 @@
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="rail-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
           '<div class="rail-card-meta">' +
-            '<a class="post-card-author" href="about.html"><img class="post-card-author-img" src="assets/icon.jpg" alt="HSH站长头像"><span>HSH(站长)</span></a>' +
+            postAuthor(post) +
             '<span>' + formatDate(post.date) + '</span>' +
             '<span>' + post.readingTime + ' 分钟</span>' +
           '</div>' +
@@ -130,7 +151,7 @@
         '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="lazy" decoding="async"></a>' +
       '<div class="archive-row-main">' + categoryChip(post) +
         '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
-        (post.excerpt ? '<p>' + escapeHtml(post.excerpt) + '</p>' : '') + '</div>' +
+        (post.excerpt ? '<p>' + escapeHtml(post.excerpt) + '</p>' : '') + postAuthor(post) + '</div>' +
       '<div class="archive-row-side"><div class="archive-row-tags">' + (post.tags || []).map(function (tag) {
         return '<a class="archive-tag-link" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
       }).join('') + '</div><time datetime="' + escapeHtml(post.date) + '">' + formatDate(post.date) + '</time>' +
@@ -228,6 +249,8 @@
       if (item.slug === 'about') {
         source = '关于';
         link = 'about.html#commentsSection';
+      } else if (item.slug.indexOf('community-')===0 && window.CommunityPublic) {
+        var target=(window.COMMUNITY_PUBLIC.items||[]).find(function(i){return 'community-'+i.id===item.slug;});if(!target)return '';source=target.title;link=window.CommunityPublic.target(target);
       } else if (item.slug.indexOf('moment-') === 0) {
         source = '动态';
         link = 'moments.html#' + item.slug;
@@ -393,10 +416,10 @@
           return '<div class="timeline-month">' +
             '<span class="timeline-month-label">' + parseInt(month, 10) + ' 月</span>' +
             byMonth[month].map(function (post) {
-              return '<a class="timeline-item" href="' + postUrl(post.slug) + '">' +
+              return '<div class="timeline-entry"><a class="timeline-item" href="' + postUrl(post.slug) + '">' +
                 '<span class="timeline-item-title">' + escapeHtml(post.title) + '</span>' +
                 '<span class="timeline-item-meta">' + formatDate(post.date) + ' · ' + escapeHtml(post.category) + '</span>' +
-              '</a>';
+              '</a>'+postAuthor(post)+'</div>';
             }).join('') +
           '</div>';
         }).join('') +
@@ -435,7 +458,8 @@
       return '<a class="tag-chip" href="' + tagUrl(tag) + '">' + escapeHtml(tag) + '</a>';
     }).join('');
 
-    document.getElementById('postContent').innerHTML = post.content;
+    document.getElementById('postContent').innerHTML = post.community ? window.CommunityPublic.articleHTML(post.public_item) : post.content;
+    var authorEl=document.getElementById('postAuthor');if(authorEl)authorEl.innerHTML=postAuthor(post);
     document.getElementById('postContent').querySelectorAll('img').forEach(function (img) {
       img.setAttribute('decoding', 'async');
       img.setAttribute('loading', 'eager');
@@ -455,9 +479,9 @@
     enhanceCodeBlocks(document.getElementById('postContent'));
     SiteLightbox.watch(document.getElementById('postContent'));
     buildToc();
-    initLikes(post.slug);
+    initLikes(post.community ? post.item_id : post.slug, post.community ? 'content' : 'post');
     var section = document.getElementById('commentsSection');
-    if (section) section.dataset.slug = post.slug;
+    if (section) section.dataset.slug = post.community ? 'community-'+post.item_id : post.slug;
 
     var index = posts.indexOf(post);
     var prev = index > 0 ? posts[index - 1] : null;
@@ -699,13 +723,14 @@
     location.href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
     return false;
   }
-  function initLikes(slug) {
+  function initLikes(slug, type) {
+    type=type||'post';
     var btn = document.getElementById('likeBtn');
     var count = document.getElementById('likeCount');
     if (!btn || !count) return;
     async function refresh() {
       try {
-        var row = (await window.BlogData.likes('post', [slug]))[slug] || { count: 0, liked: false };
+        var row = (await window.BlogData.likes(type, [slug]))[slug] || { count: 0, liked: false };
         count.textContent = String(row.count);
         btn.classList.toggle('liked', row.liked);
         btn.setAttribute('aria-label', row.liked ? '取消点赞' : '点赞这篇文章');
@@ -714,7 +739,7 @@
     btn.onclick = async function () {
       if (!loginForAction()) return;
       btn.disabled = true;
-      try { await window.BlogData.toggleLike('post', slug); await refresh(); }
+      try { await window.BlogData.toggleLike(type, slug); await refresh(); }
       catch (error) { alert(error.message); }
       finally { btn.disabled = false; }
     };
@@ -852,6 +877,7 @@
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
         '<div class="comment-foot">' +
           (item.status === 'approved' && !item.legacy ? CommentLikes.button(String(item.id)) : '') +
+          (item.own&&!item.legacy?'<a class="btn" rel="nofollow" href="account.html?comment='+encodeURIComponent(item.id)+'#my-comments">编辑我的评论</a>':'') +
           '<button type="button" class="comment-reply-btn" data-reply-id="' + escapeHtml(item.id) + '" data-reply-nick="' + escapeHtml(item.nick) + '">回复</button>' +
         '</div>' +
       '</div>';
@@ -889,14 +915,16 @@
     replyBanner.className = 'comment-reply-banner'; replyBanner.hidden = true;
     form.insertBefore(replyBanner, form.firstChild);
     function clearReply() { replyTarget = null; replyBanner.hidden = true; replyBanner.textContent = ''; }
+    var commentGeneration=0;
     async function refresh() {
+      var attempt=++commentGeneration;listEl.replaceChildren();
       try {
-        var all = await window.BlogData.listComments(slug);
+        var all = await window.BlogData.listComments(slug);if(attempt!==commentGeneration)return;
         listEl.innerHTML = all.length ? all.filter(function (item) { return !item.parentId; }).map(function (item) {
           return renderCommentTree(item, all);
         }).join('') : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
         CommentLikes.decorate(listEl);
-      } catch (error) { listEl.textContent = '评论加载失败：' + error.message; }
+      } catch (error) { if(attempt===commentGeneration)listEl.textContent = '评论加载失败：' + error.message; }
     }
     listEl.addEventListener('click', function (event) {
       var toggle = event.target.closest('.comment-collapse-toggle');
@@ -960,9 +988,14 @@
     });
   }
 
+  var notificationBadgeGeneration = 0;
   function refreshNotificationBadge() {
+    var token = ++notificationBadgeGeneration, actor = window.BlogAuth.user();
+    updateNotificationBadge(0);
     if (!window.BlogAuth.user()) { updateNotificationBadge(0); return; }
-    window.BlogData.notificationCount().then(updateNotificationBadge).catch(function () { updateNotificationBadge(0); });
+    window.BlogData.messageUnreadCount().then(function (count) {
+      if (token === notificationBadgeGeneration && window.BlogAuth.user() && window.BlogAuth.user().id === actor.id) updateNotificationBadge(count);
+    }).catch(function () { if (token === notificationBadgeGeneration) updateNotificationBadge(0); });
   }
 
   function setupRail() {
@@ -987,7 +1020,8 @@
   }
 
   function init() {
-    posts = window.BLOG_POSTS || [];
+    if(window.CommunityPublic&&!window.COMMUNITY_PUBLIC){document.addEventListener('posts-ready',init,{once:true});return;}
+    posts = (window.CommunityPublic ? window.CommunityPublic.mergePosts(window.BLOG_POSTS) : window.BLOG_POSTS || []);
     applyContent();
     applyAuthUi();
     setupUserMenu();

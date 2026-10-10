@@ -7,7 +7,9 @@
   var ALBUMS_PATH = 'js/albums.js';
 
   var albums = window.SITE_ALBUMS || [];
-  var currentAlbumId = new URLSearchParams(window.location.search).get('album');
+  var currentAlbumId = new URLSearchParams(window.location.search).get('community') || new URLSearchParams(window.location.search).get('album');
+  function allAlbums(){return albums.concat(window.CommunityPublic?window.CommunityPublic.albums():[]);}
+  function albumURL(a){return 'gallery.html?'+(a.community?'community=':'album=')+encodeURIComponent(a.id);}
   var lightboxIndex = 0;
   var slideshowTimer = null;
 
@@ -48,11 +50,11 @@
   }
 
   function currentAlbum() {
-    return albums.filter(function (album) { return album.id === currentAlbumId; })[0] || null;
+    return allAlbums().filter(function (album) { return album.id === currentAlbumId; })[0] || null;
   }
 
   function visibleAlbums() {
-    return albums.filter(function (album) {
+    return allAlbums().filter(function (album) {
       return album.visibility !== 'private' || isAuthed();
     });
   }
@@ -146,15 +148,16 @@
       return;
     }
     grid.innerHTML = list.map(function (album) {
-      var cover = album.photos[0] ? '<img src="' + escapeHtml(album.photos[0].src) + '" alt="" loading="lazy">' : '<div class="album-cover-empty">暂无照片</div>';
+      var cover = album.photos[0] ? '<img src="' + escapeHtml(album.photos[0].src) + '" alt="'+escapeHtml(album.title)+'" loading="lazy">' : '<div class="album-cover-empty">暂无照片</div>';
       var badge = album.visibility === 'private' ? '<span class="album-badge">仅我可见</span>' : '';
-      var menuBtn = canEdit() ? '<button class="album-menu-btn" type="button" data-menu-album="' + escapeHtml(album.id) + '" aria-label="图册菜单" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>' : '';
+      var menuBtn = canEdit() && !album.community ? '<button class="album-menu-btn" type="button" data-menu-album="' + escapeHtml(album.id) + '" aria-label="图册菜单" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>' : '';
       return '' +
         '<div class="album-card">' +
-          '<a class="album-cover-link" href="gallery.html?album=' + encodeURIComponent(album.id) + '"><div class="album-cover">' + cover + '</div></a>' +
+          '<a class="album-cover-link" href="' + albumURL(album) + '"><div class="album-cover">' + cover + '</div></a>' +
           menuBtn +
           '<div class="album-card-body">' +
-            '<div class="album-card-title-row"><h3><a href="gallery.html?album=' + encodeURIComponent(album.id) + '">' + escapeHtml(album.title) + '</a></h3>' + badge + '</div>' +
+            '<div class="album-card-title-row"><h3><a href="' + albumURL(album) + '">' + escapeHtml(album.title) + '</a></h3>' + badge + '</div>' +
+            (window.PublicCards?window.PublicCards.author(album.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'}).outerHTML:'<a href="profile.html?username=hshspacex">HSH(站长) / @hshspacex</a>') +
             '<div class="album-card-meta"><span>' + album.photos.length + ' 张照片</span><span>' + escapeHtml(album.created || '') + '</span></div>' +
           '</div>' +
         '</div>';
@@ -181,7 +184,7 @@
   }
 
   function renderAlbumView(albumId) {
-    var album = albums.filter(function (item) { return item.id === albumId; })[0];
+    var album = allAlbums().filter(function (item) { return item.id === albumId; })[0];
     var view = $('albumView');
     var authed = isAuthed();
     if (!album || (album.visibility === 'private' && !authed)) {
@@ -194,15 +197,17 @@
       return;
     }
     currentAlbumId = album.id;
+    if(window.CommunityDiscussion)window.CommunityDiscussion.show(album.community?album.id:null);
     view.hidden = false;
     $('galleryGrid').innerHTML = '';
     $('albumTitle').textContent = album.title;
-    $('albumMeta').innerHTML = album.photos.length + ' 张照片 · ' + (album.visibility === 'private' ? '仅我可见' : '公开');
+    $('albumMeta').innerHTML = (window.PublicCards?window.PublicCards.author(album.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'}).outerHTML:'')+album.photos.length + ' 张照片 · ' + (album.visibility === 'private' ? '仅我可见' : '公开');
 
+    if(album.description){var description=document.createElement('p');description.className='public-text';if(album.public_item&&album.public_item.body.document&&window.CommunityPublic){description=document.createElement('div');description.className='public-text prose';description.innerHTML=window.CommunityPublic.bodyHTML(album.public_item);}else description.textContent=album.description;$('albumMeta').appendChild(description);}
     var actions = $('albumActions');
     actions.innerHTML = '';
-    actions.hidden = !canEdit();
-    if (canEdit()) {
+    actions.hidden = !canEdit() || album.community;
+    if (canEdit() && !album.community) {
       actions.appendChild(createActionButton('上传照片', function () { $('galleryFileInput').click(); }));
       actions.appendChild(createActionButton(album.visibility === 'private' ? '设为公开' : '设为仅我可见', function () {
         album.visibility = album.visibility === 'private' ? 'public' : 'private';
@@ -228,10 +233,10 @@
 
     var grid = $('photoGrid');
     grid.innerHTML = album.photos.map(function (photo, index) {
-      var del = canEdit() ? '<button class="photo-del" type="button" data-del-photo="' + index + '" aria-label="删除这张照片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' : '';
+      var del = canEdit() && !album.community ? '<button class="photo-del" type="button" data-del-photo="' + index + '" aria-label="删除这张照片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' : '';
       return '<figure class="photo-item">' +
-        '<img src="' + escapeHtml(photo.src) + '" alt="" loading="lazy" data-photo-index="' + index + '">' +
-        del +
+        '<img src="' + escapeHtml(photo.src) + '" alt="'+escapeHtml(photo.caption||album.title)+'" loading="lazy" data-photo-index="' + index + '">' +
+        del + (photo.caption?'<figcaption>'+escapeHtml(photo.caption)+'</figcaption>':'') +
       '</figure>';
     }).join('');
   }
@@ -540,7 +545,7 @@
     setup();
   }
 
-  if (window.SITE_ALBUMS) {
+  if (window.SITE_ALBUMS && (!window.CommunityPublic || window.COMMUNITY_PUBLIC)) {
     boot();
   } else {
     document.addEventListener('posts-ready', boot);
