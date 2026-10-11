@@ -1,3 +1,6 @@
 # The upstream SDK contains spaces/tabs at a line end inside a JS template literal.
 # Preserve its exact bytes; supply-chain tests verify the vendor manifest hashes.
 assets/vendor/supabase-js-2.117.2/supabase.js whitespace=-blank-at-eol
+
+# Vendored assets are hash-pinned; preserve exact bytes across platforms.
+assets/vendor/** -text

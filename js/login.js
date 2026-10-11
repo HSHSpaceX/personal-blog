@@ -9,7 +9,7 @@
   function message(text, kind) { status.textContent = text; status.className = 'status-line' + (kind ? ' ' + kind : ''); }
   function returnUrl() {
     var next = new URLSearchParams(location.search).get('next');
-    return next && /^\/?[a-z0-9/_#.?=&%-]+$/i.test(next) && !next.startsWith('//') ? next : 'profile.html';
+    return next && /^\/?[a-z0-9/_#.?=&%-]+$/i.test(next) && !next.startsWith('//') ? next : 'account.html';
   }
   auth.ready().then(function () {
     if (!auth.configured()) message('登录暂未开放：站点尚未配置 Supabase。', 'err');
