@@ -39,7 +39,7 @@
       });
     });
     (moments || []).forEach(function (moment) {
-      records.push({ type: 'moment', id: moment.id, title: moment.text || '', date: moment.time || '',
+      records.push({ type: 'moment', community:!!moment.community, id: moment.id, title: moment.text || '', date: moment.time || '',
         fields: { text: moment.text || '' } });
     });
     Object.keys(comments || {}).forEach(function (slug) {
@@ -84,7 +84,7 @@
         ? (terms.some(function (term) { return record.normalizedFields.body.includes(term); }) ? context(record.body, terms) : context(record.excerpt || record.body, terms))
         : context(record.fields.text, terms);
       return { type: record.type, slug: record.slug, id: record.id, title: record.title,
-        date: record.date, snippet: snippet, matched: matched, score: score };
+        community:record.community, date: record.date, snippet: snippet, matched: matched, score: score };
     }).filter(Boolean).sort(function (a, b) {
       return b.matched - a.matched || b.score - a.score || String(b.date).localeCompare(String(a.date));
     });

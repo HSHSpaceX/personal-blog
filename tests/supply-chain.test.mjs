@@ -42,7 +42,7 @@ test('first-party HTML and Auth loader execute only local scripts; KaTeX is loca
   const auth = await read('js/auth.js');
   assert.match(auth,/assets\/vendor\/supabase-js-2\.117\.2\/supabase\.js/);
   assert.doesNotMatch(auth,/cdn\.jsdelivr/);
-  for (const file of ['admin.html','post.html',...(await readdir(new URL('posts/',root))).map(file=>'posts/'+file)]) {
+  for (const file of ['account.html','post.html',...(await readdir(new URL('posts/',root))).map(file=>'posts/'+file)]) {
     const html=await read(file);
     assert.doesNotMatch(html,/cdn\.jsdelivr/);
     assert.match(html,/assets\/vendor\/katex-0\.16\.11\/katex\.min\.css/);
