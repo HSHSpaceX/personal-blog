@@ -1,8 +1,8 @@
 (function () {
   'use strict';
   var auth = window.BlogAuth, schema = window.CommunitySchema;
-  var itemFields = 'id,author_id,content_type,slug,published_revision_id';
-  var revisionFields = '*,content_items!content_revisions_item_id_fkey(' + itemFields + ')';
+  var itemFields = 'id,author_id,content_type,slug,published_revision_id,featured';
+  var revisionFields = 'content_revision_trash(restored_at,reason),*,content_items!content_revisions_item_id_fkey(' + itemFields + ',content_revision_trash(restored_at,reason))';
   function Community_FormatError(error) { return error && (['PGRST202','PGRST205','42883','42P01'].includes(error.code) || /Could not find (?:the function|the table).*schema cache/i.test(error.message||'')) ? '当前连接的 Supabase 环境尚未部署所需表或 RPC。请站长核对项目配置、按顺序执行 migrations 并刷新 schema cache；此操作未完成。' : error.message; }
   function value(result) { if (result.error) { var error=new Error(Community_FormatError(result.error));error.code=result.error.code;throw error; } return result.data; }
   async function client() { await auth.ready(); auth.requireUser(); return auth.client(); }
@@ -34,9 +34,10 @@
   }
   async function upload(file) {
     var db = await client(), actor = auth.requireUser().id;
-    if (!schema.mime[file.type] || file.size < 1 || file.size > 20*1024*1024) throw Error('支持 JPG/PNG/WebP/MP4/PDF/TXT，文件须为 1 字节至 20 MiB。');
+    if (!schema.mime[file.type] || file.size < 1 || file.size > 90*1024*1024) throw Error('支持 JPG/PNG/WebP/MP4/PDF/TXT，文件须为 1 字节至 90 MiB。');
     var path = actor + '/' + crypto.randomUUID() + '.' + schema.mime[file.type];
-    value(await db.storage.from('community-assets').upload(path,file,{contentType:file.type,upsert:false}));
+    if(file.size>6*1024*1024)await window.CommunityUpload.upload(file,{url:window.BlogConfig.SUPABASE_URL,anonKey:window.BlogConfig.SUPABASE_PUBLISHABLE_KEY,path:path,session:async function(){return value(await db.auth.getSession()).session;},checkIdentity:function(){if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化，分块上传已停止。');}});
+    else value(await db.storage.from('community-assets').upload(path,file,{contentType:file.type,upsert:false}));
     // Recheck identity before registration. If interrupted, retain the exact path
     // for safe orphan cleanup; never register or remove another account's file.
     if (!auth.user() || auth.user().id !== actor) throw Error('账号已变化；未登记的上传留待资源清理。');
@@ -50,13 +51,13 @@
     }
   }
   async function signedAsset(id) {
-    var db=await client();
+    var db=await client(),actor=auth.requireUser().id;
     var asset=value(await db.from('user_assets').select('id,original_name,mime_type,object_path').eq('id',id).maybeSingle());
     if (!asset) throw Error('资源不可访问。');
-    var result=value(await db.storage.from('community-assets').createSignedUrl(asset.object_path,60));
+    if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化；预览已取消。');var issuedAt=Date.now();var result=value(await db.storage.from('community-assets').createSignedUrl(asset.object_path,60));if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化；预览已取消。');if(Date.now()>=issuedAt+60000)throw Error('链接已过期，请重试。');
     var url=new URL(result.signedUrl), origin=new URL(window.BlogConfig.SUPABASE_URL);
     if (url.protocol!=='https:' || url.origin!==origin.origin) throw Error('无效资源地址。');
-    return {asset:asset,url:url.href,expiresAt:Date.now()+60000};
+    return {asset:asset,url:url.href,expiresAt:issuedAt+60000};
   }
   async function listReviews() {
     var db=await client(); auth.requireAdmin();
@@ -86,6 +87,15 @@
     deleteOrphan:function(id){return removePrivate('community_prepare_orphan_delete',{p_object_id:id});},
     submit:function (id) {return rpc('community_submit_revision',{p_revision_id:id});},listReviews:listReviews,
     review:function (id,decision,reason) {auth.requireAdmin();return rpc('community_review_revision',{p_revision_id:id,p_decision:decision,p_rejection_reason:reason||null});},
-    policyUser:policyUser,policyStatus:function (id) {auth.requireAdmin();return rpc('community_review_policy_status',{p_user_id:id});},
-    setThreshold:function (id,type,n) {auth.requireAdmin();return rpc('community_set_user_review_threshold',{p_user_id:id,p_content_type:type,p_threshold:n});}};
+    policyUser:policyUser,policyStatus:function (id) {auth.requireAdmin();return rpc('community_review_cycle_status',{p_user_id:id});},
+    setCycle:function (id,type,n) {auth.requireAdmin();return rpc('community_set_review_cycle',{p_user_id:id,p_content_type:type,p_every:n});},
+    setFeatured:function(id,featured){auth.requireAdmin();return rpc('community_set_featured',{p_item_id:id,p_featured:featured});},
+    restore:function(id){auth.requireAdmin();return rpc('community_restore_revision',{p_revision_id:id});},
+    trash:async function(offset){var db=await client();return value(await db.from('content_revision_trash').select('*,content_revisions!content_revision_trash_revision_id_fkey(title)').is('restored_at',null).order('trashed_at',{ascending:false}).range(offset,offset+19));},
+    publishedArticles:async function(offset){var db=await client();auth.requireAdmin();return value(await db.from('content_items').select(itemFields+',content_revisions!content_published_revision_same_item(title)').eq('content_type','article').not('published_revision_id','is',null).order('created_at',{ascending:false}).range(offset,offset+19));},
+    siteSettings:async function(){var db=await client();auth.requireAdmin();return value(await db.from('community_site_settings').select('*').order('created_at',{ascending:false}).limit(1));},
+    assetInfo:async function(id){if(!schema.uuid(id))throw Error('无效资源');var db=await client();return value(await db.from('user_assets').select('id,original_name,mime_type,size_bytes').eq('id',id).maybeSingle());},
+    legacyRevision:async function(id){var db=await client();auth.requireAdmin();var item=value(await db.from('content_items').select('published_revision_id').eq('id',id).maybeSingle());if(!item||!item.published_revision_id)throw Error('迁移条目尚未公开');return item;},
+    legacyMappings:async function(){var db=await client();auth.requireAdmin();return value(await db.from('community_legacy_mappings').select('item_id,target_type,target_id'));},
+    saveSiteSettings:function(settings){auth.requireAdmin();return rpc('community_save_site_settings',{p_settings:settings});}};
 })();

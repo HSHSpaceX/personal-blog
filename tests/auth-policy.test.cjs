@@ -136,41 +136,13 @@ test('comment and like writes carry authenticated ID; admin moderation works', a
   assert.equal(admin.calls[1].action, 'delete');
 });
 
-test('PAT validates repository access, restores only in the same account session, and clears on logout', async () => {
-  const localWrites = [], sessionWrites = [], sessionReads = [], sessionRemovals = [], urls = [];
-  const listeners = [];
-  const session = new Map();
-  let admin = true;
-  const actor = { id: 'admin-id' };
-  const context = {
-    window: { BlogConfig: { GITHUB_OWNER: 'HSHSpaceX', GITHUB_REPO: 'personal-blog' }, BlogAuth: { requireAdmin() { if (!admin) throw new Error('admin required'); }, requireUser: () => actor, isAdmin: () => admin, user: () => admin ? actor : null }, addEventListener(name, listener) { listeners.push({ name, listener }); } },
-    localStorage: { removeItem() {}, setItem(...args) { localWrites.push(args); } },
-    sessionStorage: { getItem(key) { sessionReads.push([key]); return session.get(key) || ''; }, setItem(key, value) { sessionWrites.push([key,value]); session.set(key,value); }, removeItem(key) { sessionRemovals.push([key]); session.delete(key); } },
-    document: { querySelectorAll: () => [], addEventListener(name, listener) { listeners.push({ name, listener }); } },
-    fetch: async (url) => { urls.push(url); return { ok: true, json: async () => url.endsWith('/user') ? { login: 'owner' } : { permissions: { push: true } } }; }
-  };
-  vm.runInNewContext(read('js/github-credentials.js'), context);
-  await context.window.GitHubCredentials.connect('test-token');
-  assert.deepEqual(urls, ['https://api.github.com/user', 'https://api.github.com/repos/HSHSpaceX/personal-blog']);
-  assert.equal(context.window.GitHubCredentials.get(), 'test-token');
-  assert.equal(localWrites.length, 0);
-  assert.deepEqual(sessionWrites, [['blog-gh-pat-temp','test-token'], ['blog-gh-pat-owner','admin-id']]);
-  assert.equal(sessionReads.length, 0);
-  assert.ok(sessionRemovals.some(([key]) => key === 'blog-gh-pat-session'), 'legacy session key must be purged');
-  vm.runInNewContext(read('js/github-credentials.js'), context);
-  assert.equal(context.window.GitHubCredentials.get(), 'test-token', 'same-account navigation preserves the existing session workflow');
-  admin = false;
-  listeners.find((entry) => entry.name === 'blog-auth-change').listener();
-  assert.equal(context.window.GitHubCredentials.get(), '', 'logout clears memory');
-  admin = true;
-  await context.window.GitHubCredentials.connect('test-token');
-  vm.runInNewContext(read('js/github-credentials.js'), context);
-  assert.equal(context.window.GitHubCredentials.get(), 'test-token', 'only the matching account session restores PAT');
-  session.set('blog-gh-pat-owner', 'other-admin');
-  vm.runInNewContext(read('js/github-credentials.js'), context);
-  assert.equal(context.window.GitHubCredentials.get(), '', 'a different account cannot restore the session token');
-  context.window.GitHubCredentials.clear();
-  assert.equal(context.window.GitHubCredentials.get(), '');
+test('retired PAT authorization never makes requests, restores tokens or persists credentials', async () => {
+ const h=credentialsHarness();
+ await assert.rejects(h.credentials.connect('test-token'),/已停用/);
+ await assert.rejects(h.credentials.validate('test-token'),/已停用/);
+ assert.equal(h.credentials.get(),'');assert.equal(h.inputs[0].value,'');assert.equal(h.requests.length,0);
+ for(const change of [null,{id:'admin-two'},{id:'admin-one'}]){h.change(change);assert.equal(h.credentials.get(),'');}
+ assert.doesNotMatch(read('js/github-credentials.js'),/fetch\(|setItem\(/);
 });
 
 test('old local-only auth and comment write paths are gone', () => {
@@ -194,7 +166,7 @@ test('explicit grants exclude TRUNCATE, immutable columns and internal trigger R
 });
 
 function credentialsHarness() {
-  let actor = {id:'admin-one'}, admin = true, release;
+  let actor = {id:'admin-one'}, admin = true;const requests=[];
   const events = {}, inputs = [{value:'typed-pat'}];
   const context = { window: { BlogConfig:{GITHUB_OWNER:'HSHSpaceX',GITHUB_REPO:'personal-blog'},
     BlogAuth:{user:()=>actor, isAdmin:()=>!!actor && admin,
@@ -203,32 +175,19 @@ function credentialsHarness() {
     addEventListener(name, fn) { events[name] = fn; } },
     localStorage:{removeItem(){}}, sessionStorage:{removeItem(){}},
     document:{querySelectorAll:()=>inputs,addEventListener(name,fn){events[name]=fn;}},
-    fetch:async (url)=> {
-      if (url.endsWith('/user')) await new Promise((resolve)=>{release=resolve;});
-      return {ok:true,json:async()=>({permissions:{push:true}})};
-    }
+    fetch:async url=>{requests.push(url);assert.fail('retired PAT must not issue requests');}
   };
   vm.runInNewContext(read('js/github-credentials.js'), context);
   return {credentials:context.window.GitHubCredentials, inputs, events,
-    release:()=>release(), change:(next, isAdmin = true)=>{actor=next;admin=isAdmin;events['blog-auth-change']();}};
+    requests, change:(next, isAdmin = true)=>{actor=next;admin=isAdmin;events['blog-auth-change']();}};
 }
 
-test('logout/clear during PAT validation cannot restore token; demotion/account change purge memory and inputs', async () => {
-  for (const change of [(h)=>h.change(null), (h)=>h.credentials.clear(), (h)=>h.change({id:'admin-one'},false)]) {
-    const h = credentialsHarness();
-    const pending = h.credentials.connect('test-token');
-    change(h); h.release();
-    await assert.rejects(pending, /admin required|登录状态已变化/);
-    assert.equal(h.credentials.get(), '');
-    assert.equal(h.inputs[0].value, '');
-  }
-  for (const change of [(h)=>h.change({id:'admin-two'}),(h)=>h.credentials.clear()]) {
-    const h = credentialsHarness();
-    const pending=h.credentials.connect('test-token'); h.release(); await pending;
-    assert.equal(h.credentials.get(),'test-token');
-    change(h); assert.equal(h.credentials.get(),'');
-  }
-  assert.doesNotMatch(read('js/admin.js'), /var token\s*=/, 'admin must not cache a duplicate PAT');
+test('logout, clear, demotion and account change purge every retired PAT input', async () => {
+ for(const change of [h=>h.change(null),h=>h.credentials.clear(),h=>h.change({id:'admin-one'},false),h=>h.change({id:'admin-two'})]){
+ const h=credentialsHarness();const pending=h.credentials.connect('test-token');change(h);
+ await assert.rejects(pending,/已停用/);assert.equal(h.credentials.get(),'');assert.equal(h.inputs[0].value,'');assert.equal(h.requests.length,0);
+ }
+ assert.doesNotMatch(read('js/admin.js'),/var token\s*=/);
 });
 
 function authHarness({configured=true, initial=null, role='user', hash='', search='', missing=true, getUserGate=null} = {}) {

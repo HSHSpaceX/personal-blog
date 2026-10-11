@@ -8,7 +8,7 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 function element() {
   return { children: [], hidden: true, textContent: '', disabled: false, handlers: {},
     replaceChildren(...nodes) { this.children = nodes; }, appendChild(node) { this.children.push(node); },
-    addEventListener(name, fn) { this.handlers[name] = fn; }, setAttribute() {} };
+    classList:{add(){},remove(){}}, addEventListener(name, fn) { this.handlers[name] = fn; }, setAttribute() {} };
 }
 function accountHarness(initialRole, deferred = false, deferredData = false) {
   let role = initialRole, resolveReady, resolveData;
@@ -72,8 +72,8 @@ test('account gives admin the same social overview plus review links and purges 
   assert.match(h.elements.accountConnections.textContent,/4 位关注者/);
   assert.equal(h.elements['review-center'].hidden,false);
   assert.equal(h.elements['review-policies'].hidden,false);
-  assert.equal(h.elements.accountAdminNav.children.length,4);
-  assert.equal(h.elements.accountReviewLinks.children[0].href,'admin.html#messages');
+  assert.equal(h.elements.accountAdminNav.children.length,5);
+  assert.equal(h.elements.accountReviewLinks.children[0].href,'account.html#comment-moderation');
   assert.ok(h.elements.accountReviewLinks.children.every(link=>link.rel==='nofollow'));
   h.change('user'); await flush();
   assert.equal(h.elements.accountReviewLinks.children.length,0);
@@ -114,7 +114,7 @@ test('personal notifications ignore an old inbox response after logout', async (
   let user={id:'admin-one'}, resolveRows;
   const elements=Object.fromEntries([...read('messages.html').matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
   const list=elements.messagesList,status=elements.messagesStatus,events={},redirects=[];
-  const context={window:{BlogTheme:{setup(){}},BlogAuth:{ready:async()=>{},user:()=>user},BlogData:{
+  const context={window:{addEventListener(){},BlogTheme:{setup(){}},BlogAuth:{ready:async()=>{},user:()=>user},BlogData:{
     listNotifications:()=>new Promise(resolve=>{resolveRows=resolve;}),notificationCount:async()=>0,markNotificationsRead:async()=>assert.fail('stale inbox must not be marked read')}},
     document:{getElementById:id=>elements[id],querySelectorAll:()=>[],addEventListener:(name,fn)=>{events[name]=fn;}},
     URLSearchParams,setInterval:()=>1,clearTimeout:()=>{},

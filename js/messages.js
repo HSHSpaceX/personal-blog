@@ -4,7 +4,7 @@
   var $=function(id){return document.getElementById(id);};
   var generation=0,identity=null,notificationSerial=0,threadsSerial=0,threadSerial=0,historySerial=0,assetSerial=0,countSerial=0;
   var notificationOffset=0,threadsOffset=0,assetOffset=0,orphanOffset=0,selectedThread=null;
-  var history=new Map(),attachments=[],imageTimers=[],uploading=0,sending=false,oldest=null;
+  var history=new Map(),attachments=[],imageTimers=[],uploading=0,sending=false,oldest=null,peerRead=0,sendRetry=null;
   window.BlogTheme.setup();
   function node(tag,text,cls){return cards.node(tag,text,cls);}
   function active(token){return token===generation&&auth.user()&&auth.user().id===identity;}
@@ -18,7 +18,7 @@
   }
   function clearImages(){imageTimers.forEach(clearTimeout);imageTimers=[];}
   function clearChat(){
-    threadSerial++;historySerial++;selectedThread=null;history.clear();oldest=null;attachments=[];uploading=0;sending=false;
+    threadSerial++;historySerial++;selectedThread=null;history.clear();oldest=null;attachments=[];uploading=0;sending=false;peerRead=0;sendRetry=null;$('dmPanel').classList.remove('chat-open');if($('dmImagePreview')){if($('dmImagePreview').open)$('dmImagePreview').close();$('dmImagePreviewBody').replaceChildren();}
     clearImages();['dmHistory','dmPeer','dmChatStatus','dmAttachments'].forEach(function(id){$(id).replaceChildren();});
     $('dmBody').value='';$('dmImages').value='';$('dmSend').disabled=false;$('dmChat').hidden=true;$('dmComposer').hidden=false;
   }
@@ -35,7 +35,8 @@
     $('notificationUnread').textContent=String(values[0]);$('dmUnread').textContent=String(values[1]);changed();
   }
   function action(item){
-    if(/^content_(approved|rejected)$/.test(item.type)&&data.uuid(item.revision_id))return ['account.html?revision='+item.revision_id+'#content',item.type==='content_rejected'?'查看原因并重新编辑':'查看发布版本'];
+    if(/^content_(approved|rejected|returned|trashed)$/.test(item.type)&&data.uuid(item.revision_id))return ['account.html?revision='+item.revision_id+'#content',item.type==='content_trashed'?'查看拒绝原因与回收站':item.type==='content_approved'?'查看发布版本':'查看原因并重新编辑'];
+    if(item.type==='content_featured'&&data.uuid(item.revision_id))return ['account.html?revision='+item.revision_id+'#articles','查看精选文章版本'];
     if(/^comment_edit_(approved|rejected)$/.test(item.type)&&data.uuid(item.comment_edit_id))return ['account.html?edit='+item.comment_edit_id+'#my-comments','查看评论修改 / 重新编辑'];
     if(/^comment_(approved|rejected)$/.test(item.type)&&data.uuid(item.comment_id))return ['account.html?comment='+item.comment_id+'#my-comments','查看我的评论 / 重新编辑'];
     if(item.type==='direct_message'&&data.uuid(item.dm_thread_id))return ['messages.html?thread='+item.dm_thread_id+'&tab=dm','打开私信'];
@@ -74,7 +75,7 @@
   }
   async function threads(token){
     var serial=++threadsSerial;$('dmThreads').replaceChildren();var rows=await data.threads(threadsOffset);if(!active(token)||serial!==threadsSerial)return;
-    rows.forEach(function(t){var row=node('article',undefined,'dm-thread');row.appendChild(cards.author(t));row.appendChild(node('p',(t.last_message_at||'').slice(0,16).replace('T',' ')||'尚无消息','muted'));
+    rows.forEach(function(t){var row=node('article',undefined,'dm-thread'+(selectedThread===t.id?' active':''));if(selectedThread===t.id)row.setAttribute('aria-current','true');row.appendChild(cards.author(t));row.appendChild(node('p',(t.last_message_at||'').slice(0,16).replace('T',' ')||'尚无消息','muted'));
       row.appendChild(node('p',t.unread_count+' 条未读'));button(row,'打开会话',function(){return openThread(t.id);});$('dmThreads').appendChild(row);
     });
     if(!rows.length)$('dmThreads').appendChild(node('p','还没有会话。从对方主页点击“私信”开始。'));
@@ -83,7 +84,7 @@
   async function image(parent,asset,token,serial){
     var caption=node('span','图片加载中…','muted');parent.appendChild(caption);
     try{var signed=await data.signedAsset(asset.id);if(!chatActive(token,serial)||!parent.isConnected)return;
-      var img=node('img');img.className='dm-image';img.alt=asset.original_name||'私信图片';img.src=signed.url;caption.remove();parent.appendChild(img);
+      var img=node('img');img.className='dm-image';img.alt=asset.original_name||'私信图片';img.src=signed.url;caption.remove();parent.appendChild(img);img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label','预览 '+img.alt);function Messages_PreviewImage(){if(!chatActive(token,serial)||Date.now()>=signed.expiresAt)return;var preview=img.cloneNode();preview.removeAttribute('role');preview.removeAttribute('tabindex');$('dmImagePreviewBody').replaceChildren(preview);$('dmImagePreview').showModal();imageTimers.push(setTimeout(function(){$('dmImagePreview').close();$('dmImagePreviewBody').replaceChildren();},Math.max(0,signed.expiresAt-Date.now())));}img.addEventListener('click',Messages_PreviewImage);img.addEventListener('keydown',function(e){if(e.key==='Enter')Messages_PreviewImage();});
       imageTimers.push(setTimeout(function(){img.removeAttribute('src');img.remove();if(parent.isConnected)parent.appendChild(node('span','图片链接已过期，刷新聊天可重新查看。','muted'));},Math.max(0,signed.expiresAt-Date.now())));
     }catch(e){if(chatActive(token,serial)&&caption.isConnected)caption.textContent='图片不可用：'+e.message;}
   }
@@ -91,30 +92,32 @@
     clearImages();$('dmHistory').replaceChildren();
     Array.from(history.values()).sort(function(a,b){return Number(a.message_no)-Number(b.message_no);}).forEach(function(m){
       var own=m.sender_id===identity,row=node('article',undefined,'dm-message '+(own?'dm-mine':'dm-theirs'));
-      row.appendChild(node('p',(own?'我':'对方')+' · '+m.created_at.slice(0,16).replace('T',' '),'muted'));if(m.body)row.appendChild(node('p',m.body,'public-text'));
+      row.appendChild(node('p',(own?'我':'对方')+' · '+m.created_at.slice(0,16).replace('T',' ')+(own?(Number(m.message_no)<=peerRead?' · 已读':' · 已发送'):''),'muted'));if(m.body)row.appendChild(node('p',m.body,'public-text'));
       (m.assets||[]).forEach(function(a){var slot=node('div',undefined,'dm-image-slot');row.appendChild(slot);image(slot,a,token,serial);});$('dmHistory').appendChild(row);
     });if(!history.size)$('dmHistory').appendChild(node('p','会话尚无消息。'));
   }
   async function loadHistory(token,serial,older){
-    var request=++historySerial,id=selectedThread;$('dmOlder').disabled=true;var rows=await data.messages(id,older?oldest:null);
+    var request=++historySerial,id=selectedThread,scroll=$('dmHistory'),top=scroll.scrollTop,height=scroll.scrollHeight,nearBottom=height-top-scroll.clientHeight<100,previous=Array.from(history.values()).map(function(m){return m.id;}).join(','),read=peerRead;
+    var olderDisabled=$('dmOlder').disabled;$('dmOlder').disabled=true;var rows=await data.messages(id,older?oldest:null),info=await data.threadInfo(id);
     if(!chatActive(token,serial)||request!==historySerial)return;
     rows.forEach(function(row){history.set(row.id,row);});if(rows.length)oldest=Math.min(oldest||Infinity,Number(rows.at(-1).message_no));
-    renderHistory(token,serial);$('dmOlder').disabled=rows.length<20;
+    peerRead=Number(info.peer_read_no)||0;var next=Array.from(history.values()).map(function(m){return m.id;}).join(',');if(previous!==next||read!==peerRead){renderHistory(token,serial);if(older)scroll.scrollTop=top+scroll.scrollHeight-height;else if(nearBottom||!previous)scroll.scrollTop=scroll.scrollHeight;else $('dmNewMessages').hidden=false;}$('dmOlder').disabled=older||!previous?rows.length<20:olderDisabled;
     if(!older&&rows.length){await data.markRead(id,Number(rows[0].message_no));if(chatActive(token,serial)){await counts(token);await threads(token);}}
   }
-  async function openThread(id){
-    clearChat();var token=generation,serial=threadSerial;selectedThread=id;$('dmChat').hidden=false;status('正在读取会话…',true);
+  async function openThread(id,restoring){
+    clearChat();var token=generation,serial=threadSerial;selectedThread=id;$('dmChat').hidden=false;$('dmPanel').classList.add('chat-open');status('正在读取会话…',true);
     try{var info=await data.threadInfo(id);if(!chatActive(token,serial))return;$('dmPeer').replaceChildren(cards.author(info.peer));
-      var url=new URL(location.href);url.searchParams.delete('user');url.searchParams.set('thread',id);url.searchParams.set('tab','dm');window.history.replaceState({},'',url);
+      var url=new URL(location.href);url.searchParams.delete('user');url.searchParams.set('thread',id);url.searchParams.set('tab','dm');if(location.href!==url.href)window.history[restoring?'replaceState':'pushState']({},'',url);
       await loadHistory(token,serial,false);if(chatActive(token,serial))status('',true);
     }catch(e){if(chatActive(token,serial)){$('dmHistory').replaceChildren();status(e.message,true);$('dmComposer').hidden=true;}}
   }
-  async function selectTab(tab,token){
+  async function selectTab(tab,token,restoring){
+    if(!restoring){var url=new URL(location.href);url.searchParams.set('tab',tab);if(tab!=='dm'){url.searchParams.delete('thread');url.searchParams.delete('user');}if(url.href!==location.href)window.history.pushState({},'',url);}
     var dm=tab==='dm';$('dmPanel').hidden=!dm;$('notificationsPanel').hidden=dm;$('notificationTab').setAttribute('aria-pressed',String(!dm));$('dmTab').setAttribute('aria-pressed',String(dm));
     if(dm)await threads(token);else{clearChat();await notifications(token);}
   }
   function renderAttachments(){
-    $('dmAttachments').replaceChildren();attachments.forEach(function(a){var row=node('div',undefined,'dm-attachment');row.appendChild(node('span',a.original_name,'public-text'));
+    $('dmAttachments').replaceChildren();attachments.forEach(function(a){var row=node('div',undefined,'dm-attachment');row.appendChild(node('span',a.original_name,'public-text'));var slot=node('div',undefined,'dm-image-slot');row.appendChild(slot);image(slot,a,generation,threadSerial);
       button(row,'移出本条消息',function(){attachments=attachments.filter(function(x){return x.id!==a.id;});renderAttachments();});$('dmAttachments').appendChild(row);
     });$('dmSend').disabled=uploading>0||sending;
   }
@@ -133,8 +136,8 @@
     clear();var token=generation;
     try{await auth.ready();if(token!==generation)return;if(!auth.user()){location.replace('login.html?next='+encodeURIComponent('messages.html'+location.search));return;}
       identity=auth.user().id;$('messagePanels').hidden=false;var params=new URLSearchParams(location.search),dm=params.get('tab')==='dm'||params.has('thread')||params.has('user');
-      await selectTab(dm?'dm':'notifications',token);if(!active(token))return;
-      if(params.has('user')){var tid=await data.getThread(params.get('user'));if(!active(token))return;await openThread(tid);}else if(params.has('thread'))await openThread(params.get('thread'));
+      await selectTab(dm?'dm':'notifications',token,true);if(!active(token))return;
+      if(params.has('user')){var tid=await data.getThread(params.get('user'));if(!active(token))return;await openThread(tid,true);}else if(params.has('thread'))await openThread(params.get('thread'),true);
       if(active(token)){await counts(token);status('只有会话双方可以读取私信。');}
     }catch(e){if(token===generation)status(e.message);}
   }
@@ -157,10 +160,15 @@
   $('dmComposer').addEventListener('submit',async function(event){
     event.preventDefault();var token=generation,serial=threadSerial,id=selectedThread;if(!active(token)||!id||uploading||sending)return;
     var body=$('dmBody').value,ids=attachments.map(function(a){return a.id;});if(Array.from(body).length>4000||(!body.trim()&&!ids.length)){status('请输入 1–4000 字或选择图片。',true);return;}
-    sending=true;renderAttachments();try{await data.send(id,body,ids);if(chatActive(token,serial)){$('dmBody').value='';attachments=[];renderAttachments();await loadHistory(token,serial,false);status('已发送。',true);}}
-    catch(e){if(chatActive(token,serial))status(e.message,true);}finally{if(chatActive(token,serial)){sending=false;renderAttachments();}}
+    var payload=JSON.stringify([id,body,ids]);if(!sendRetry||sendRetry.payload!==payload)sendRetry={payload:payload,nonce:crypto.randomUUID()};
+    sending=true;renderAttachments();try{await data.send(id,body,ids,sendRetry.nonce);if(chatActive(token,serial)){$('dmBody').value='';attachments=[];sendRetry=null;renderAttachments();await loadHistory(token,serial,false);$('dmHistory').scrollTop=$('dmHistory').scrollHeight;status('已发送。',true);}}
+    catch(e){if(chatActive(token,serial))status('发送未确认：'+e.message+'。可点击发送重试，同一请求不会重复发送。',true);}finally{if(chatActive(token,serial)){sending=false;renderAttachments();}}
   });
   document.addEventListener('blog-auth-change',load);
-  setInterval(function(){var token=generation;if(active(token)&&!document.hidden)counts(token).catch(function(e){if(active(token))status(e.message);});},20000);
+  if($('dmBack'))$('dmBack').addEventListener('click',function(){clearChat();var url=new URL(location.href);url.searchParams.delete('thread');window.history.pushState({},'',url);threads(generation).catch(function(e){status(e.message);});});
+  if($('dmImageClose'))$('dmImageClose').addEventListener('click',function(){$('dmImagePreview').close();$('dmImagePreviewBody').replaceChildren();});
+  if($('dmNewMessages'))$('dmNewMessages').addEventListener('click',function(){$('dmHistory').scrollTop=$('dmHistory').scrollHeight;this.hidden=true;});
+  window.addEventListener('popstate',load);
+  var polling=false;setInterval(async function(){var token=generation;if(!active(token)||document.hidden||polling)return;polling=true;try{await counts(token);if(active(token)&&!$('dmPanel').hidden){if(selectedThread)await loadHistory(token,threadSerial,false);else await threads(token);}}catch(e){if(active(token))status(e.message);}finally{polling=false;}},8000);
   window.MessageCenter={clear:clear,refresh:load,action:action};load();
 })();

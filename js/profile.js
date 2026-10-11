@@ -3,7 +3,7 @@
   var auth=window.BlogAuth,data=window.PublicProfileData,cards=window.PublicCards;
   window.BlogTheme.setup();
   var $=function(id){return document.getElementById(id);};
-  var target=null,generation=0,pageGeneration=0,tab='moment',offset=0,legacyRows=[],legacyIndex=0,pageStartLegacy=0,cursors=[],hasNext=false;
+  var target=null,generation=0,pageGeneration=0,tab='moment',offset=0,legacyRows=[],legacyIndex=0,pageStartLegacy=0,cursors=[],hasNext=false,mappedSeen=new Set();
   function status(text,error){$('profileStatus').textContent=text;$('profileStatus').className='status-line '+(error?'err':'ok');}
   function clear(){if(window.ProfileComments)window.ProfileComments.clear();generation++;pageGeneration++;target=null;$('profileCards').replaceChildren();$('profileDetail').replaceChildren();$('profileLogout').hidden=true;$('profileEditor').hidden=true;$('profileOwnLinks').hidden=true;$('followBtn').hidden=true;$('profileMessage').hidden=true;$('profileMessage').removeAttribute('href');
     ['profileUsernameInput','profileDisplayInput','profileBioInput','profileAvatarInput'].forEach(function(id){$(id).value='';});}
@@ -22,7 +22,7 @@
       if(auth.user()&&!own){$('followBtn').hidden=false;var following=await window.BlogData.following(target.id);if(token!==generation)return;$('followBtn').textContent=following?'取消关注':'关注';}
       var counts=await data.counts(target.id);if(token!==generation)return;$('profileFollowers').textContent=counts[0]+' 粉丝';$('profileFollowing').textContent=counts[1]+' 关注';
       tab=params.get('tab')||'moment';if(!['moment','article','album','comment','likes','followers','following'].includes(tab))tab='moment';
-      await changeTab(tab);
+      await changeTab(tab,true);
       if(token!==generation)return;
       if(params.get('item')){var card=await data.item(params.get('item'));if(token!==generation)return;$('profileDetail').replaceChildren(cards.content(card,true));if(window.ProfileComments)await window.ProfileComments.show(params.get('item'));}
       status('公开主页。');
@@ -47,13 +47,13 @@
       // legacy compatibility stream once Community pages end, without ownership.
       hasNext=rows.length===20;pageStartLegacy=legacyIndex;
       if(tab==='likes')rows=rows.map(data.resolveLegacy).filter(Boolean);
-      if(!['followers','following','likes','comment'].includes(tab)&&rows.length<20){var extra=legacyRows.slice(legacyIndex,legacyIndex+20-rows.length);rows=rows.concat(extra);legacyIndex+=extra.length;hasNext=legacyIndex<legacyRows.length;}
+      if(!['followers','following','likes','comment'].includes(tab)){rows.forEach(function(r){if(['post','moment','album'].includes(r.target_type)&&!r.legacy)mappedSeen.add(r.target_type+':'+r.target_id);});if(rows.length<20){var extra=[];while(legacyIndex<legacyRows.length&&rows.length+extra.length<20){var candidate=legacyRows[legacyIndex++];if(!mappedSeen.has(candidate.target_type+':'+candidate.target_id))extra.push(candidate);}rows=rows.concat(extra);hasNext=legacyIndex<legacyRows.length;}}
       rows.forEach(function(r){$('profileCards').appendChild(tab==='followers'||tab==='following'?followCard(r,token):cards.content(r));});
       if(!rows.length)$('profileCards').appendChild(cards.node('p','暂无公开内容。'));
       $('profilePageLabel').textContent='第 '+(cursors.length+1)+' 页';$('profilePrev').disabled=cursors.length===0;$('profileNext').disabled=!hasNext;
     }catch(e){if(token===pageGeneration)status(e.message,true);}
   }
-  async function changeTab(next){tab=next;offset=0;legacyIndex=0;cursors=[];legacyRows=target.username.toLowerCase()==='hshspacex'?data.legacy(tab):[];
+  async function changeTab(next,restoring){if(!restoring){var url=new URL(location.href);url.searchParams.set('tab',next);if(location.href!==url.href)history.pushState({},'',url);}tab=next;offset=0;legacyIndex=0;cursors=[];mappedSeen.clear();legacyRows=target.username.toLowerCase()==='hshspacex'?data.legacy(tab):[];
     document.querySelectorAll('[data-profile-tab]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.profileTab===tab));});await showPage();}
   document.querySelectorAll('[data-profile-tab]').forEach(function(b){b.addEventListener('click',function(){if(target)changeTab(b.dataset.profileTab);});});
   $('profileFollowers').addEventListener('click',function(){if(target)changeTab('followers');});$('profileFollowing').addEventListener('click',function(){if(target)changeTab('following');});
@@ -67,5 +67,5 @@
     }catch(e){if(token===generation)status(e.message,true);}finally{$('profileSave').disabled=false;}});
   $('followBtn').addEventListener('click',async function(){var token=generation;if(!auth.user()||!target)return;try{$('followBtn').disabled=true;await window.BlogData.toggleFollow(target.id);if(token===generation)await load();}catch(e){if(token===generation)status(e.message,true);}finally{$('followBtn').disabled=false;}});
   $('profileLogout').addEventListener('click',async function(){clear();await auth.signOut();await load();});
-  document.addEventListener('blog-auth-change',load);load();
+  window.addEventListener('popstate',load);document.addEventListener('blog-auth-change',load);load();
 })();

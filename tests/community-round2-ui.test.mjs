@@ -25,10 +25,10 @@ async function harness(role='user',revision){
  async create(type,slug,title,body){const item={id:randomUUID(),author_id:actor.id,content_type:type,slug,published_revision_id:null};items.set(item.id,item);return save(item,title,body);},
  async save(item,title,body){return save(items.get(item.id),title,body);},async submit(id){calls.push(['submit',id]);revs.get(id).status='pending';},
  async listReviews(){return [...revs.values()].filter(r=>r.status==='pending');},
- async review(id,decision,reason){calls.push(['review',id,decision,reason]);const r=revs.get(id);r.status=decision;r.rejection_reason=reason;if(decision==='approved')items.get(r.item_id).published_revision_id=id;},
+ async review(id,decision,reason){calls.push(['review',id,decision,reason]);const r=revs.get(id);r.status=decision==='approved'?'approved':'rejected';r.rejection_reason=reason;if(decision==='approved')items.get(r.item_id).published_revision_id=id;},
  async policyUser(name){calls.push(['policyUser',name]);return {id:other,username:'other_user'};},
- async policyStatus(){return ['article','moment','album'].map(content_type=>({content_type,manual_approvals_required:null,approved_new_count:0}));},
- async setThreshold(id,type,n){calls.push(['threshold',id,type,n]);},
+ async policyStatus(){return ['article','moment','album'].map(content_type=>({content_type,review_every:1,first_published_count:0,until_review:1,review_due:false}));},
+ async setCycle(id,type,n){calls.push(['cycle',id,type,n]);},
  async upload(file){calls.push(['upload',file.name]);files.push({id:randomUUID(),original_name:file.name,mime_type:file.type,size_bytes:file.size});},
  async signedAsset(id){calls.push(['signed',id]);return {asset:files.find(f=>f.id===id),url:'https://test.supabase.co/storage/v1/object/sign/community-assets/private?token=short',expiresAt:Date.now()+60000};}
  };
@@ -86,8 +86,8 @@ test('real DOM: admin queue preview, required rejection reason, approve, user/ty
  await h.w.CommunityUI.refresh();assert.equal(h.$('communityReviewControls').hidden,false);await h.click('communityReject');assert.match(h.$('communityStatus').textContent,/拒绝必须填写原因/);assert.equal(h.calls.filter(c=>c[0]==='review').length,0);
  h.$('communityRejectReason').value=hostile;await h.click('communityReject');assert.equal(h.revs.get(r.id).rejection_reason,hostile);assert.equal(h.$('communityPreviewReason').querySelector('script,img'),null);assert.equal(h.$('communityReviewQueue').querySelector('button'),null);
  const next=row('article','pending',other);h.items.set(next.item_id,next.content_items);h.revs.set(next.id,next);h.w.history.replaceState({},'','?revision='+next.id);await h.w.CommunityUI.refresh();await h.click('communityApprove');assert.equal(h.items.get(next.item_id).published_revision_id,next.id);
- h.$('communityPolicyUser').value='other_user';await h.click('communityLoadPolicy');h.$('communityPolicyType').value='album';h.$('communityPolicyThreshold').value='2';await h.click('communitySavePolicy');assert.deepEqual(h.calls.find(c=>c[0]==='threshold'),['threshold',other,'album',2]);
- h.$('communityPolicyThreshold').value='';await h.click('communitySavePolicy');assert.deepEqual(h.calls.filter(c=>c[0]==='threshold').at(-1),['threshold',other,'album',null]);
+ h.$('communityPolicyUser').value='other_user';await h.click('communityLoadPolicy');h.$('communityPolicyType').value='album';h.$('communityPolicyThreshold').value='2';await h.click('communitySavePolicy');assert.deepEqual(h.calls.find(c=>c[0]==='cycle'),['cycle',other,'album',2]);
+ h.$('communityPolicyThreshold').value='';await h.click('communitySavePolicy');assert.equal(h.calls.filter(c=>c[0]==='cycle').length,1);assert.match(h.$('communityStatus').textContent,/1–10000/);
  h.logout();assert.equal(h.$('communityReviewQueue').textContent,'');assert.equal(h.$('communityPolicyIdentity').textContent,'');
  }finally{h.d.window.close();}
 });

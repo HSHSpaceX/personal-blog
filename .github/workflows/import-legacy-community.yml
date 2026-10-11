@@ -1,0 +1,34 @@
+name: Reviewed legacy Community import
+on:
+  workflow_dispatch:
+    inputs:
+      plan_digest:
+        description: SHA256 printed by the reviewed dry-run on this exact main commit
+        required: true
+      owner_id:
+        description: Verified configured legacy author UUID
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: generate-static-site
+  cancel-in-progress: false
+jobs:
+  import:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: community-release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --prefix /tmp/legacy-dom --ignore-scripts --no-save --no-audit --no-fund jsdom@26.1.0
+      - run: node scripts/legacy-community-import.mjs --output /tmp/legacy-plan.json
+      - run: node scripts/legacy-community-import.mjs --apply /tmp/legacy-plan.json
+        env:
+          LEGACY_PLAN_SHA256: ${{ inputs.plan_digest }}
+          LEGACY_OWNER_ID: ${{ inputs.owner_id }}
+          COMMUNITY_DOM_MODULE: file:///tmp/legacy-dom/node_modules/jsdom/lib/api.js
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

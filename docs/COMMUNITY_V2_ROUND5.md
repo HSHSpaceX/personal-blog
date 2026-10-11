@@ -1,3 +1,5 @@
+> 历史阶段记录：本轮统一管理已停用所有浏览器 PAT、将资源上限设为 90 MiB，并以正整数周期审核替代旧累计门槛。当前行为、22 项 migration 和 RC 步骤以 [最终发布手册](COMMUNITY_V2_RELEASE.md) 为准；下文旧阶段实现仅供审计。
+
 # Community V2 Round 5：静态发布桥
 
 本轮基于 `ca6b9c5deb3a5b4326bd5ce122b23df146b48471`。只新增 `202610070003_publication_bridge.sql` 与 `202610070004_category_raw_length.sql`；未连接生产 Supabase、执行生产迁移或合并 main。RC 操作见 [最终发布清单](COMMUNITY_V2_RELEASE.md)。

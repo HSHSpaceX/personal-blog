@@ -47,7 +47,7 @@
     function Editor_SetBody(body) {
       savedRange=null;
       if(body.document){var refs=(body.asset_ids||[]).concat((body.photos||[]).map(function(p){return p.asset_id;})).map(function(id){return id.toLowerCase();});editor.innerHTML=schema.renderDocument(body.document,refs,options.maxLength||100000);}
-      else {editor.replaceChildren();String(body.text||body.description||'').split(/\n\n/).forEach(function(value){var p=document.createElement('p');p.textContent=value;editor.appendChild(p);});}
+      else {editor.replaceChildren();var value=String(body.text||body.description||'');if(value)value.split(/\n\n/).forEach(function(part){var p=document.createElement('p');p.textContent=part;editor.appendChild(p);});}
       lastText=body.text||body.description||'';if(text)text.value=lastText;
     }
     function Editor_RunTool(tool) {
@@ -59,7 +59,7 @@
       else document.execCommand(tool.cmd,false,false);
       Editor_RememberSelection();Editor_SyncText();if(options.onChange)options.onChange();
     }
-    toolbar.replaceChildren();(legacy?tools.concat([{label:'公式',cmd:'insertFormula',snippet:'$$公式$$'}]):tools).forEach(function(tool){var b=document.createElement('button');b.type='button';b.className='btn';b.textContent=tool.label;b.dataset.editorTool=tool.cmd||tool.block;b.addEventListener('mousedown',function(e){e.preventDefault();Editor_RememberSelection();});b.addEventListener('click',function(){try{Editor_RunTool(tool);}catch(e){if(options.onError)options.onError(e.message);}});toolbar.appendChild(b);});
+    toolbar.replaceChildren();tools.concat([{label:'公式',cmd:'insertFormula',snippet:'$$公式$$'}]).forEach(function(tool){var b=document.createElement('button');b.type='button';b.className='btn';b.textContent=tool.label;b.dataset.editorTool=tool.cmd||tool.block;b.addEventListener('mousedown',function(e){e.preventDefault();Editor_RememberSelection();});b.addEventListener('click',function(){try{Editor_RunTool(tool);}catch(e){if(options.onError)options.onError(e.message);}});toolbar.appendChild(b);});
     try{document.execCommand('styleWithCSS',false,'false');}catch(error){/* DOM test runners lack editing commands. */}
     editor.addEventListener('input',function(){try{Editor_SyncText();if(options.onChange)options.onChange();}catch(e){if(options.onError)options.onError(e.message);}});
     editor.addEventListener('keyup',Editor_RememberSelection);editor.addEventListener('mouseup',Editor_RememberSelection);
@@ -67,7 +67,13 @@
     editor.addEventListener('drop',function(e){e.preventDefault();});
     return {setBody:Editor_SetBody,getDocument:Editor_ReadDocument,clear:function(){editor.replaceChildren();lastText='';savedRange=null;if(text)text.value='';},
       getHTML:function(){return options.sourceMode&&options.sourceMode()?text.value:editor.innerHTML;},setHTML:function(html){if(!legacy)throw Error('Community 不接受 HTML。');savedRange=null;editor.innerHTML=html||'<p></p>';if(text)text.value=html||'<p></p>';},
-      insertAsset:function(id){if(!schema.uuid(id))throw Error('无效资源 UUID。');Editor_RestoreSelection();var block=document.createElement('p');block.dataset.contentAsset=id;block.contentEditable='false';block.textContent='附件 · '+id;var anchor=savedRange&&savedRange.startContainer;while(anchor&&anchor.parentNode!==editor)anchor=anchor.parentNode;if(anchor&&anchor.parentNode===editor)editor.insertBefore(block,anchor.nextSibling);else editor.appendChild(block);savedRange=null;Editor_SyncText();if(options.onChange)options.onChange();},
+      insertAsset:function(id,asset){if(!schema.uuid(id))throw Error('无效资源 UUID。');Editor_RestoreSelection();var block=document.createElement('p');block.dataset.contentAsset=id;block.contentEditable='false';block.textContent=asset?asset.original_name:'附件';var anchor=savedRange&&savedRange.startContainer;while(anchor&&anchor.parentNode!==editor)anchor=anchor.parentNode;if(anchor&&anchor.parentNode===editor&&savedRange&&['P','DIV','H2','H3','BLOCKQUOTE','PRE'].includes(anchor.tagName)&&!anchor.dataset.contentAsset){
+        savedRange.deleteContents();var tailRange=savedRange.cloneRange();tailRange.setEnd(anchor,anchor.childNodes.length);var tail=document.createElement(anchor.tagName);tail.appendChild(tailRange.extractContents());editor.insertBefore(block,anchor.nextSibling);editor.insertBefore(tail,block.nextSibling);var caret=document.createRange();caret.selectNodeContents(tail);caret.collapse(true);savedRange=caret;
+      }else if(anchor&&anchor.nodeType===3&&anchor.parentNode===editor&&savedRange){
+        savedRange.deleteContents();var rest=anchor.splitText(savedRange.startOffset),head=document.createElement('p'),tail=document.createElement('p');editor.insertBefore(head,anchor);head.appendChild(anchor);editor.insertBefore(block,head.nextSibling);editor.insertBefore(tail,rest);tail.appendChild(rest);var caret=document.createRange();caret.selectNodeContents(tail);caret.collapse(true);savedRange=caret;
+      }else{if(anchor&&anchor.parentNode===editor)editor.insertBefore(block,anchor.nextSibling);else editor.appendChild(block);savedRange=null;}Editor_SyncText();if(options.onChange)options.onChange();return block;},
+      insertText:function(value){Editor_RestoreSelection();document.execCommand('insertText',false,value);Editor_SyncText();if(options.onChange)options.onChange();},
+      removeAsset:function(id){editor.querySelectorAll('[data-content-asset]').forEach(function(block){if(block.dataset.contentAsset===id)block.remove();});Editor_SyncText();if(options.onChange)options.onChange();},
       insertHTML:function(html){if(!legacy)throw Error('Community 不接受 HTML。');Editor_RestoreSelection();document.execCommand('insertHTML',false,html);if(options.onChange)options.onChange();}};
   }
   window.ContentEditor={create:Editor_Create};

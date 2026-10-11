@@ -1,10 +1,10 @@
 # Community V2 最终发布 / RC 清单
 
-这是 operator 执行手册，不是已经完成的生产操作。Community V2 统一 GUI 已整合，当前只修收尾验收问题。最终待合并分支为 integration/community-v2，对应现有 PR #4；不得在未验收前自动合并或执行生产 SQL。相关设计见 [Round 5](COMMUNITY_V2_ROUND5.md)、[Auth](AUTH_SETUP.md)、[Supabase](SUPABASE_SETUP.md)。记录环境、时间、操作者、commit、实际 HTTP 状态与截图，失败项必须关闭再继续。
+这是 operator 执行手册，不是已经完成的生产操作。Community V2 统一 GUI 已整合，本轮完成统一管理与周期审核的 forward 改造。最终待合并分支为 integration/community-v2，对应现有 PR #4；不得在未验收前自动合并或执行生产 SQL。相关设计见 [Round 5](COMMUNITY_V2_ROUND5.md)、[Auth](AUTH_SETUP.md)、[Supabase](SUPABASE_SETUP.md)。记录环境、时间、操作者、commit、实际 HTTP 状态与截图，失败项必须关闭再继续。
 
 ## A. migration 正式顺序
 
-当前共 18 个 migration。先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复执行。新测试/RC 项目按下列顺序完整执行；生产库只执行尚未应用的 migration，不能重新运行已经执行过的历史 migration。
+当前共 22 个 migration。先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复执行。新测试/RC 项目按下列顺序完整执行；生产库只执行尚未应用的 migration，不能重新运行已经执行过的历史 migration。
 
 1. 202609300001_invite_auth.sql
 2. 202609300002_private_reactions.sql
@@ -24,6 +24,10 @@
 16. 202610070003_publication_bridge.sql
 17. 202610070004_category_raw_length.sql
 18. 202610100001_safe_content_document.sql
+19. 202610110001_periodic_review_and_management.sql
+20. 202610110002_private_media_and_legacy_bridge.sql
+21. 202610110003_site_settings.sql
+22. 202610110004_idempotent_messages.sql
 
 第 18 项必须在 202610070004_category_raw_length.sql 之后执行，用于统一富文本编辑器的安全结构化正文 `body.document = { version: 1, blocks: [...] }`。未应用时，新版 Community 富文本保存可能失败；前端错误提示不能代替迁移，也不能通过放松 RLS 修复。
 
@@ -69,7 +73,7 @@ where singleton;
 
 ## I. Community Storage HTTP
 
-用真实 anon/A/B/admin JWT 分别通过 Storage HTTP upload/read/sign/list/update/remove。A 私有原件只 A 与审核 admin 可读，B/guest 拒绝；目录伪造、覆盖、他人引用、referenced 删除、registration/delete race 拒绝。orphan cleanup 只清自己 uid 且无 registry。记录状态码；不只用浏览器 UI 判断。对公开副本 user/admin PUT/DELETE 拒绝；已发布图像 guest 200；旧副本全量清理后不存在，私有原件仍存在。
+用真实 anon/A/B/admin JWT 分别通过 Storage HTTP upload/read/sign/list/update/remove。A 私有原件由 A 读取；管理员仅可读取提交审核版本实际引用的资源，不能列出他人未提交资源，B/guest 拒绝；目录伪造、覆盖、他人引用、referenced 删除、registration/delete race 拒绝。orphan cleanup 只清自己 uid 且无 registry。记录状态码；不只用浏览器 UI 判断。对公开副本 user/admin PUT/DELETE 拒绝；已发布图像 guest 200；旧副本全量清理后不存在，私有原件仍存在。
 
 ## J. DM Storage HTTP
 
@@ -85,13 +89,13 @@ where singleton;
 
 ## M. Community 投稿 → 静态发布
 
-A 分别 article/moment/album；draft/pending/rejected 不能出 snapshot/Storage/SEO/search。默认永远审核；具体用户+类型 N 次首次人工 approved 后仅新内容可自动 approved，公开内容修改始终审核；admin 自己默认直接 approved。拒绝原因只作者/admin 看，重新编辑新 draft。
+A 分别 article/moment/album；draft/pending/returned/trashed 不能出 snapshot/Storage/SEO/search。默认 N=1，每次首次发表须人工审核；配置 N=3 时依次自动、自动、人工，三个类型分别累计所有首次批准，包括自动批准。普通用户修改公开内容始终人工审核，不重复计数；admin 自己直接 approved。退回和回收站原因只作者/admin 看，恢复不等于重新发布。
 
 批准 → state pending → main publisher 完整 snapshot/media → offline generate/SEO/security → verify → bot push → finalize CAS → state published。等待 Pages build 完成，检查正式文章/动态/图册媒体与评论点赞通知。 pending 修改保留旧版本，新 approved 替换；历史不导出；item/账号删除后下轮删除页面/公开副本。模拟媒体失败、Git 非 fast-forward、回写失败、重复 schedule，下一次收敛且无空 commit。观察 publication errors 固定代码，不含 credentials。
 
 ## N. legacy admin 发布
 
-按照既有管理员 PAT 会话入口分别发布 legacy 文章、动态、图册（独立于 Community，无普通用户 PAT）；确认只写 js/posts.js / js/moments.js / js/albums.js 和原 assets。原 generate-site 工作流正常，下一轮 publisher 自动更新 legacy_public_targets；转 private/deleted album 从受控公共目录移除。所有 Community 数据仍在独立 snapshot，双方无覆盖，main 并发 push 失败可重试。
+网站已停用全部 PAT 输入和 GitHub Contents 写入，旧 admin 入口转到统一账号中心。按下文 legacy dry-run 审阅清单后，由受控 main workflow_dispatch 导入；不由本机执行生产迁移。旧公开路径和互动标识由映射保留，未导入前仍可公开阅读。
 
 ## O. sitemap / feed / Bing / IndexNow
 
@@ -114,3 +118,28 @@ RC A–O 记录完成且负责人确认后才审查现有 PR #4；检查 migrati
 普通同步失败：修 Secret/URL/安全文件名/MIME/格式/冲突/branch protection/网络后 main dispatch，下次全量导出恢复。Git 已推送而 state/cleanup 失败：同 revision 没有 diff 仍 finalize，补状态并清理 public prefix。回滚页面若引用已清理旧公开副本，必须由 operator 从仍保存的私有原件准备受控恢复，或优先重新发布当前 approved snapshot，不能直接把历史 revision 当当前版本导出。
 
 若误公开敏感内容，先受信任 SQL 移除 authority 公开指针/删除 item，再 full sync 并清 Pages/Storage CDN 缓存；互联网副本不能保证撤回。疑似密钥泄露立即轮换 Repository Secret / Supabase service key 并审查日志及 Git 历史，不将旧密钥留在回滚文件。重试只针对当前 authority，禁止为重试开放 private bucket、扩大客户端 grants 或让 admin 查看别人 DM。
+
+## S. 本轮 forward migrations 与统一管理验收
+
+第 19–22 项严格按清单顺序接在第 18 项后，只执行尚未应用的文件。旧 18 个 SQL 文件保持原始内容。19 为每用户、每类型正整数周期（默认 N=1）、首次发表账本、三种审核结果、回收站和精选；20 为仅限审核引用的管理员媒体读取、90 MiB、受控历史映射；21 为验证管理员身份后的安全站点文案；22 为私信发送重试幂等键。
+
+旧累计信任门槛不能翻译为新周期：迁移审计旧规则并设安全默认 N=1，首次发表账本从所有已批准首次版本回填，包括自动发表。N=3 时自动、自动、人工；文章/动态/图册分别计数，修改始终人工审核。退回不计数，回收站只软删除拒绝版本；已经公开的旧安全版本继续可见。未处理的第 N 次关口阻止后来投稿自动通过，管理员恢复后仍须重审。评论与回复保留独立审核。
+
+资源中心和编辑器共用 main 的卡片/工具栏。文件上限恢复为 90 MiB，超过 6 MiB 使用 Supabase TUS 6 MiB 分块上传；RC 必须真实测试边界、断网、账号切换、MIME 验证和 Storage 的限制，修改 bucket 限额不能代表项目套餐允许对应大小。引用中资源不可删除；清理失败保留对象供本人重试。签名仅显示 60 秒，正文只记录 UUID，不持久存储私有正文或签名。
+
+站点文案保存后进入服务端发布队列，发布器同时生成安全的 js/content.js 和静态 about/index。保存成功不等于审核或 Cloudflare 已部署；发布失败展示可重试状态，Git push 冲突不得强推。精选管理只允许管理员操作已发表文章；重复设置不重复通知，取消后重新精选形成新事件。featured.html 为公开专题页。
+
+## T. Legacy 预检、导入与回滚
+
+1. 在明确的候选 main commit 上执行 `node scripts/legacy-community-import.mjs --output <私有审阅目录>/legacy-plan.json`。此命令没有网络和数据库写入；保存打印的 SHA256、commit 与操作者，核对全部公开文章/动态/图册及文件字节摘要。私有图册不会进入清单。预检发现原 main 中一个 .jpg 文件实际为 PNG；清单显式记录 extension_mismatch，新增私有副本按真实 MIME 使用 .png，不改原文件字节或公开路径。原文件全部保留，不能删除 assets 或改原 slug、日期、分类、标签、精选、点赞/评论目标。
+2. 在独立 RC 环境完整应用迁移，配置真实 legacy_author_id。审阅安全 HTML 到结构化正文的转换；脚本先验证所有正文、文件 MIME/magic/90 MiB 边界，再执行全量 slug/source 冲突预检，任何不安全或不支持内容都停止，不静默丢弃。
+3. 为 `community-release` GitHub Environment 配置审核人并限制 main。使用受控 server secrets，不把任何 service_role 放进前端或清单。由站长在 main 的 Reviewed legacy Community import 手工输入已审 SHA256 与核实的 owner UUID；脚本再次生成和比较同一 commit 清单，生产导入必须经过该流程审批。本任务没有实际运行它。先将服务器配置指向 RC 测试同一流程。
+4. 上传使用只新增对象和确定性文件摘要路径；已有文件只读并比较字节，不覆盖。登记 RPC 从真实 Storage 元数据验证 owner/MIME/size。导入按来源映射幂等，每项事务创建安全 revision、审核审计、首次发表账本；中断后同清单可安全重试。不要修改历史映射来绕过摘要或 slug 冲突。
+5. 运行现有 main 静态发布 workflow，核对映射条目只替换一个原卡片、旧 URL/评论/点赞 ID、原日期、精选与个人主页，以及 owner 在唯一编辑器中的修改/审核。后续修改重新审核，拒绝时旧公开版本继续存在。未迁移内容由界面明确标记等待导入。
+6. 回滚先停止 publisher/import workflow，备份映射、审核账本和 Storage，使用原 `pre-community-v2-20261007` tag 审阅并正常创建恢复提交；不删除 tag，不 reset/force push。数据库和对象不能直接删除，按审计记录由站长制定补偿迁移。已发布资源清理必须在 Git push 成功后进行，私有原件和私信对象永不由发布器清理。
+
+## U. 实际 RC 与 Pages 验收
+
+本机 fixture、PGlite、Chromium 及 CI 原生 PostgreSQL不能替代真实部署。独立 Supabase/Cloudflare RC 要验证邀请/邮件回跳、两个普通账号和两个管理员、RLS 与签名 HTTP、90 MiB TUS 中断恢复、三种审核/周期并发、精选通知、历史导入、资源删除保护、私信双人权限/已读/失败重试，其他用户与非参与管理员均不能读取私信。消息仅在站内刷新/轮询，无离站推送承诺。
+
+Cloudflare Preview 使用 RC 公共配置，production branch=main；核对最新候选 SHA、实际部署 URL、Auth redirect allowlist、noindex/sitemap/canonical、缓存更新和静态发布实际延迟。PR #4 保持 open，确认以上记录后由用户决定正式合并与部署。

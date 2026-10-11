@@ -10,7 +10,7 @@ python3 -m http.server 8080 --bind 127.0.0.1
 
 配置入口是 `site.config.mjs`，集中定义 `SITE_BASE_URL`、`SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`、`JOIN_REQUEST_URL`、`GITHUB_OWNER` 和 `GITHUB_REPO`。未填 Supabase 公共配置时，站点内容仍可阅读，用户写入不可用。**不要提交数据库密码、service_role key、用户密码或 GitHub PAT。**
 
-登录采用邀请制 Supabase Auth；无公开注册。站长在 Dashboard 邀请账号并赋予 admin role。评论、点赞、关注、资料和头像由 Supabase RLS/Storage 管理；公开点赞／关注数经只返回计数的 RPC 读取，原始关系只对本人可见。旧评论可用脚本生成审阅后的 SQL 迁移。完整配置见 [Supabase 部署](docs/SUPABASE_SETUP.md) 和 [认证与 PAT](docs/AUTH_SETUP.md)。GitHub PAT 仅供管理员发布文章/动态/图库，**只在当前标签页临时 sessionStorage 中保存**；同标签页刷新/跳转可恢复，退出、切换账号或关闭标签页后清除。普通用户的 Community 投稿不需要 PAT。
+登录采用邀请制 Supabase Auth；无公开注册。站长在 Dashboard 邀请账号并赋予 admin role。评论、点赞、关注、资料和头像由 Supabase RLS/Storage 管理；公开点赞／关注数经只返回计数的 RPC 读取，原始关系只对本人可见。旧评论可用脚本生成审阅后的 SQL 迁移。完整配置见 [Supabase 部署](docs/SUPABASE_SETUP.md) 和 [认证与管理](docs/AUTH_SETUP.md)。网站已取消用户及管理员 PAT 输入和客户端 GitHub 写入；所有内容使用 Supabase Auth 与统一编辑器，经受信任的服务端发布工作流写入静态仓库。历史导入、周期审核和完整部署步骤见 [发布手册](docs/COMMUNITY_V2_RELEASE.md)。
 
 本地检查：
 

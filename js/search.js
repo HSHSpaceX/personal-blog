@@ -85,7 +85,7 @@
         });
       }
     } catch (error) { comments = {}; }
-    var posts=window.CommunityPublic?window.CommunityPublic.mergePosts(window.BLOG_POSTS):window.BLOG_POSTS||[],moments=(window.BLOG_MOMENTS||[]).concat(window.CommunityPublic?window.CommunityPublic.moments():[]);
+    var posts=window.CommunityPublic?window.CommunityPublic.mergePosts(window.BLOG_POSTS):window.BLOG_POSTS||[],moments=window.CommunityPublic?window.CommunityPublic.mergeMoments(window.BLOG_MOMENTS):window.BLOG_MOMENTS||[];
     var allowed=new Set(['about'].concat(posts.map(function(p){return p.community?'community-'+p.item_id:p.slug;}),moments.map(function(m){return (m.community?'community-':'moment-')+m.id;}),(window.SITE_ALBUMS||[]).filter(function(a){return a.visibility!=='private';}).map(function(a){return 'album-'+a.id;}),(window.COMMUNITY_PUBLIC?window.COMMUNITY_PUBLIC.items:[]).filter(function(i){return i.content_type==='album';}).map(function(i){return 'community-'+i.id;})));
     Object.keys(comments).forEach(function(slug){if(!allowed.has(slug))delete comments[slug];});
     index = core.createIndex(posts, moments, comments);

@@ -27,7 +27,7 @@ const one = (source, pattern, replacement, label) => {
 };
 const gitDate = (file) => {
   try {
-    return execFileSync('git', ['log', '-1', '--format=%cs', '--', file], { cwd: root, encoding: 'utf8' }).trim();
+    return execFileSync('git', ['log', '-1', '--format=%cs', '--', file], { cwd: root, encoding: 'utf8' }).trim() || execFileSync('git',['log','-1','--format=%cs'],{cwd:root,encoding:'utf8'}).trim();
   } catch (error) {
     // Some restricted runners report EPERM after Git has already written stdout.
     return String(error.stdout || '').trim() || new Date().toISOString().slice(0, 10);
@@ -41,7 +41,7 @@ const snapshot=community.validate(JSON.parse(await read('data/community-public.j
 for(const item of snapshot.items)schema.validate(item.content_type,item.title,item.body);
 const serialized=JSON.stringify(snapshot).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 await write('js/community-published.js','// Generated public snapshot. Do not edit.\nwindow.COMMUNITY_PUBLIC = '+serialized+';\n');
-const posts = Array.from(context.window.BLOG_POSTS || []).concat(community.posts(snapshot));
+const posts = community.mergePosts(Array.from(context.window.BLOG_POSTS || []),snapshot);
 if (!posts.length) throw new Error('No real posts in js/posts.js');
 const slugs = new Set();
 for (const post of posts) {
@@ -84,11 +84,14 @@ const publicPages = [
   ['index.html', '', '拾光手记 - 记录思考，也记录生活', '拾光手记是一个记录技术笔记、读书感想、旅行见闻与日常观察的个人博客，分享值得长期保留的思考与生活记录。'],
   ['about.html', 'about', '关于 - 拾光手记', '了解拾光手记的作者与写作初衷，看看这个个人博客如何记录技术探索、阅读感悟和生活中值得珍藏的片段。'],
   ['archive.html', 'archive', '归档 - 拾光手记', '按分类和标签浏览拾光手记的文章归档，从技术笔记、阅读记录到旅行见闻，寻找感兴趣的话题与值得重读的内容。'],
+  ['featured.html', 'featured', '精选文章 - 拾光手记', '浏览拾光手记的全部精选文章，阅读站长与社区作者分享的技术探索、阅读思考与生活记录，发现值得慢慢重读的内容。'],
   ['timeline.html', 'timeline', '时间线 - 拾光手记', '沿着时间线浏览拾光手记的全部文章，回看不同阶段的技术探索、阅读思考与生活记录，感受日常积累的变化。'],
   ['gallery.html', 'gallery', '画廊 - 拾光手记', '浏览拾光手记的图片画廊，在照片中回看旅行途中的风景与日常生活的细节，留住那些值得慢慢欣赏的瞬间。'],
   ['moments.html', 'moments', '动态 - 拾光手记', '阅读拾光手记的最新动态，看看长文之外的随手记录、即时想法与生活片段，分享日常遇见的小事和新发现。']
 ];
 const fallback = posts.map((post) => `          <a href="${html(postPath(post))}">${html(post.title)}</a>`).join('\n');
+let siteCopy=null;
+try {const settings=JSON.parse(await read('data/site-settings-public.json')).settings;schema.validateDocument(settings.aboutDocument,[],100000);siteCopy=settings;}catch(error){if(error.code!=='ENOENT')throw error;}
 for (const [file, route, title, description] of publicPages) {
   let output = pageMeta(await read(file), {
     title, description, address: url(route), image: url('assets/covers/cover-travel.jpg')
@@ -96,6 +99,9 @@ for (const [file, route, title, description] of publicPages) {
   if (file === 'index.html') output = staticLinks(output, 'postGrid', fallback);
   if (file === 'archive.html') output = staticLinks(output, 'archiveCategories', fallback);
   if (file === 'timeline.html') output = staticLinks(output, 'timelineList', fallback);
+  if (file === 'featured.html') output = staticLinks(output, 'featuredGrid', posts.filter(p=>p.featured).map(post=>`<a href="${html(postPath(post))}">${html(post.title)}</a>`).join('\n'));
+  if(siteCopy&&file==='index.html')for(const key of ['introTitle','introText','aboutTitle','aboutText'])output=one(output,new RegExp('(<(?:h1|h2|p)[^>]*id="'+key+'"[^>]*>)[\\s\\S]*?(</(?:h1|h2|p)>)'),(_,start,end)=>start+html(siteCopy[key])+end,key);
+  if(siteCopy&&file==='about.html')output=one(output,/(<div class="prose" id="aboutProse">)[\s\S]*?(<\/div>)/,(_,start,end)=>start+'\n'+schema.renderDocument(siteCopy.aboutDocument,[],100000)+'\n'+end,'aboutProse');
   await write(file, output);
 }
 

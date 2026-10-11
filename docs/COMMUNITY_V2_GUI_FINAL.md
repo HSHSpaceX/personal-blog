@@ -1,3 +1,5 @@
+> 历史阶段记录：本轮统一管理已停用所有浏览器 PAT、将资源上限设为 90 MiB，并以正整数周期审核替代旧累计门槛。当前行为、22 项 migration 和 RC 步骤以 [最终发布手册](COMMUNITY_V2_RELEASE.md) 为准；下文旧阶段实现仅供审计。
+
 # Community V2 GUI 最终整合
 
 开始基线：integration/community-v2 a537dc4bc1cc5a35b682615b43e813f955a71038；main 7e955659045a715539f674f74c8367145908e34f。远端核对后无新 main 提交，本轮不合并 PR、不部署生产。

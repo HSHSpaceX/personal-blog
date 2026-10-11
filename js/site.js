@@ -126,6 +126,13 @@
       '</article>';
   }
 
+  function Featured_RenderPage() {
+    var grid=document.getElementById('featuredGrid');if(!grid)return;
+    var selected=posts.filter(function(p){return p.featured===true;}).sort(function(a,b){return b.date.localeCompare(a.date);}),page=Math.max(1,Math.min(Math.ceil(selected.length/12)||1,Math.floor(Number(new URLSearchParams(location.search).get('page')))||1));
+    grid.innerHTML=selected.slice((page-1)*12,page*12).map(renderPostCard).join('')||'<p>暂无精选文章。</p>';
+    document.getElementById('featuredPage').textContent='第 '+page+' 页';
+    [['featuredPrev',page-1,page===1],['featuredNext',page+1,page*12>=selected.length]].forEach(function(entry){var button=document.getElementById(entry[0]);button.disabled=entry[2];button.onclick=function(){var url=new URL(location.href);url.searchParams.set('page',entry[1]);location.assign(url.href);};});
+  }
   function renderRailCard(post, index) {
     return '' +
       '<article class="rail-card reveal glass-card" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
@@ -1032,6 +1039,7 @@
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     renderHome();
+    Featured_RenderPage();
     renderArchive();
     renderTimeline();
     renderPost();

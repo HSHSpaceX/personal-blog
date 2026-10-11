@@ -8,10 +8,10 @@
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=4">
-  <link rel="stylesheet" href="css/community.css?v=5">
+  <link rel="stylesheet" href="css/community.css?v=12">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
-  <link rel="stylesheet" href="css/workspace.css?v=1">
+  <link rel="stylesheet" href="css/workspace.css?v=12">
 </head>
 <body>
   <header class="site-header"><div class="container header-inner">
@@ -42,9 +42,9 @@
               <div class="admin-row"><button id="dmThreadsPrev" class="btn" type="button" disabled>上一页会话</button><button id="dmThreadsNext" class="btn" type="button" disabled>下一页会话</button></div>
             </section>
             <section id="dmChat" class="dm-chat" aria-label="聊天窗口" hidden>
-              <h2 id="dmPeer"></h2><p id="dmChatStatus" class="status-line" role="status" aria-live="polite"></p>
+              <button id="dmBack" class="btn" type="button">返回会话列表</button><h2 id="dmPeer"></h2><p id="dmChatStatus" class="status-line" role="status" aria-live="polite"></p>
               <div class="admin-row"><button id="dmOlder" class="btn" type="button" disabled>加载更早消息</button><button id="dmChatRefresh" class="btn" type="button">刷新聊天</button></div>
-              <div id="dmHistory" aria-label="消息历史"></div>
+              <div id="dmHistory" aria-label="消息历史" tabindex="0"></div><button id="dmNewMessages" class="btn" type="button" hidden>查看新消息 ↓</button>
               <form id="dmComposer">
                 <label for="dmBody">消息（最多 4000 字）</label><textarea id="dmBody" maxlength="8000" rows="4"></textarea>
                 <label for="dmImages">图片（JPG/PNG/WebP，单张最多 8 MiB，每条最多 4 张）</label><input id="dmImages" type="file" multiple accept="image/jpeg,image/png,image/webp">
@@ -64,13 +64,14 @@
       <div class="admin-row"><a class="btn" href="account.html" rel="nofollow">账号中心</a><a class="btn" href="profile.html" rel="nofollow">我的主页</a></div>
     </section>
   </main>
+  <dialog id="dmImagePreview" class="resource-picker"><button id="dmImageClose" class="btn" type="button">关闭图片</button><div id="dmImagePreviewBody"></div></dialog>
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
   <script src="js/blog-data.js?v=10"></script>
   <script src="js/public-cards.js?v=1"></script>
-  <script src="js/message-data.js?v=10"></script>
-  <script src="js/messages.js?v=9"></script>
+  <script src="js/message-data.js?v=12"></script>
+  <script src="js/messages.js?v=12"></script>
   <script src="js/workspace-embed.js?v=1"></script>
 </body>
 </html>

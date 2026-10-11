@@ -1,3 +1,5 @@
+> 历史阶段记录：本轮统一管理已停用所有浏览器 PAT、将资源上限设为 90 MiB，并以正整数周期审核替代旧累计门槛。当前行为、22 项 migration 和 RC 步骤以 [最终发布手册](COMMUNITY_V2_RELEASE.md) 为准；下文旧阶段实现仅供审计。
+
 # Community V2 Round 1
 
 本页保留 Round 1 历史语义；投稿/审核底座见 [Round 2](COMMUNITY_V2_ROUND2.md)，当前公开主页、评论编辑与资源管理见 [Round 3](COMMUNITY_V2_ROUND3.md)；通知与私信以 [Round 4](COMMUNITY_V2_ROUND4.md) 为准。

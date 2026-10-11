@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 const require=createRequire(import.meta.url), publicData=require('../js/community-public.js'),schema=require('../js/community-schema.js');
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -16,7 +17,7 @@ export function validateMedia(asset,bytes=null){
  const suffix=extensions[asset.mime_type],meta=asset.storage_metadata||{};
  if(!UUID.test(asset.id)||!UUID.test(asset.owner_id)||asset.bucket_id!=='community-assets'||!suffix||
  !new RegExp('^'+asset.owner_id+'/[0-9a-f-]{36}\\.'+(suffix==='jpg'?'jpe?g':suffix)+'$','i').test(asset.object_path)||
- !Number.isInteger(Number(asset.size_bytes))||Number(asset.size_bytes)<1||Number(asset.size_bytes)>20971520||
+ !Number.isInteger(Number(asset.size_bytes))||Number(asset.size_bytes)<1||Number(asset.size_bytes)>94371840||
  Number(meta.size)!==Number(asset.size_bytes)||meta.mimetype!==asset.mime_type||(bytes!==null&&bytes.length!==Number(asset.size_bytes))||
  typeof asset.original_name!=='string'||asset.original_name.length>255||/[\\/\x00-\x1f]/.test(asset.original_name)||
  !new RegExp('^[^.]+\\.'+(suffix==='jpg'?'jpe?g':suffix)+'$','i').test(asset.original_name))fail('INVALID_MEDIA');
@@ -27,7 +28,7 @@ export function validateMedia(asset,bytes=null){
  mime==='image/webp'?b.length>=12&&prefix.subarray(0,4).toString()==='RIFF'&&prefix.subarray(8,12).toString()==='WEBP':
  mime==='application/pdf'?prefix.subarray(0,5).toString()==='%PDF-':
  mime==='video/mp4'?b.length>=12&&prefix.subarray(4,8).toString()==='ftyp'&&['isom','iso2','mp41','mp42','avc1','M4V '].includes(prefix.subarray(8,12).toString()):
- mime==='text/plain'?b.length<=20971520&&!b.includes(0)&&!/[<>]/.test(new TextDecoder('utf-8',{fatal:true}).decode(b)):false;
+ mime==='text/plain'?b.length<=94371840&&!b.includes(0)&&!/[<>]/.test(new TextDecoder('utf-8',{fatal:true}).decode(b)):false;
  if(!good)fail('INVALID_MEDIA');return suffix;
 }
 export async function desiredSnapshot(rows,adapter){
@@ -37,6 +38,8 @@ export async function desiredSnapshot(rows,adapter){
   if(!Array.isArray(row.assets)||row.assets.length!==refs.length||row.assets.some(a=>!refs.includes(a.id)))fail('INVALID_MEDIA');
   const item={id:row.id,revision_id:row.revision_id,content_type:row.content_type,slug:row.slug,title:row.title,body:row.body,published_at:row.published_at,
    author:{username:row.author?.username,display_name:row.author?.display_name||'',avatar_url:row.author?.avatar_url||''},assets:[]};
+  if('featured' in row)item.featured=row.featured;
+  if(row.legacy)item.legacy=row.legacy;
   // Avatar URLs must be durable HTTPS/local profile values, never a signed URL.
   if(/[?&](token|signature)=/i.test(item.author.avatar_url)||/\/object\/sign\/|\/(community-assets|dm-media)\//.test(item.author.avatar_url))item.author.avatar_url='';
   for(const a of [...row.assets].sort((a,b)=>a.id.localeCompare(b.id))){
@@ -61,37 +64,55 @@ export async function legacyCatalogue(directory=root){
 export async function reconcile({adapter,directory=root,finalize=false,verify=false,commitSHA=null}){
  let rows=[];try{
   rows=await adapter.export();
+  const site=adapter.siteExport?await adapter.siteExport():null;
+  let siteContent=null;
+  if(site){
+   const s=site.settings;if(!UUID.test(site.id)||!s||Object.keys(s).some(k=>!['siteName','introTitle','introText','aboutTitle','aboutText','contactEmail','aboutDocument'].includes(k)))fail('INVALID_SNAPSHOT');
+   for(const k of ['siteName','introTitle','introText','aboutTitle','aboutText','contactEmail'])if(typeof s[k]!=='string'||s[k].length>2000||/[<>]/.test(s[k]))fail('INVALID_SNAPSHOT');
+   try{schema.validateDocument(s.aboutDocument,[],100000);}catch{fail('INVALID_SNAPSHOT');}
+   siteContent={...s,aboutPage:schema.renderDocument(s.aboutDocument,[],100000)};delete siteContent.aboutDocument;
+  }
   if(finalize||verify){
    const saved=publicData.validate(JSON.parse(await readFile(path.join(directory,'data/community-public.json'),'utf8')));
    const current=new Map(rows.map(r=>[r.id,r.revision_id]));
    if(saved.items.length!==rows.length||saved.items.some(i=>current.get(i.id)!==i.revision_id))fail('FINALIZE_FAILED');
-   for(const i of saved.items){const row=rows.find(r=>r.id===i.id);if(JSON.stringify(i.body)!==JSON.stringify(row.body)||i.title!==row.title||i.slug!==row.slug||i.assets.length!==row.assets.length||i.assets.some(a=>!row.assets.some(r=>r.id===a.id&&r.mime_type===a.mime_type&&r.original_name===a.name)))fail('FINALIZE_FAILED');}
+   for(const i of saved.items){const row=rows.find(r=>r.id===i.id);if(JSON.stringify(i.body)!==JSON.stringify(row.body)||!!i.featured!==!!row.featured||JSON.stringify(i.legacy)!==JSON.stringify(row.legacy)||i.title!==row.title||i.slug!==row.slug||i.assets.length!==row.assets.length||i.assets.some(a=>!row.assets.some(r=>r.id===a.id&&r.mime_type===a.mime_type&&r.original_name===a.name)))fail('FINALIZE_FAILED');}
+   if(site){const stored=JSON.parse(await readFile(path.join(directory,'data/site-settings-public.json'),'utf8'));if(JSON.stringify(stored)!==JSON.stringify(site))fail('FINALIZE_FAILED');}
    if(verify)return {changed:false,snapshot:saved};
    // Cleanup AFTER Git push; never remove private originals or dm-media.
    const desired=new Set(saved.items.flatMap(i=>i.assets.map(a=>new URL(a.url).pathname.split('/published-media/')[1])));
    for(const name of await adapter.listPublic())if(name.startsWith('community/')&&!desired.has(name))await adapter.removePublic(name);
    for(const i of saved.items)if(await adapter.result(i.id,i.revision_id,'published',commitSHA,null)===false)fail('FINALIZE_FAILED');
+   if(site&&adapter.siteResult)await adapter.siteResult(site.id,commitSHA);
    return {changed:false,snapshot:saved};
   }
   const {snapshot,media}=await desiredSnapshot(rows,adapter),legacy=await legacyCatalogue(directory);
   // Fail collision before any upload or tracked mutation.
   const context={window:{}};vm.runInNewContext(await readFile(path.join(directory,'js/posts.js'),'utf8'),context,{timeout:1000});
-  const slugs=new Set((context.window.BLOG_POSTS||[]).map(p=>p.slug));if(snapshot.items.some(i=>i.content_type==='article'&&slugs.has(i.slug)))fail('INVALID_SNAPSHOT');
+  const legacyPosts=context.window.BLOG_POSTS||[],slugs=new Set(legacyPosts.map(p=>p.slug));
+  if(snapshot.items.some(i=>i.content_type==='article'&&slugs.has(i.slug)&&(!i.legacy||i.legacy.target_id!==i.slug)))fail('INVALID_SNAPSHOT');
+  for(const file of ['moments','albums'])vm.runInNewContext(await readFile(path.join(directory,'js/'+file+'.js'),'utf8'),context,{timeout:1000});
+  for(const i of snapshot.items.filter(i=>i.legacy)){const original=(i.content_type==='article'?legacyPosts:i.content_type==='moment'?context.window.BLOG_MOMENTS:context.window.SITE_ALBUMS).find(p=>(i.content_type==='article'?p.slug:p.id)===i.legacy.target_id);
+   if(!original||original.visibility==='private'||createHash('sha256').update(JSON.stringify(original)).digest('hex')!==i.legacy.source_sha256)fail('INVALID_SNAPSHOT');}
   await adapter.legacy(legacy);
   for(const i of snapshot.items)await adapter.result(i.id,i.revision_id,'pending',null,null);
   for(const m of media)await adapter.uploadPublic(m.name,m.bytes,m.mime);
   const dest=path.join(directory,'data/community-public.json'),text=stableJSON(snapshot);
   let previous='';try{previous=await readFile(dest,'utf8');}catch(e){if(e.code!=='ENOENT')throw e;}
   if(previous!==text){await writeFile(dest+'.tmp',text);await rename(dest+'.tmp',dest);}
+  if(site){
+   await writeFile(path.join(directory,'data/site-settings-public.json'),stableJSON(site));
+   await writeFile(path.join(directory,'js/content.js'),'/* Public site copy, approved by a verified administrator. */\nwindow.SITE_CONTENT = '+JSON.stringify(siteContent,null,2).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')+';\n');
+  }
   return {changed:previous!==text,snapshot};
  }catch(error){const code=error instanceof PublicationError?error.code:'EXPORT_FAILED';for(const r of rows){try{await adapter.result(r.id,r.revision_id,'failed',null,code);}catch{ /* retry next schedule */ }}throw new PublicationError(code);}
 }
 export function serviceAdapter({url,key,fetchImpl=fetch}){
  const origin=new URL(url);if(origin.protocol!=='https:'||origin.username||origin.password||origin.pathname!=='/'||origin.search||origin.hash)fail('EXPORT_FAILED');
- async function request(route,options={}){try{const response=await fetchImpl(new URL(route,origin),{...options,redirect:'error',signal:AbortSignal.timeout(30000),headers:{apikey:key,Authorization:'Bearer '+key,...options.headers}});if(!response.ok)fail(route.startsWith('/storage/')?'STORAGE_FAILED':'EXPORT_FAILED');return response;}catch(e){if(e instanceof PublicationError)throw e;fail('EXPORT_FAILED');}}
+ async function request(route,options={}){try{const response=await fetchImpl(new URL(route,origin),{...options,redirect:'error',signal:AbortSignal.timeout(route.startsWith('/storage/')?120000:30000),headers:{apikey:key,Authorization:'Bearer '+key,...options.headers}});if(!response.ok)fail(route.startsWith('/storage/')?'STORAGE_FAILED':'EXPORT_FAILED');return response;}catch(e){if(e instanceof PublicationError)throw e;fail('EXPORT_FAILED');}}
  async function rpc(name,body={}){return (await request('/rest/v1/rpc/'+name,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();}
  const segment=p=>p.split('/').map(encodeURIComponent).join('/');
- return {export:()=>rpc('community_publication_export'),legacy:p=>rpc('community_sync_legacy_targets',{p_targets:p}),
+ return {export:()=>rpc('community_publication_export'),siteExport:()=>rpc('community_site_settings_export'),siteResult:(id,sha)=>rpc('community_site_settings_result',{p_id:id,p_commit_sha:sha}),legacy:p=>rpc('community_sync_legacy_targets',{p_targets:p}),
  result:(id,rev,status,sha,error)=>rpc('community_publication_result',{p_item_id:id,p_revision_id:rev,p_status:status,p_commit_sha:sha,p_error:error}),
  download:async p=>new Uint8Array(await (await request('/storage/v1/object/community-assets/'+segment(p))).arrayBuffer()),
  publicURL:p=>new URL('/storage/v1/object/public/published-media/'+segment(p),origin).href,

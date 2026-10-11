@@ -14,7 +14,7 @@ const baseHost = new URL(SITE_BASE_URL).host;
 const postsContext = { window: {} };
 vm.runInNewContext(await read('js/posts.js'), postsContext, { filename: 'js/posts.js', timeout: 1000 });
 const snapshot=community.validate(JSON.parse(await read('data/community-public.json')));
-const posts = Array.from(postsContext.window.BLOG_POSTS || []).concat(community.posts(snapshot));
+const posts = community.mergePosts(Array.from(postsContext.window.BLOG_POSTS || []),snapshot);
 assert.ok(posts.length, 'No real posts found');
 
 // Count decoded Unicode code points, not UTF-16 units or HTML entity bytes.
@@ -39,7 +39,7 @@ const checkImages = (markup, label, requireDescription = false) => {
 const sitemap = await read('sitemap.xml');
 const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
 const expected = [
-  full(), ...['about', 'archive', 'timeline', 'gallery', 'moments'].map(full),
+  full(), ...['about', 'archive', 'featured', 'timeline', 'gallery', 'moments'].map(full),
   ...posts.map((post) => full(`posts/${post.slug}`))
 ];
 assert.deepEqual(new Set(urls), new Set(expected), 'Sitemap URLs must exactly match indexable pages');

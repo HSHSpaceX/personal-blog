@@ -60,6 +60,7 @@ test('service HTTP adapter stays in exact bucket boundaries, cleans only generat
  const adapter=serviceAdapter({url:'https://fixture.supabase.invalid',key,fetchImpl:async(url,options)=>{
   assert.equal(options.headers.apikey,key);assert.equal(options.headers.Authorization,'Bearer '+key);const u=new URL(url);requests.push([u.pathname,options.method||'GET']);const args=options.headers['Content-Type']==='application/json'?JSON.parse(options.body):null;
   if(u.pathname.endsWith('/community_publication_export'))return response(f.rows);
+  if(u.pathname.endsWith('/community_site_settings_export'))return response(null);
   if(u.pathname.endsWith('/community_sync_legacy_targets'))return response(null);
   if(u.pathname.endsWith('/community_publication_result')){f.results.push(args);return response(true);}
   if(u.pathname.startsWith('/storage/v1/object/community-assets/')){const a=f.files.find(a=>a.object_path===u.pathname.split('/community-assets/')[1]);assert.ok(a);return response(null,a.bytes);}

@@ -14,11 +14,11 @@
   async function threadInfo(id) {
     if (!uuid(id)) throw Error('无效会话链接。');
     var actor = snapshot(); await auth.ready(); check(actor);
-    var row = value(await auth.client().from('dm_threads').select('id,user_low,user_high').eq('id', id).maybeSingle());
+    var row = value(await auth.client().from('dm_threads').select('id,user_low,user_high,low_read_no,high_read_no').eq('id', id).maybeSingle());
     check(actor); if (!row || (row.user_low !== actor.id && row.user_high !== actor.id)) throw Error('会话不存在或无权访问。');
     var peer = row.user_low === actor.id ? row.user_high : row.user_low;
     var profile = value(await auth.client().from('profiles').select('id,username,display_name,avatar_url').eq('id', peer).maybeSingle());
-    check(actor); if (!profile) throw Error('对方账号不可用。'); return { id: row.id, peer: profile };
+    check(actor); if (!profile) throw Error('对方账号不可用。'); return { id: row.id, peer: profile, peer_read_no: row.user_low===actor.id?row.high_read_no:row.low_read_no };
   }
   async function signedAsset(id) {
     if (!uuid(id)) throw Error('无效图片标识。');
@@ -62,9 +62,9 @@
       if (!uuid(id)) throw Error('无效会话。');
       return rpc('dm_messages', { p_thread_id: id, p_limit: 20, p_before_no: before || null });
     },
-    send: function (id, body, assets) {
+    send: function (id, body, assets, nonce) {
       if (!uuid(id)) throw Error('无效会话。'); var actor = snapshot();
-      return rpc('dm_send_message', { p_thread_id: id, p_body: body, p_asset_ids: assets, p_expected_sender_id: actor.id }, actor);
+      return nonce?rpc('dm_send_message_once', { p_thread_id: id, p_body: body, p_asset_ids: assets, p_client_nonce:nonce,p_expected_sender_id: actor.id }, actor):rpc('dm_send_message', { p_thread_id: id, p_body: body, p_asset_ids: assets, p_expected_sender_id: actor.id }, actor);
     },
     markRead: function (id, through) {
       var actor = snapshot(); return rpc('dm_mark_thread_read', { p_thread_id: id, p_through_no: through, p_expected_user_id: actor.id }, actor);

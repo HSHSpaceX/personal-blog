@@ -108,6 +108,7 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
       'dm_can_read_object','dm_guard_object','dm_clear_delete_intent','dm_get_or_create_thread','dm_threads','dm_messages',
       'dm_register_asset','dm_send_message','dm_mark_thread_read','dm_unread_count','dm_unsent_assets','dm_orphan_assets',
       'dm_prepare_asset_delete','dm_prepare_orphan_delete','notifications_page',
+      'community_cycle_lock','community_record_first_publication','community_set_review_cycle','community_review_cycle_status','community_restore_revision','community_set_featured','community_can_read_asset','community_can_read_registered_object','community_import_legacy','community_register_legacy_asset','community_publication_export_base','community_public_target_base','community_save_site_settings','community_site_settings_export','community_site_settings_result','dm_send_message_once',
       'community_publication_changed','community_publication_export','community_publication_result','community_sync_legacy_targets'
     ].sort());
     for (const fn of functions.rows) assert.ok(fn.proconfig.includes('search_path=""')); assertions++;

@@ -1,14 +1,9 @@
 (function () {
   'use strict';
 
-  var OWNER = window.BlogConfig.GITHUB_OWNER;
-  var REPO = window.BlogConfig.GITHUB_REPO;
-  var BRANCH = 'main';
-  var ALBUMS_PATH = 'js/albums.js';
-
   var albums = window.SITE_ALBUMS || [];
   var currentAlbumId = new URLSearchParams(window.location.search).get('community') || new URLSearchParams(window.location.search).get('album');
-  function allAlbums(){return albums.concat(window.CommunityPublic?window.CommunityPublic.albums():[]);}
+  function allAlbums(){return window.CommunityPublic?window.CommunityPublic.mergeAlbums(albums):albums;}
   function albumURL(a){return 'gallery.html?'+(a.community?'community=':'album=')+encodeURIComponent(a.id);}
   var lightboxIndex = 0;
   var slideshowTimer = null;
@@ -30,16 +25,7 @@
   }
 
   function isAuthed() { return window.BlogAuth.isAdmin(); }
-  function getToken() { return window.GitHubCredentials.get(); }
-  function canEdit() { return isAuthed() && !!getToken(); }
-
-  function rawUrl(path) {
-    return 'https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/main/' + path;
-  }
-
-  function uid() {
-    return 'al' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  }
+  function canEdit() { return false; }
 
   function setStatus(message, kind) {
     var el = $('galleryStatus');
@@ -56,87 +42,6 @@
   function visibleAlbums() {
     return allAlbums().filter(function (album) {
       return album.visibility !== 'private' || isAuthed();
-    });
-  }
-
-  function saveAlbums(message) {
-    window.BlogAuth.requireAdmin();
-    var token = getToken();
-    if (!token) throw new Error('请先在本页连接 GitHub PAT');
-    var headers = {
-      Authorization: 'Bearer ' + token,
-      Accept: 'application/vnd.github+json'
-    };
-    var text = '/* 图册数据：在画廊页右上角“+”创建和管理。 */\nwindow.SITE_ALBUMS = ' + JSON.stringify(albums, null, 2) + ';\n';
-    var content = btoa(unescape(encodeURIComponent(text)));
-    return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + ALBUMS_PATH + '?ref=' + BRANCH, { headers: headers })
-      .then(function (res) {
-        if (!res.ok) throw new Error('GitHub ' + res.status);
-        return res.json();
-      })
-      .then(function (meta) {
-        return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + ALBUMS_PATH, {
-          method: 'PUT',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-          body: JSON.stringify({
-            message: message,
-            content: content,
-            branch: BRANCH,
-            sha: meta.sha
-          })
-        });
-      })
-      .then(function (res) {
-        if (!res.ok) throw new Error('GitHub ' + res.status);
-        window.SITE_ALBUMS = albums;
-      });
-  }
-
-  function putFile(path, base64, message) {
-    window.BlogAuth.requireAdmin();
-    var headers = {
-      Authorization: 'Bearer ' + getToken(),
-      Accept: 'application/vnd.github+json'
-    };
-    var body = {
-      message: message,
-      content: base64,
-      branch: BRANCH
-    };
-    return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + path, {
-      method: 'PUT',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-      body: JSON.stringify(body)
-    }).then(function (res) {
-      if (res.status === 422) {
-        return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + path + '?ref=' + BRANCH, { headers: headers })
-          .then(function (metaRes) { return metaRes.json(); })
-          .then(function (meta) {
-            body.sha = meta.sha;
-            return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + path, {
-              method: 'PUT',
-              headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-              body: JSON.stringify(body)
-            });
-          });
-      }
-      return res;
-    }).then(function (res) {
-      if (!res.ok) throw new Error('GitHub ' + res.status);
-    });
-  }
-
-  function fileToBase64(file) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        var result = String(reader.result);
-        resolve(result.slice(result.indexOf(',') + 1));
-      };
-      reader.onerror = function () {
-        reject(new Error('读取文件失败'));
-      };
-      reader.readAsDataURL(file);
     });
   }
 
@@ -166,23 +71,6 @@
 
   var menuAlbumId = null;
 
-  function openAlbumMenu(btn) {
-    menuAlbumId = btn.dataset.menuAlbum;
-    var album = albums.filter(function (item) { return item.id === menuAlbumId; })[0];
-    if (!album) return;
-    var menu = $('albumMenu');
-    menu.querySelector('[data-action="visibility"]').textContent = album.visibility === 'private' ? '设为公开' : '设为仅我可见';
-    menu.hidden = false;
-    var rect = btn.getBoundingClientRect();
-    menu.style.top = (rect.bottom + window.scrollY + 6) + 'px';
-    menu.style.left = Math.max(12, Math.min(rect.left + window.scrollX, window.scrollX + window.innerWidth - menu.offsetWidth - 12)) + 'px';
-  }
-
-  function closeAlbumMenu() {
-    var menu = $('albumMenu');
-    if (menu) menu.hidden = true;
-  }
-
   function renderAlbumView(albumId) {
     var album = allAlbums().filter(function (item) { return item.id === albumId; })[0];
     var view = $('albumView');
@@ -207,30 +95,6 @@
     var actions = $('albumActions');
     actions.innerHTML = '';
     actions.hidden = !canEdit() || album.community;
-    if (canEdit() && !album.community) {
-      actions.appendChild(createActionButton('上传照片', function () { $('galleryFileInput').click(); }));
-      actions.appendChild(createActionButton(album.visibility === 'private' ? '设为公开' : '设为仅我可见', function () {
-        album.visibility = album.visibility === 'private' ? 'public' : 'private';
-        saveAlbums('更新图册可见性：' + album.title).then(function () {
-          setStatus('可见性已更新。', 'ok');
-          renderAlbumView(album.id);
-        }).catch(function (e) {
-          album.visibility = album.visibility === 'private' ? 'public' : 'private';
-          setStatus('更新失败：' + e.message, 'err');
-        });
-      }));
-      actions.appendChild(createActionButton('删除图册', function () {
-        if (!window.confirm('确定删除图册《' + album.title + '》？照片文件会保留在仓库中。')) return;
-        albums = albums.filter(function (item) { return item.id !== album.id; });
-        saveAlbums('删除图册：' + album.title).then(function () {
-          window.location.href = 'gallery.html';
-        }).catch(function (e) {
-          albums.push(album);
-          setStatus('删除失败：' + e.message, 'err');
-        });
-      }, true));
-    }
-
     var grid = $('photoGrid');
     grid.innerHTML = album.photos.map(function (photo, index) {
       var del = canEdit() && !album.community ? '<button class="photo-del" type="button" data-del-photo="' + index + '" aria-label="删除这张照片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' : '';
@@ -251,8 +115,7 @@
   }
 
   function refreshPlusVisibility() {
-    if ($('galleryPlus')) $('galleryPlus').hidden = !canEdit();
-    if ($('galleryConnect')) $('galleryConnect').hidden = !isAuthed() || !!getToken();
+    if ($('galleryPlus')) $('galleryPlus').hidden = !window.BlogAuth.user();
   }
 
   function render() {
@@ -315,212 +178,10 @@
     }
   }
 
-  function createAlbum(title, visibility) {
-    var album = {
-      id: uid(),
-      title: title,
-      visibility: visibility,
-      photos: [],
-      created: new Date().toISOString().slice(0, 10)
-    };
-    albums.push(album);
-    return saveAlbums('创建图册：' + title).then(function () {
-      currentAlbumId = album.id;
-      $('albumModal').hidden = true;
-      window.history.pushState({}, '', 'gallery.html?album=' + encodeURIComponent(album.id));
-      renderAlbumView(album.id);
-    }).catch(function (e) {
-      albums = albums.filter(function (item) { return item.id !== album.id; });
-      if (String(e.message).indexOf('PAT') !== -1) setStatus('保存失败：请先在本页连接 GitHub PAT。', 'err');
-      throw e;
-    });
-  }
-
-  async function uploadPhotos(files) {
-    var album = currentAlbum();
-    if (!album) return;
-    var token = getToken();
-    if (!token) {
-      setStatus('上传前请先在本页连接 GitHub PAT。', 'err');
-      return;
-    }
-    for (var i = 0; i < files.length; i++) {
-      var file = files[i];
-      setStatus('上传中 ' + (i + 1) + '/' + files.length + '…');
-      try {
-        var extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
-        if (!/^(jpg|jpeg|png|webp|gif|avif)$/i.test(extension)) extension = 'jpg';
-        if (file.size > 90 * 1024 * 1024) throw new Error('文件超过 90MB');
-        var path = 'assets/gallery/' + album.id + '/' + uid() + '.' + extension;
-        var base64 = await fileToBase64(file);
-        await putFile(path, base64, '上传照片：' + album.title);
-        album.photos.push({ src: rawUrl(path), caption: '' });
-      } catch (e) {
-        setStatus('第 ' + (i + 1) + ' 张上传失败：' + e.message, 'err');
-      }
-    }
-    setStatus('正在保存图册…');
-    try {
-      await saveAlbums('更新图册照片：' + album.title);
-      setStatus('上传完成。', 'ok');
-    } catch (e) {
-      setStatus('保存失败：' + e.message, 'err');
-    }
-    renderAlbumView(album.id);
-  }
-
   function setup() {
-    var yearEl = $('year');
-    if (yearEl) yearEl.textContent = new Date().getFullYear();
-    refreshPlusVisibility();
-    render();
-    document.addEventListener('blog-auth-change', function () { refreshPlusVisibility(); render(); });
-
-    $('galleryConnectBtn').addEventListener('click', async function () {
-      var input = $('galleryTokenInput');
-      var status = $('galleryConnectStatus');
-      try {
-        status.textContent = '正在验证…';
-        await window.GitHubCredentials.connect(input.value.trim());
-        input.value = '';
-        status.textContent = '已连接，仅在当前页面保留。';
-        refreshPlusVisibility();
-        render();
-      } catch (error) { status.textContent = error.message; }
-      finally { input.value = ''; }
-    });
-
-    $('galleryPlus').addEventListener('click', function () {
-      if (!canEdit()) {
-        window.location.href = 'login.html';
-        return;
-      }
-      $('albumModal').hidden = false;
-      $('albumTitleInput').focus();
-    });
-
-    $('galleryGrid').addEventListener('click', function (event) {
-      var menuBtn = event.target.closest('.album-menu-btn');
-      if (!menuBtn) return;
-      event.preventDefault();
-      var menu = $('albumMenu');
-      if (!menu.hidden && menuAlbumId === menuBtn.dataset.menuAlbum) {
-        closeAlbumMenu();
-        return;
-      }
-      openAlbumMenu(menuBtn);
-    });
-
-    $('albumMenu').addEventListener('click', function (event) {
-      var btn = event.target.closest('button[data-action]');
-      if (!btn) return;
-      var album = albums.filter(function (item) { return item.id === menuAlbumId; })[0];
-      closeAlbumMenu();
-      if (!album) return;
-      var action = btn.dataset.action;
-
-      if (action === 'rename') {
-        var name = window.prompt('新的图册名称', album.title);
-        if (name === null) return;
-        name = name.trim();
-        if (!name || name === album.title) return;
-        album.title = name;
-        setStatus('正在保存…');
-        saveAlbums('重命名图册：' + name).then(function () {
-          setStatus('已重命名。', 'ok');
-          renderGrid();
-        }).catch(function (e) {
-          setStatus('重命名失败：' + e.message, 'err');
-        });
-      } else if (action === 'visibility') {
-        album.visibility = album.visibility === 'private' ? 'public' : 'private';
-        setStatus('正在保存…');
-        saveAlbums('调整图册可见性：' + album.title).then(function () {
-          setStatus('可见性已调整。', 'ok');
-          renderGrid();
-        }).catch(function (e) {
-          album.visibility = album.visibility === 'private' ? 'public' : 'private';
-          setStatus('调整失败：' + e.message, 'err');
-        });
-      } else if (action === 'up' || action === 'down') {
-        var index = albums.indexOf(album);
-        var target = action === 'up' ? index - 1 : index + 1;
-        if (target < 0 || target >= albums.length) return;
-        var tmp = albums[index];
-        albums[index] = albums[target];
-        albums[target] = tmp;
-        setStatus('正在保存…');
-        saveAlbums('调整图册顺序').then(function () {
-          setStatus('已移动。', 'ok');
-          renderGrid();
-        }).catch(function (e) {
-          var revert = albums[index];
-          albums[index] = albums[target];
-          albums[target] = revert;
-          setStatus('移动失败：' + e.message, 'err');
-        });
-      } else if (action === 'delete') {
-        if (!window.confirm('确定删除图册《' + album.title + '》？')) return;
-        albums = albums.filter(function (item) { return item.id !== album.id; });
-        setStatus('正在保存…');
-        saveAlbums('删除图册：' + album.title).then(function () {
-          setStatus('已删除。', 'ok');
-          renderGrid();
-        }).catch(function (e) {
-          albums.push(album);
-          setStatus('删除失败：' + e.message, 'err');
-        });
-      }
-    });
-
-    document.addEventListener('click', function (event) {
-      if (!event.target.closest('.album-menu-btn') && !event.target.closest('#albumMenu')) closeAlbumMenu();
-    });
-
-    $('albumCancelBtn').addEventListener('click', function () {
-      $('albumModal').hidden = true;
-    });
-
-    $('albumCreateBtn').addEventListener('click', function () {
-      var title = $('albumTitleInput').value.trim();
-      if (!title) {
-        setStatus('请填写图册名称。', 'err');
-        return;
-      }
-      setStatus('正在创建…');
-      createAlbum(title, $('albumVisibility').value).catch(function (e) {
-        setStatus('创建失败：' + e.message, 'err');
-      });
-    });
-
-    $('galleryFileInput').addEventListener('change', function () {
-      var files = Array.prototype.slice.call(this.files);
-      this.value = '';
-      if (files.length) uploadPhotos(files);
-    });
-
-    $('photoGrid').addEventListener('click', function (event) {
-      var img = event.target.closest('img[data-photo-index]');
-      if (img) {
-        openLightbox(Number(img.dataset.photoIndex));
-        return;
-      }
-      var del = event.target.closest('.photo-del');
-      if (del) {
-        var album = currentAlbum();
-        var index = Number(del.dataset.delPhoto);
-        if (!album || !window.confirm('确定删除这张照片？')) return;
-        album.photos.splice(index, 1);
-        setStatus('正在保存…');
-        saveAlbums('删除图册照片：' + album.title).then(function () {
-          setStatus('已删除。', 'ok');
-          renderAlbumView(album.id);
-        }).catch(function (e) {
-          setStatus('删除失败：' + e.message, 'err');
-        });
-      }
-    });
-
+    render();refreshPlusVisibility();document.addEventListener('blog-auth-change',function(){refreshPlusVisibility();render();});
+    $('galleryPlus').addEventListener('click',function(){location.assign('account.html#albums');});
+    $('photoGrid').addEventListener('click',function(event){var img=event.target.closest('img[data-photo-index]');if(img)openLightbox(Number(img.dataset.photoIndex));});
     $('lightboxClose').addEventListener('click', closeLightbox);
     $('lightboxPrev').addEventListener('click', prevPhoto);
     $('lightboxNext').addEventListener('click', nextPhoto);

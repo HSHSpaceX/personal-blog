@@ -24,8 +24,10 @@ function suite(db){
  };
  return {run,eq,denied,rows,item,save,submit,review,state,upload,report:label=>console.log(label+': '+count+' assertions passed.')};
 }
-test('Round 2 native PostgreSQL: thresholds apply only to new user content; admin authoring and immutable audits',options,async()=>{
- const db=await createNativeDatabase();
+test('Round 2 historical PostgreSQL: thresholds apply only to new user content; admin authoring and immutable audits',options,async()=>{
+ // Preserve all historical assertions against the pre-cycle schema. The current
+ // periodic policy has its own full lifecycle and multi-connection regression.
+ const db=await createNativeDatabase({through:'202610100001_safe_content_document.sql'});
  try{await seedActors(db);const c=suite(db);
   c.eq((await c.run(user,'select public.is_admin() as admin')).rows[0].admin,false);
   await c.denied(null,"select public.community_create_item('article','guest')");
@@ -90,7 +92,7 @@ test('Round 2 native PostgreSQL: thresholds apply only to new user content; admi
  }finally{await db.close();}
 });
 test('Round 2 native PostgreSQL: strict body schemas, private Storage, references and immutable files',options,async()=>{
- const db=await createNativeDatabase();
+ const db=await createNativeDatabase({through:'202610100001_safe_content_document.sql'});
  try{await seedActors(db);const c=suite(db),i=await c.item(user),file=await c.upload(user),otherFile=await c.upload(other);
   for(const body of [{text:'x',html:'<script>1</script>'},{text:'x',url:'javascript:1'},{text:'x',onerror:'alert(1)'},{text:'x',tags:['a'.repeat(31)]},{text:'x',tags:Array(11).fill('x')},{text:'x',asset_ids:Array(21).fill(file.asset)},{text:1},{text:''},{text:'a'.repeat(100001)},{text:'x'+' '.repeat(100000)},{text:'x',tags:['x'+' '.repeat(30)]},{text:'x',asset_ids:['not-uuid']},{text:'x',asset_ids:[file.asset,file.asset]}])
     await c.denied(user,'select public.community_save_revision($1,$2,$3)',[i,'invalid',body],/Invalid|Duplicate/);

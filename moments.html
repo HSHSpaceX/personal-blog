@@ -16,7 +16,7 @@
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/style.css?v=3">
-  <link rel="stylesheet" href="css/community.css?v=5">
+  <link rel="stylesheet" href="css/community.css?v=12">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -66,24 +66,6 @@
 
 
   <main id="main">
-    <section class="band" id="momentConnect" hidden>
-      <div class="container">
-        <div class="admin-card">
-          <h2>连接 GitHub</h2>
-          <p class="hint">发布动态需要 GitHub 授权。Token 只在当前页面内存中保存，刷新或离开后需重新输入。</p>
-          <div class="field">
-            <label for="momentTokenInput">GitHub Token</label>
-            <input id="momentTokenInput" data-github-pat type="password" placeholder="github_pat_…" autocomplete="off">
-          </div>
-          <div class="admin-row">
-            <button class="btn primary" id="momentConnectBtn" type="button">连接</button>
-            <a class="btn" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">创建 Fine-grained PAT</a>
-          </div>
-          <p id="momentConnectStatus" class="status-line"></p>
-        </div>
-      </div>
-    </section>
-
     <section class="page-head band">
       <div class="container">
         <p class="eyebrow">MOMENTS</p>
@@ -94,20 +76,7 @@
 
     <section class="band">
       <div class="container moment-container">
-        <div class="composer" id="composer" hidden>
-          <img class="moment-avatar" src="assets/avatar-default.jpg" alt="">
-          <div class="composer-body">
-            <textarea id="composerText" rows="3" maxlength="2000" placeholder="有什么新鲜事?"></textarea>
-            <div class="composer-preview" id="composerPreview" hidden></div>
-            <div class="composer-bar">
-            <button class="icon-btn" id="composerImgBtn" type="button" aria-label="添加图片或视频" title="添加图片或视频">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-            </button>
-              <span class="status-line" id="composerStatus"></span>
-              <button class="btn primary" id="composerPost" type="button">发布</button>
-            </div>
-          </div>
-        </div>
+        <div class="composer" id="composer" hidden><a class="btn primary" href="account.html#moments" rel="nofollow">发布 / 管理动态</a></div>
         <div class="moment-list" id="momentList"></div>
         <p class="status-line" id="momentStatus"></p>
       </div>
@@ -129,13 +98,13 @@
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
   <script src="js/blog-data.js?v=10"></script>
-  <script src="js/github-credentials.js?v=10"></script>
+  <script src="js/github-credentials.js?v=12"></script>
   <script src="js/urls.js?v=2"></script>
   <script src="js/community-schema.js?v=10"></script>
-  <script src="js/community-public.js?v=10"></script>
+  <script src="js/community-public.js?v=12"></script>
   <script src="js/boot.js?v=9"></script>
   <script src="js/public-cards.js?v=1"></script>
-  <script src="js/site.js?v=9"></script>
-  <script src="js/moments-page.js?v=10"></script>
+  <script src="js/site.js?v=12"></script>
+  <script src="js/moments-page.js?v=12"></script>
 </body>
 </html>

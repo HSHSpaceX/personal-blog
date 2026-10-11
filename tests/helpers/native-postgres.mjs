@@ -5,7 +5,7 @@ import { once } from 'node:events';
 import path from 'node:path';
 import { prepareDatabase } from './postgres.mjs';
 export const nativeConfigured = !!(process.env.PG_TEST_BIN && process.env.PG_TEST_MODULE);
-export async function createNativeDatabase() {
+export async function createNativeDatabase(options = {}) {
   const imported=await import(process.env.PG_TEST_MODULE), Client=imported.Client||imported.default.Client;
   const root=await mkdtemp('/tmp/community-pg-'), bin=process.env.PG_TEST_BIN;
   const env={...process.env};
@@ -26,7 +26,7 @@ export async function createNativeDatabase() {
     }
     if(!primary)throw Error('Local PostgreSQL readiness timed out: '+log);
     const db={query:(...args)=>primary.query(...args),exec:sql=>primary.query(sql),connect,close};
-    await prepareDatabase(db);
+    await prepareDatabase(db,options);
     return db;
   }catch(e){await close();throw e;}
 }

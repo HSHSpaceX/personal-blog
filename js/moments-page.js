@@ -1,13 +1,8 @@
 (function () {
   'use strict';
 
-  var OWNER = window.BlogConfig.GITHUB_OWNER;
-  var REPO = window.BlogConfig.GITHUB_REPO;
-  var BRANCH = 'main';
-  var MOMENTS_PATH = 'js/moments.js';
-
   var moments = [];
-  function allMoments(){return moments.concat(window.CommunityPublic?window.CommunityPublic.moments():[]);}
+  function allMoments(){return window.CommunityPublic?window.CommunityPublic.mergeMoments(moments):moments;}
   function isCommunity(id){return allMoments().some(function(m){return m.id===id&&m.community;});}
   var pendingMedia = [];
   var booted = false;
@@ -23,7 +18,6 @@
   }
 
   function isAuthed() { return window.BlogAuth.isAdmin(); }
-  function getToken() { return window.GitHubCredentials.get(); }
 
   function siteName() {
     return (window.SITE_CONTENT && window.SITE_CONTENT.siteName) || '拾光手记';
@@ -223,119 +217,6 @@
     if (old) old.remove();
   }
 
-  function saveMoments(message) {
-    window.BlogAuth.requireAdmin();
-    var token = getToken();
-    if (!token) return Promise.reject(new Error('需要先连接 GitHub Token'));
-    var headers = {
-      Authorization: 'Bearer ' + token,
-      Accept: 'application/vnd.github+json'
-    };
-    var text = '/* 动态数据:在动态页登录后发布和管理。 */\nwindow.BLOG_MOMENTS = ' + JSON.stringify(moments, null, 2) + ';\n';
-    var content = btoa(unescape(encodeURIComponent(text)));
-    return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + MOMENTS_PATH + '?ref=' + BRANCH, { headers: headers })
-      .then(function (res) {
-        if (res.status === 404) return { sha: null };
-        if (!res.ok) throw new Error('GitHub ' + res.status);
-        return res.json();
-      })
-      .then(function (meta) {
-        var body = {
-          message: message,
-          content: content,
-          branch: BRANCH
-        };
-        if (meta && meta.sha) body.sha = meta.sha;
-        return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + MOMENTS_PATH, {
-          method: 'PUT',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-          body: JSON.stringify(body)
-        });
-      })
-      .then(function (res) {
-        if (!res.ok) throw new Error('GitHub ' + res.status);
-        window.BLOG_MOMENTS = moments;
-      });
-  }
-
-  function putFile(path, base64, message) {
-    window.BlogAuth.requireAdmin();
-    var headers = {
-      Authorization: 'Bearer ' + getToken(),
-      Accept: 'application/vnd.github+json'
-    };
-    var body = {
-      message: message,
-      content: base64,
-      branch: BRANCH
-    };
-    return fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + path, {
-      method: 'PUT',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-      body: JSON.stringify(body)
-    }).then(function (res) {
-      if (!res.ok) throw new Error('GitHub ' + res.status);
-    });
-  }
-
-  function fileToBase64(file) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        resolve(String(reader.result).slice(String(reader.result).indexOf(',') + 1));
-      };
-      reader.onerror = function () {
-        reject(new Error('读取文件失败'));
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // 大图片在浏览器里先压缩再上传,宽度上限 1600px,JPEG 质量 0.78,显著加快速度
-  var IMAGE_MAX_DIM = 1600;
-  var IMAGE_COMPRESS_OVER = 300 * 1024; // 超过 300KB 的图片才压缩
-  function processFile(file) {
-    if (file.type && file.type.indexOf('video/') === 0) {
-      return fileToBase64(file).then(function (base64) {
-        return { base64: base64, name: file.name || 'video.mp4', type: file.type };
-      });
-    }
-    if (!file.type || file.type.indexOf('image/') !== 0 || file.size < IMAGE_COMPRESS_OVER) {
-      return fileToBase64(file).then(function (base64) {
-        return { base64: base64, name: file.name || 'image.jpg', type: file.type || 'image/jpeg' };
-      });
-    }
-    return new Promise(function (resolve) {
-      var url = URL.createObjectURL(file);
-      var img = new Image();
-      img.onload = function () {
-        URL.revokeObjectURL(url);
-        var w = img.width;
-        var h = img.height;
-        if (w <= IMAGE_MAX_DIM && h <= IMAGE_MAX_DIM) {
-          fileToBase64(file).then(function (base64) {
-            resolve({ base64: base64, name: file.name || 'image.jpg', type: 'image/jpeg', ext: 'jpg' });
-          });
-          return;
-        }
-        var scale = Math.min(IMAGE_MAX_DIM / w, IMAGE_MAX_DIM / h);
-        var canvas = document.createElement('canvas');
-        canvas.width = Math.round(w * scale);
-        canvas.height = Math.round(h * scale);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.78);
-        resolve({ base64: dataUrl.slice(dataUrl.indexOf(',') + 1), name: (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg', type: 'image/jpeg', ext: 'jpg' });
-      };
-      img.onerror = function () {
-        URL.revokeObjectURL(url);
-        fileToBase64(file).then(function (base64) {
-          resolve({ base64: base64, name: file.name || 'image.jpg', type: file.type || 'image/jpeg' });
-        });
-      };
-      img.src = url;
-    });
-  }
-
   function renderFeed() {
     var list = $('momentList');
     if (!list) return;
@@ -346,7 +227,7 @@
     var sorted = allMoments().slice().sort(function (a, b) {
       return String(b.time || '').localeCompare(String(a.time || ''));
     });
-    var authed = isAuthed();
+    var authed = false;
     list.innerHTML = sorted.map(function (item) {
       var liked = getLiked(item.id);
       var count = getCachedCount(item.id);
@@ -405,255 +286,8 @@
     if (window.SiteLightbox) window.SiteLightbox.watch(list);
   }
 
-  function syncPanels() {
-    var authed = isAuthed();
-    var connected = !!getToken();
-    $('momentConnect').hidden = !(authed && !connected);
-    $('composer').hidden = !(authed && connected);
-  }
-
-  function clearMedia() {
-    pendingMedia = [];
-    renderComposerPreview();
-    $('momentFileInput').value = '';
-  }
-
-  function renderComposerPreview() {
-    var preview = $('composerPreview');
-    if (!pendingMedia.length) {
-      preview.innerHTML = '';
-      preview.hidden = true;
-      return;
-    }
-    preview.innerHTML = pendingMedia.map(function (file, index) {
-      var thumb;
-      if (file.type.indexOf('video/') === 0) {
-        thumb = '<div class="composer-thumb-video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>';
-      } else {
-        thumb = '<img src="data:' + file.type + ';base64,' + file.base64 + '" alt="预览">';
-      }
-      return '<div class="composer-thumb">' + thumb +
-        '<button class="composer-thumb-remove" type="button" data-remove-media="' + index + '" aria-label="移除" title="移除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
-        '</div>';
-    }).join('');
-    preview.hidden = false;
-  }
-
-  function postMoment() {
-    var textEl = $('composerText');
-    var statusEl = $('composerStatus');
-    var postBtn = $('composerPost');
-    var text = textEl.value.trim();
-    if (!text && !pendingMedia.length) {
-      setStatus(statusEl, '先写点内容,或选图片/视频。', 'err');
-      return;
-    }
-    postBtn.disabled = true;
-    setStatus(statusEl, pendingMedia.length ? '上传中 0/' + pendingMedia.length + '…' : '发布中…');
-    var added = null;
-    var mediaPaths = [];
-    var work = Promise.resolve();
-    pendingMedia.forEach(function (file, i) {
-      work = work.then(function () {
-        setStatus(statusEl, '上传中 ' + (i + 1) + '/' + pendingMedia.length + '…');
-        var ext = file.ext || String(file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-        var path = 'assets/moments/' + uid('m-') + '.' + ext;
-        return putFile(path, file.base64, '上传动态附件').then(function () {
-          mediaPaths.push({ type: file.type, src: path });
-        });
-      });
-    });
-    work.then(function () {
-      added = {
-        id: uid('m'),
-        time: nowText(),
-        text: text,
-        image: mediaPaths.length && mediaPaths[0].type.indexOf('image/') === 0 ? mediaPaths[0].src : '',
-        media: mediaPaths
-      };
-      moments.unshift(added);
-      setStatus(statusEl, '发布中…');
-      return saveMoments('发布动态');
-    }).then(function () {
-      textEl.value = '';
-      clearMedia();
-      renderFeed();
-      setStatus(statusEl, '已发布,约 1 分钟后所有人可见。', 'ok');
-    }).catch(function (err) {
-      if (added) {
-        var index = moments.indexOf(added);
-        if (index !== -1) moments.splice(index, 1);
-      }
-      setStatus(statusEl, '发布失败:' + err.message, 'err');
-    }).then(function () {
-      postBtn.disabled = false;
-    });
-  }
-
-  function deleteMoment(id) {
-    var index = -1;
-    moments.forEach(function (item, i) {
-      if (item.id === id) index = i;
-    });
-    if (index === -1) return;
-    if (!window.confirm('确定删除这条动态吗?')) return;
-    var removed = moments.splice(index, 1)[0];
-    renderFeed();
-    setStatus($('momentStatus'), '删除中…');
-    saveMoments('删除动态').then(function () {
-      setStatus($('momentStatus'), '已删除,约 1 分钟后生效。', 'ok');
-    }).catch(function (err) {
-      moments.splice(index, 0, removed);
-      renderFeed();
-      setStatus($('momentStatus'), '删除失败:' + err.message, 'err');
-    });
-  }
-
-  function editMoment(id) {
-    var item = null;
-    moments.forEach(function (m) { if (m.id === id) item = m; });
-    if (!item) return;
-    var card = document.getElementById('moment-' + id);
-    if (!card) return;
-    var body = card.querySelector('.moment-body');
-    var originalHtml = body.innerHTML;
-    var editMedia = item.media ? item.media.map(function (m) { return Object.assign({}, m); }) : [];
-    body.innerHTML =
-      '<div class="moment-edit-area">' +
-        '<div class="field"><textarea class="moment-edit-text" rows="3" maxlength="2000">' + escapeHtml(item.text) + '</textarea></div>' +
-        (editMedia.length ? '<div class="moment-edit-media">' + editMedia.map(function (m, i) {
-          return '<div class="moment-edit-media-item"><img src="' + escapeHtml(m.src) + '" alt=""><button type="button" data-del-media="' + i + '" aria-label="删除">×</button></div>';
-        }).join('') + '</div>' : '') +
-        '<div class="moment-edit-upload"><input type="file" accept="image/*,video/*" multiple class="moment-edit-file" hidden><button class="btn" type="button" data-add-media>添加图片/视频</button></div>' +
-        '<div class="admin-row" style="display:flex;gap:10px;flex-wrap:wrap">' +
-          '<button class="btn primary moment-edit-save" type="button" data-save="' + escapeHtml(id) + '">保存</button>' +
-          '<button class="btn moment-edit-cancel" type="button" data-cancel="' + escapeHtml(id) + '">取消</button>' +
-        '</div>' +
-      '</div>';
-    body.querySelector('textarea').focus();
-
-    // 删除媒体
-    body.querySelectorAll('[data-del-media]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        editMedia.splice(Number(btn.getAttribute('data-del-media')), 1);
-        btn.closest('.moment-edit-media-item').remove();
-      });
-    });
-
-    // 添加媒体
-    body.querySelector('[data-add-media]').addEventListener('click', function () {
-      body.querySelector('.moment-edit-file').click();
-    });
-    body.querySelector('.moment-edit-file').addEventListener('change', function (event) {
-      var files = Array.prototype.slice.call(event.target.files || []);
-      var mediaWrap = body.querySelector('.moment-edit-media') || (function () {
-        var div = document.createElement('div');
-        div.className = 'moment-edit-media';
-        body.querySelector('.moment-edit-upload').before(div);
-        return div;
-      })();
-      files.forEach(function (file) {
-        processFile(file).then(function (result) {
-          editMedia.push(result);
-          var idx = editMedia.length - 1;
-          var div = document.createElement('div');
-          div.className = 'moment-edit-media-item';
-          div.innerHTML = '<img src="' + (result.type.indexOf('video/') === 0 ? '' : 'data:' + result.type + ';base64,' + result.base64) + '" alt=""><button type="button" data-del-media="' + idx + '" aria-label="删除">×</button>';
-          div.querySelector('button').addEventListener('click', function () {
-            editMedia.splice(idx, 1);
-            div.remove();
-          });
-          mediaWrap.appendChild(div);
-        });
-      });
-    });
-
-    card.querySelector('[data-cancel]').addEventListener('click', function () {
-      body.innerHTML = originalHtml;
-      if (window.CommentLikes) window.CommentLikes.decorate(card);
-    });
-
-    card.querySelector('[data-save]').addEventListener('click', function () {
-      var newText = card.querySelector('.moment-edit-text').value.trim();
-      item.text = newText;
-      if (editMedia.length) {
-        // 新上传的媒体需要上传后再保存
-        var uploads = editMedia.filter(function (m) { return m.base64; });
-        var done = 0;
-        if (!uploads.length) {
-          item.media = editMedia.map(function (m) { return { type: m.type, src: m.src }; });
-          finish();
-        } else {
-          uploads.forEach(function (m, i) {
-            var ext = m.ext || String(m.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-            var path = 'assets/moments/' + uid('m-') + '.' + ext;
-            putFile(path, m.base64, '上传动态附件').then(function () {
-              editMedia[i].src = path;
-              editMedia[i].base64 = null;
-              done++;
-              if (done === uploads.length) {
-                item.media = editMedia.map(function (mm) { return { type: mm.type, src: mm.src }; });
-                finish();
-              }
-            }).catch(function (err) {
-              setStatus($('momentStatus'), '上传失败:' + err.message, 'err');
-            });
-          });
-        }
-      } else {
-        finish();
-      }
-      function finish() {
-      saveMoments('编辑动态').then(function () {
-        renderFeed();
-      }).catch(function (err) {
-        item.text = item.text;
-        body.innerHTML = originalHtml;
-        setStatus($('momentStatus'), '保存失败:' + err.message, 'err');
-      });
-      }
-    });
-  }
-
-  async function connect() {
-    var input = $('momentTokenInput');
-    var statusEl = $('momentConnectStatus');
-    try {
-      setStatus(statusEl, '验证中…');
-      await window.GitHubCredentials.connect(input.value.trim());
-      input.value = '';
-      setStatus(statusEl, '已连接，仅在当前页面保留。', 'ok');
-      syncPanels();
-    } catch (error) { setStatus(statusEl, error.message, 'err'); }
-    finally { input.value = ''; }
-  }
-
+  function syncPanels() { $('composer').hidden=!window.BlogAuth.user(); }
   function bindEvents() {
-    $('composerPost').addEventListener('click', postMoment);
-    $('composerImgBtn').addEventListener('click', function () {
-      $('momentFileInput').click();
-    });
-    $('momentFileInput').addEventListener('change', function (event) {
-      var files = Array.prototype.slice.call(event.target.files || []);
-      if (!files.length) return;
-      var loaded = 0;
-      files.forEach(function (file) {
-        processFile(file).then(function (result) {
-          pendingMedia.push(result);
-          loaded += 1;
-          if (loaded === files.length) renderComposerPreview();
-        }).catch(function (err) {
-          setStatus($('composerStatus'), err.message, 'err');
-        });
-      });
-    });
-    $('composerPreview').addEventListener('click', function (event) {
-      var btn = event.target.closest('[data-remove-media]');
-      if (!btn) return;
-      pendingMedia.splice(Number(btn.getAttribute('data-remove-media')), 1);
-      renderComposerPreview();
-    });
-    $('momentConnectBtn').addEventListener('click', connect);
     $('momentList').addEventListener('click', function (event) {
       var likeBtn = event.target.closest('[data-like]');
       if (likeBtn) {
@@ -689,12 +323,6 @@
         form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
-      var btn = event.target.closest('[data-delete]');
-      if (btn) deleteMoment(btn.getAttribute('data-delete'));
-    });
-    $('momentList').addEventListener('click', function (event) {
-      var editBtn = event.target.closest('[data-edit]');
-      if (editBtn) editMoment(editBtn.getAttribute('data-edit'));
     });
     $('momentList').addEventListener('submit', function (event) {
       var form = event.target.closest('[data-moment-form]');

@@ -17,12 +17,14 @@
     if(type==='article')rows=(window.BLOG_POSTS||[]).map(function(p){return {kind:'article',target_type:'post',target_id:p.slug,title:p.title,text:p.excerpt||'',published_at:p.date,target_path:'posts/'+encodeURIComponent(p.slug)+'.html'};});
     if(type==='moment')rows=(window.BLOG_MOMENTS||window.SITE_MOMENTS||[]).map(function(p){return {kind:'moment',target_type:'moment',target_id:p.id,title:'动态',text:p.text||'',published_at:p.time,target_path:'moments.html#moment-'+encodeURIComponent(p.id)};});
     if(type==='album')rows=(window.SITE_ALBUMS||[]).filter(function(p){return p.visibility!=='private';}).map(function(p){return {kind:'album',target_type:'album',target_id:p.id,title:p.title,text:p.description||'',published_at:p.created,target_path:'gallery.html?album='+encodeURIComponent(p.id)};});
+    var mapped=new Set(((window.COMMUNITY_PUBLIC||{}).items||[]).filter(function(i){return i.legacy;}).map(function(i){return i.legacy.target_type+':'+i.legacy.target_id;}));rows=rows.filter(function(r){return !mapped.has(r.target_type+':'+r.target_id);});
     return rows.map(function(r){return Object.assign(r,{legacy:true,username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'});}).sort(function(a,b){return String(b.published_at).localeCompare(String(a.published_at));});
   }
   // Recheck legacy activity against the currently loaded trusted static catalog.
   function resolveLegacy(card){
     if(!card.legacy)return card;
     if(card.target_type==='post'&&card.target_id==='about')return card;
+    var mapped=((window.COMMUNITY_PUBLIC||{}).items||[]).find(function(i){return i.legacy&&i.legacy.target_type===card.target_type&&i.legacy.target_id===card.target_id;});if(mapped)return Object.assign({},card,{title:mapped.title,text:mapped.body.text||mapped.body.description||'',username:mapped.author.username,display_name:mapped.author.display_name,avatar_url:mapped.author.avatar_url});
     var match=legacy(card.kind).find(function(p){return p.target_id===card.target_id;});
     return match?Object.assign({},match,{liked_at:card.liked_at}):null;
   }

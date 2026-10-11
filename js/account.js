@@ -5,7 +5,7 @@
   var initialized = false;
   var generation = 0;
   var $ = function (id) { return document.getElementById(id); };
-  var workspace = window.AccountWorkspace ? window.AccountWorkspace.create({root:$('accountSections'),nav:$('accountDirectory'),toggle:$('directoryToggle'),backdrop:$('directoryBackdrop'),beforeLeave:function(){return !window.CommunityUI||window.CommunityUI.confirmLeave();}}) : null;
+  var workspace = window.AccountWorkspace ? window.AccountWorkspace.create({root:$('accountSections'),nav:$('accountDirectory'),toggle:$('directoryToggle'),backdrop:$('directoryBackdrop'),beforeLeave:function(){return (!window.CommunityUI||window.CommunityUI.confirmLeave())&&(!window.CommunityManagement||window.CommunityManagement.confirmLeave());}}) : null;
   if (workspace) window.AccountRoute = workspace;
   window.BlogTheme.setup();
   function status(text, kind) {
@@ -22,6 +22,7 @@
     if (window.CommunityUI) window.CommunityUI.clear();
     if (window.AssetCenter) window.AssetCenter.clear();
     if (window.AccountComments) window.AccountComments.clear();
+    if (window.CommunityManagement) window.CommunityManagement.clear();
     $('accountSections').hidden = true;
     if (workspace) workspace.setEnabled(false);
     $('accountIdentity').textContent = '';
@@ -42,11 +43,11 @@
     $('accountIdentity').textContent = auth.isAdmin() ? '管理员账号 · 保留全部用户社交能力' : '邀请制用户账号';
     if (auth.isAdmin()) {
       link($('accountAdminNav'), 'account.html#review-center', '审核中心');
-      link($('accountAdminNav'), 'account.html#review-policies', '审核规则');
-      link($('accountAdminNav'), 'admin.html#pages', '站点页面管理');
-      link($('accountAdminNav'), 'admin.html', 'Legacy 内容管理');
-      link($('accountReviewLinks'), 'admin.html#messages', '现有评论审核');
-      link($('accountReviewLinks'), 'admin.html', '管理后台');
+      link($('accountAdminNav'), 'account.html#review-policies', '审核周期');
+      link($('accountAdminNav'), 'account.html#featured-management', '精选管理');
+      link($('accountAdminNav'), 'account.html#site-settings', '站点页面管理');
+      link($('accountAdminNav'), 'account.html#comment-moderation', '评论审核');
+      link($('accountReviewLinks'), 'account.html#comment-moderation', '评论审核');
       if (!workspace) { $('review-center').hidden = false; $('review-policies').hidden = false; }
     }
     if (workspace) {
