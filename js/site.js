@@ -1049,7 +1049,6 @@
     setupMenu();
     setupReveal();
     setupRail();
-    buildContribChart();
   }
 
   // 本站仓库的 GitHub 提交热力图:悬停显示当天提交次数,不跳转
