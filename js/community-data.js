@@ -1,12 +1,16 @@
 (function () {
   'use strict';
-  var auth = window.BlogAuth, schema = window.CommunitySchema;
+  var auth = window.BlogAuth, schema = window.CommunitySchema, generation = 0;
+  document.addEventListener('blog-auth-change',function(){generation++;});
+  function Community_CaptureActor(){return {id:auth.requireUser().id,generation:generation};}
+  function Community_ActorActive(actor){return generation===actor.generation&&auth.user()&&auth.user().id===actor.id;}
+  function Community_CheckActor(actor){if(!Community_ActorActive(actor))throw Error('账号已变化；操作已取消。');}
   var itemFields = 'id,author_id,content_type,slug,published_revision_id,featured';
   var revisionFields = 'content_revision_trash(restored_at,reason),*,content_items!content_revisions_item_id_fkey(' + itemFields + ',content_revision_trash(restored_at,reason))';
   function Community_FormatError(error) { return error && (['PGRST202','PGRST205','42883','42P01'].includes(error.code) || /Could not find (?:the function|the table).*schema cache/i.test(error.message||'')) ? '当前连接的 Supabase 环境尚未部署所需表或 RPC。请站长核对项目配置、按顺序执行 migrations 并刷新 schema cache；此操作未完成。' : error.message; }
   function value(result) { if (result.error) { var error=new Error(Community_FormatError(result.error));error.code=result.error.code;throw error; } return result.data; }
   async function client() { await auth.ready(); auth.requireUser(); return auth.client(); }
-  async function rpc(name, args) { return value(await (await client()).rpc(name, args)); }
+  async function rpc(name, args) { var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);var result=await db.rpc(name,args);Community_CheckActor(actor);return value(result); }
   async function listItems() {
     var db = await client();
     return value(await db.from('content_items').select(itemFields+',community_publication_state(status,last_error,published_revision_id),content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no)')
@@ -33,17 +37,17 @@
     return rpc('community_assets_page',{p_search:'',p_kind:'all',p_limit:20,p_offset:0});
   }
   async function upload(file) {
-    var db = await client(), actor = auth.requireUser().id;
+    var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);
     if (!schema.mime[file.type] || file.size < 1 || file.size > 90*1024*1024) throw Error('支持 JPG/PNG/WebP/MP4/PDF/TXT，文件须为 1 字节至 90 MiB。');
-    var path = actor + '/' + crypto.randomUUID() + '.' + schema.mime[file.type];
-    if(file.size>6*1024*1024)await window.CommunityUpload.upload(file,{url:window.BlogConfig.SUPABASE_URL,anonKey:window.BlogConfig.SUPABASE_PUBLISHABLE_KEY,path:path,session:async function(){return value(await db.auth.getSession()).session;},checkIdentity:function(){if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化，分块上传已停止。');}});
+    var path = actor.id + '/' + crypto.randomUUID() + '.' + schema.mime[file.type];
+    if(file.size>6*1024*1024)await window.CommunityUpload.upload(file,{url:window.BlogConfig.SUPABASE_URL,anonKey:window.BlogConfig.SUPABASE_PUBLISHABLE_KEY,path:path,session:async function(){return value(await db.auth.getSession()).session;},checkIdentity:function(){Community_CheckActor(actor);}});
     else value(await db.storage.from('community-assets').upload(path,file,{contentType:file.type,upsert:false}));
     // Recheck identity before registration. If interrupted, retain the exact path
     // for safe orphan cleanup; never register or remove another account's file.
-    if (!auth.user() || auth.user().id !== actor) throw Error('账号已变化；未登记的上传留待资源清理。');
-    try { return value(await db.rpc('community_register_asset',{p_object_path:path,p_original_name:file.name})); }
+    if (!Community_ActorActive(actor)) throw Error('账号已变化；未登记的上传留待资源清理。');
+    try { var result=await db.rpc('community_register_asset',{p_object_path:path,p_original_name:file.name});Community_CheckActor(actor);return value(result); }
     catch (error) {
-      if (auth.user() && auth.user().id === actor) {
+      if (Community_ActorActive(actor)) {
         var cleanup = await db.storage.from('community-assets').remove([path]);
         if (cleanup.error) throw Error('资源登记失败且清理未完成：'+error.message+'；对象路径：'+path);
       }
@@ -51,10 +55,10 @@
     }
   }
   async function signedAsset(id) {
-    var db=await client(),actor=auth.requireUser().id;
+    var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);
     var asset=value(await db.from('user_assets').select('id,original_name,mime_type,object_path').eq('id',id).maybeSingle());
     if (!asset) throw Error('资源不可访问。');
-    if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化；预览已取消。');var issuedAt=Date.now();var result=value(await db.storage.from('community-assets').createSignedUrl(asset.object_path,60));if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化；预览已取消。');if(Date.now()>=issuedAt+60000)throw Error('链接已过期，请重试。');
+    Community_CheckActor(actor);var issuedAt=Date.now();var result=value(await db.storage.from('community-assets').createSignedUrl(asset.object_path,60));Community_CheckActor(actor);if(Date.now()>=issuedAt+60000)throw Error('链接已过期，请重试。');
     var url=new URL(result.signedUrl), origin=new URL(window.BlogConfig.SUPABASE_URL);
     if (url.protocol!=='https:' || url.origin!==origin.origin) throw Error('无效资源地址。');
     return {asset:asset,url:url.href,expiresAt:issuedAt+60000};
@@ -72,10 +76,10 @@
     if (!user) throw Error('找不到该用户。'); return user;
   }
   async function removePrivate(name,args) {
-    var db=await client(),actor=auth.requireUser().id;
+    var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);
     var path=value(await db.rpc(name,args));
-    if(!auth.user()||auth.user().id!==actor)throw Error('账号已变化；删除已取消。');
-    if(typeof path!=='string'||path.split('/')[0]!==actor||path.split('/').some(function(p){return p==='.'||p==='..';}))throw Error('无效资源路径。');
+    Community_CheckActor(actor);
+    if(typeof path!=='string'||path.split('/')[0]!==actor.id||path.split('/').some(function(p){return p==='.'||p==='..';}))throw Error('无效资源路径。');
     value(await db.storage.from('community-assets').remove([path]));
   }
   window.CommunityData = {errorMessage:Community_FormatError,listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,

@@ -78,3 +78,11 @@ test('comment edit deep UUID failure never renders private text; late asset resp
  let resolve;w.CommunityData={assetsPage:()=>new Promise(r=>{resolve=r;})};w.eval(await read('js/asset-center.js'));const pending=w.AssetCenter.refresh();await flush();state.set(null);w.AssetCenter.clear();resolve([{id:asset,original_name:attack}]);await pending;assert.equal(w.document.getElementById('assetCenterList').textContent,'');
  }finally{d.window.close();}
 });
+
+
+test('Community data cancels draft writes/uploads/signing before dispatch after delayed Auth or A-B-A generation changes',options,async()=>{
+ for(const switchBack of [false,true])for(const operation of ['save','upload','signedAsset']){
+  const d=await dom('account.html'),w=d.window,state=auth(w);let resolveReady,calls=0;state.a.ready=()=>new Promise(resolve=>{resolveReady=resolve;});state.a.client=()=>({rpc:async()=>{calls++;return {data:asset};},from:()=>{calls++;throw Error('Unexpected query');},storage:{from:()=>{calls++;throw Error('Unexpected storage request');}}});
+  try{w.eval(await read('js/community-schema.js'));w.eval(await read('js/community-data.js'));const pending=operation==='save'?w.CommunityData.save({id:asset,content_type:'article'},'Private draft',{text:'PRIVATE_A'}):operation==='upload'?w.CommunityData.upload({name:'private.png',type:'image/png',size:10}):w.CommunityData.signedAsset(asset);state.set({id:other});w.document.dispatchEvent(new w.Event('blog-auth-change'));if(switchBack){state.set({id:user});w.document.dispatchEvent(new w.Event('blog-auth-change'));}resolveReady();await assert.rejects(pending,/账号已变化/);assert.equal(calls,0,'old private operation must never dispatch under a new session');}finally{d.window.close();}
+ }
+});
