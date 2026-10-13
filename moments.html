@@ -15,8 +15,8 @@
   <!-- SEO_META_END -->
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="css/style.css?v=3">
-  <link rel="stylesheet" href="css/community.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=20261013">
+  <link rel="stylesheet" href="css/community.css?v=13">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -76,7 +76,15 @@
 
     <section class="band">
       <div class="container moment-container">
-        <div class="composer" id="composer" hidden><a class="btn primary" href="account.html#moments" rel="nofollow">发布 / 管理动态</a></div>
+        <div id="composer" hidden><div id="pageComposer" data-type="moment" class="composer" hidden>
+ <div class="composer-body">
+
+ <label class="sr-only" for="composeText">动态正文</label><textarea id="composeText" rows="4" maxlength="2000" placeholder="有什么新鲜事？"></textarea>
+ <div id="composeMedia" class="composer-preview"></div><div id="composePreview" class="prose" hidden></div>
+ <div class="composer-bar"><button class="btn" id="composeChoose" type="button">选择资源</button><button class="btn" id="composePreviewButton" type="button">预览</button><button class="btn" id="composeSave" type="button">保存草稿</button><button class="btn primary" id="composeSubmit" type="button">发布 / 提交审核</button><button class="btn" id="composeCancel" type="button">取消</button></div>
+ <p id="composeStatus" class="status-line" role="status" aria-live="polite"></p>
+ <dialog id="composePicker" class="compose-dialog"><h2>资源中心</h2><label class="btn">上传图片 / 视频<input id="composeUpload" type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple hidden></label><button id="composePickerClose" class="btn" type="button">返回编辑</button><label>搜索我的资源<input id="composeSearch" maxlength="120"></label><button class="btn" id="composeSearchButton" type="button">搜索</button><div id="composeResources"></div><button class="btn" id="composePrev" type="button">上一页</button><button class="btn" id="composeNext" type="button">下一页</button></dialog>
+ </div></div></div><details><summary>我的动态与草稿</summary><div id="composeMine"></div></details>
         <div class="moment-list" id="momentList"></div>
         <p class="status-line" id="momentStatus"></p>
       </div>
@@ -97,14 +105,15 @@
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=10"></script>
+  <script src="js/blog-data.js?v=13"></script>
   <script src="js/github-credentials.js?v=12"></script>
   <script src="js/urls.js?v=2"></script>
   <script src="js/community-schema.js?v=10"></script>
-  <script src="js/community-public.js?v=12"></script>
+  <script src="js/community-public.js?v=13"></script>
   <script src="js/boot.js?v=9"></script>
   <script src="js/public-cards.js?v=1"></script>
-  <script src="js/site.js?v=12"></script>
-  <script src="js/moments-page.js?v=12"></script>
+  <script src="js/site.js?v=13"></script>
+  <script src="js/moments-page.js?v=13"></script>
+  <script src="js/resumable-upload.js?v=13"></script><script src="js/backend-capabilities.js?v=13"></script><script src="js/community-data.js?v=13"></script><script src="js/page-composer.js?v=13"></script>
 </body>
 </html>

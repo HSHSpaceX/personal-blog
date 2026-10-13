@@ -9,7 +9,7 @@
   }
   async function rpc(name, args, actor) {
     actor = actor || snapshot(); await auth.ready(); check(actor);
-    var result = value(await auth.client().rpc(name, args)); check(actor); return result;
+    if(!['dm_threads','dm_messages','dm_unread_count','dm_unsent_assets','dm_orphan_assets'].includes(name)){await window.BackendCapabilities.requireUpgrade();check(actor);}var result = value(await auth.client().rpc(name, args)); check(actor); return result;
   }
   async function threadInfo(id) {
     if (!uuid(id)) throw Error('无效会话链接。');
@@ -35,6 +35,7 @@
   }
   async function upload(file) {
     var actor = snapshot(); await auth.ready(); check(actor);
+    await window.BackendCapabilities.requireUpgrade();check(actor);
     var ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
     if (!ext || !file.size || file.size > 8 * 1024 * 1024) throw Error('图片须为 8 MiB 内的 JPG、PNG 或 WebP。');
     var path = actor.id + '/' + crypto.randomUUID() + '.' + ext;
@@ -48,7 +49,7 @@
     var path = await rpc(name, args, actor); check(actor);
     if (typeof path !== 'string' || !path.startsWith(actor.id + '/') || path.includes('..') ||
         !/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/.test(path)) throw Error('拒绝不安全的图片路径。');
-    value(await auth.client().storage.from('dm-media').remove([path])); check(actor);
+    value(await auth.client().storage.from('dm-media').remove([path])); check(actor);await rpc('private_object_finish_deletes',{},actor);
   }
   document.addEventListener('blog-auth-change', function () { generation++; });
   window.MessageData = {

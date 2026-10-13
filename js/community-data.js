@@ -5,12 +5,12 @@
   function Community_CaptureActor(){return {id:auth.requireUser().id,generation:generation};}
   function Community_ActorActive(actor){return generation===actor.generation&&auth.user()&&auth.user().id===actor.id;}
   function Community_CheckActor(actor){if(!Community_ActorActive(actor))throw Error('账号已变化；操作已取消。');}
-  var itemFields = 'id,author_id,content_type,slug,published_revision_id,featured';
+  var itemFields = 'id,author_id,content_type,slug,published_revision_id,featured,deleted_at,draft_title';
   var revisionFields = 'content_revision_trash(restored_at,reason),*,content_items!content_revisions_item_id_fkey(' + itemFields + ',content_revision_trash(restored_at,reason))';
   function Community_FormatError(error) { return error && (['PGRST202','PGRST205','42883','42P01'].includes(error.code) || /Could not find (?:the function|the table).*schema cache/i.test(error.message||'')) ? '当前连接的 Supabase 环境尚未部署所需表或 RPC。请站长核对项目配置、按顺序执行 migrations 并刷新 schema cache；此操作未完成。' : error.message; }
   function value(result) { if (result.error) { var error=new Error(Community_FormatError(result.error));error.code=result.error.code;throw error; } return result.data; }
   async function client() { await auth.ready(); auth.requireUser(); return auth.client(); }
-  async function rpc(name, args) { var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);var result=await db.rpc(name,args);Community_CheckActor(actor);return value(result); }
+  async function rpc(name, args) { var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);if(!['community_assets_page','community_asset_references','community_orphan_assets','community_review_cycle_status','community_review_queue'].includes(name)){await window.BackendCapabilities.requireUpgrade();Community_CheckActor(actor);}var result=await db.rpc(name,args);Community_CheckActor(actor);return value(result); }
   async function listItems() {
     var db = await client();
     return value(await db.from('content_items').select(itemFields+',community_publication_state(status,last_error,published_revision_id),content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no)')
@@ -30,14 +30,14 @@
   }
   async function create(type, slug, title, body) {
     schema.validate(type,title,body);
-    var id = await rpc('community_create_item',{p_content_type:type,p_slug:slug});
-    return save({id:id,content_type:type},title,body);
+    return rpc('community_create_draft',{p_content_type:type,p_slug:slug,p_title:title,p_body:body});
   }
   async function listAssets() {
     return rpc('community_assets_page',{p_search:'',p_kind:'all',p_limit:20,p_offset:0});
   }
   async function upload(file) {
     var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);
+    await window.BackendCapabilities.requireUpgrade();Community_CheckActor(actor);
     if (!schema.mime[file.type] || file.size < 1 || file.size > 90*1024*1024) throw Error('支持 JPG/PNG/WebP/MP4/PDF/TXT，文件须为 1 字节至 90 MiB。');
     var path = actor.id + '/' + crypto.randomUUID() + '.' + schema.mime[file.type];
     if(file.size>6*1024*1024)await window.CommunityUpload.upload(file,{url:window.BlogConfig.SUPABASE_URL,anonKey:window.BlogConfig.SUPABASE_PUBLISHABLE_KEY,path:path,session:async function(){return value(await db.auth.getSession()).session;},checkIdentity:function(){Community_CheckActor(actor);}});
@@ -77,12 +77,12 @@
   }
   async function removePrivate(name,args) {
     var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);
-    var path=value(await db.rpc(name,args));
+    await window.BackendCapabilities.requireUpgrade();Community_CheckActor(actor);var path=value(await db.rpc(name,args));
     Community_CheckActor(actor);
     if(typeof path!=='string'||path.split('/')[0]!==actor.id||path.split('/').some(function(p){return p==='.'||p==='..';}))throw Error('无效资源路径。');
-    value(await db.storage.from('community-assets').remove([path]));
+    value(await db.storage.from('community-assets').remove([path]));Community_CheckActor(actor);value(await db.rpc('private_object_finish_deletes'));
   }
-  window.CommunityData = {errorMessage:Community_FormatError,listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,
+  window.CommunityData = {createAlbum:function(slug,title){return rpc('community_create_album',{p_slug:slug,p_title:title});},createItem:function(type,slug){return rpc('community_create_item',{p_content_type:type,p_slug:slug});},deleteMoment:function(id){return rpc('community_delete_moment',{p_item_id:id});},errorMessage:Community_FormatError,listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,
     assetsPage:function(search,kind,offset){return rpc('community_assets_page',{p_search:search,p_kind:kind,p_limit:20,p_offset:offset});},
     renameAsset:function(id,name){return rpc('community_rename_asset',{p_asset_id:id,p_name:name});},
     assetReferences:function(id,offset){return rpc('community_asset_references',{p_asset_id:id,p_limit:20,p_offset:offset});},
@@ -97,7 +97,7 @@
     restore:function(id){auth.requireAdmin();return rpc('community_restore_revision',{p_revision_id:id});},
     trash:async function(offset){var db=await client();return value(await db.from('content_revision_trash').select('*,content_revisions!content_revision_trash_revision_id_fkey(title)').is('restored_at',null).order('trashed_at',{ascending:false}).range(offset,offset+19));},
     publishedArticles:async function(offset){var db=await client();auth.requireAdmin();return value(await db.from('content_items').select(itemFields+',content_revisions!content_published_revision_same_item(title)').eq('content_type','article').not('published_revision_id','is',null).order('created_at',{ascending:false}).range(offset,offset+19));},
-    siteSettings:async function(){var db=await client();auth.requireAdmin();return value(await db.from('community_site_settings').select('*').order('created_at',{ascending:false}).limit(1));},
+    siteSettings:async function(){var db=await client();auth.requireAdmin();return value(await db.from('community_site_settings').select('*').eq('source_version',20261013).order('created_at',{ascending:false}).limit(1));},
     assetInfo:async function(id){if(!schema.uuid(id))throw Error('无效资源');var db=await client();return value(await db.from('user_assets').select('id,original_name,mime_type,size_bytes').eq('id',id).maybeSingle());},
     legacyRevision:async function(id){var db=await client();auth.requireAdmin();var item=value(await db.from('content_items').select('published_revision_id').eq('id',id).maybeSingle());if(!item||!item.published_revision_id)throw Error('迁移条目尚未公开');return item;},
     legacyMappings:async function(){var db=await client();auth.requireAdmin();return value(await db.from('community_legacy_mappings').select('item_id,target_type,target_id'));},

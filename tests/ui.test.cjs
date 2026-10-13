@@ -30,15 +30,15 @@ test('only boolean featured true appears, sorted newest first; latest includes o
   assert.ok(h.ids.postGrid.innerHTML.includes('posts/post-4.html'));
 });
 
-test('zero/single/all featured states hide section or controls and preserve all selections beyond four', () => {
+test('zero/single/all featured states cap the homepage at four', () => {
   for (const posts of [[],[fixture(0,false)]]) {
     const h=siteHarness(posts);h.ui.home();assert.equal(h.ids.featuredSection.hidden,true);assert.equal(h.nav.hidden,true);
     assert.equal(h.ids.railNext.disabled,true);assert.equal(h.ids.featuredRail.innerHTML,'');
   }
   const single=siteHarness([fixture(0)]);single.ui.home();
-  assert.equal(single.ids.featuredSection.hidden,false);assert.equal(single.nav.hidden,true);assert.equal(single.ids.railPrev.disabled,true);
+  assert.equal(single.ids.featuredSection.hidden,false);assert.equal(single.nav.hidden,false);assert.equal(single.ids.railPrev.disabled,true);
   const many=siteHarness(Array.from({length:12},(_,i)=>fixture(i)));many.ui.home();
-  assert.equal((many.ids.featuredRail.innerHTML.match(/class="rail-card /g)||[]).length,12);
+  assert.equal((many.ids.featuredRail.innerHTML.match(/class="rail-card /g)||[]).length,4);
   assert.equal((many.ids.postGrid.innerHTML.match(/class="post-card /g)||[]).length,9);
   assert.equal(many.nav.hidden,false);assert.equal(many.ids.railPrev.disabled,false);assert.equal(many.ids.railNext.disabled,false);
 });

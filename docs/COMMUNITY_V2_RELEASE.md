@@ -1,10 +1,12 @@
+> 当前部署以 [2026-10-13 增量修复与站长操作手册](SUPABASE_RELEASE_20261013.md) 为准。以下旧 PR/RC 说明保留供历史审计；现在授权正常直推 main，全新托管项目使用兼容安装副本。
+
 # Community V2 最终发布 / RC 清单
 
 这是 operator 执行手册，不是已经完成的生产操作。Community V2 统一 GUI 已整合，本轮完成统一管理与周期审核的 forward 改造。最终待合并分支为 integration/community-v2，对应现有 PR #4；不得在未验收前自动合并或执行生产 SQL。相关设计见 [Round 5](COMMUNITY_V2_ROUND5.md)、[Auth](AUTH_SETUP.md)、[Supabase](SUPABASE_SETUP.md)。记录环境、时间、操作者、commit、实际 HTTP 状态与截图，失败项必须关闭再继续。
 
 ## A. migration 正式顺序
 
-当前共 22 个 migration。先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复执行。新测试/RC 项目按下列顺序完整执行；生产库只执行尚未应用的 migration，不能重新运行已经执行过的历史 migration。
+当前共 26 个 migration。先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复执行。新测试/RC 项目按下列顺序完整执行；生产库只执行尚未应用的 migration，不能重新运行已经执行过的历史 migration。
 
 1. 202609300001_invite_auth.sql
 2. 202609300002_private_reactions.sql
@@ -28,6 +30,10 @@
 20. 202610110002_private_media_and_legacy_bridge.sql
 21. 202610110003_site_settings.sql
 22. 202610110004_idempotent_messages.sql
+23. 202610130001_storage_compatibility.sql
+24. 202610130002_release_contract.sql
+25. 202610130003_review_queue.sql
+26. 202610130004_moment_deletion.sql
 
 第 18 项必须在 202610070004_category_raw_length.sql 之后执行，用于统一富文本编辑器的安全结构化正文 `body.document = { version: 1, blocks: [...] }`。未应用时，新版 Community 富文本保存可能失败；前端错误提示不能代替迁移，也不能通过放松 RLS 修复。
 

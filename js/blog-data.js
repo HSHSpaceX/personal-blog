@@ -70,7 +70,7 @@
   }
   async function notificationCount(includeDM) {
     await auth.ready(); if (!auth.user()) return 0;
-    return Number(await personalRpc('notification_unread_count', { p_include_dm: includeDM !== false }));
+    return Number(await personalRpc('notification_unread_count', { p_include_dm: includeDM === true }));
   }
   async function markNotificationsRead(id) {
     await auth.ready(); if (!auth.user()) return;
@@ -167,7 +167,8 @@
     else value(await db().from('follows').insert({ follower_id: id, target_id: targetId }));
     return !has;
   }
-  window.BlogData = { errorMessage:Backend_FormatError, listComments: listComments, addComment: addComment, listModeration: listModeration,
+  async function Review_Count(){await auth.ready();auth.requireAdmin();return Number(value(await db().rpc('community_review_count')));}
+  window.BlogData = {reviewCount:Review_Count, errorMessage:Backend_FormatError, listComments: listComments, addComment: addComment, listModeration: listModeration,
     listLatestComments: listLatestComments,
     listNotifications: listNotifications, notificationCount: notificationCount, markNotificationsRead: markNotificationsRead, dmUnreadCount: dmUnreadCount, messageUnreadCount: messageUnreadCount,
     moderateComment: moderateComment, deleteComment: deleteComment, likes: likes, toggleLike: toggleLike,

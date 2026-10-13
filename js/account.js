@@ -52,7 +52,7 @@
     }
     if (workspace) {
       $('accountAdminNav').querySelectorAll('a').forEach(function(a){a.className='';var route=a.hash.slice(1);if(a.pathname.endsWith('/account.html'))a.dataset.workspaceRoute=route;var icon=document.createElement('span');icon.dataset.menuIcon='';icon.setAttribute('aria-hidden','true');icon.textContent='◇';a.prepend(icon);});
-      workspace.setEnabled(true);
+      document.querySelectorAll('[data-menu-icon]').forEach(function(icon,index){var paths=['<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>','<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/>','<rect x="3" y="4" width="18" height="16" rx="3"/><path d="m4 17 5-5 4 3 4-6 4 5"/>'];icon.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[index%paths.length]+'</svg>';});workspace.setEnabled(true);
     }
     status('欢迎回到账号中心。', 'ok');
     if (window.CommunityUI) window.CommunityUI.refresh();

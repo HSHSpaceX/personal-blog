@@ -91,8 +91,7 @@ test('Round 4 private DM images: pre-send owner, post-send participants, immutab
   const unsent=await c.asset(user,own);await c.rows(user,'select * from public.dm_unsent_assets(20,0)',[],1);await c.rows(other,'select * from public.dm_unsent_assets(20,0)',[],0);
   await c.run(user,'select public.dm_prepare_asset_delete($1)',[unsent]);await c.rows(user,'delete from storage.objects where id=$1 returning id',[own.id],1);
   const orphan=await c.object(other);await c.denied(user,'select public.dm_prepare_orphan_delete($1)',[orphan.id]);await c.denied(admin,'select public.dm_prepare_orphan_delete($1)',[orphan.id]);
-  await c.run(other,'select public.dm_prepare_orphan_delete($1)',[orphan.id]);const registered=await c.asset(other,orphan);
-  await c.denied(other,'delete from storage.objects where id=$1',[orphan.id]);await c.run(other,'select public.dm_prepare_asset_delete($1)',[registered]);await c.rows(other,'delete from storage.objects where id=$1 returning id',[orphan.id],1);
+  await c.run(other,'select public.dm_prepare_orphan_delete($1)',[orphan.id]);await assert.rejects(c.asset(other,orphan),/reserved for deletion/);await c.rows(other,'delete from storage.objects where id=$1 returning id',[orphan.id],1);
   const four=[];for(let i=0;i<5;i++)four.push(await c.asset(user,await c.object(user)));
   await c.denied(user,'select public.dm_send_message($1,$2,$3)',[t,'five',four],/Invalid message/);await c.send(user,t,'four',four.slice(0,4));
   const adminT=await c.thread(admin,user),adminObj=await c.object(admin),adminAsset=await c.asset(admin,adminObj);await c.send(admin,adminT,'',[adminAsset]);
@@ -189,9 +188,6 @@ test('Round 4 native concurrency: one stable thread, asset attachment versus Sto
   const removal=deleting.query('delete from storage.objects where id=$1',[obj.id]).then(()=>({ok:true}),error=>({error}));
   await waitLock(db,deletePid);await sending.query('commit');assert.match((await removal).error?.message||'',/foreign key|Sent images cannot be deleted/);await deleting.query('rollback');
   const orphan=await h.object(user);await h.run(user,'select public.dm_prepare_orphan_delete($1)',[orphan.id]);
-  const registering=await conn(db,user),removing=await conn(db,user);await registering.query('select public.dm_register_asset($1,$2)',[orphan.name,'Race']);
-  const removePid=(await removing.query('select pg_backend_pid() as pid')).rows[0].pid;
-  const deletingOrphan=removing.query('delete from storage.objects where id=$1',[orphan.id]).then(()=>({ok:true}),error=>({error}));
-  await waitLock(db,removePid);await registering.query('commit');assert.match((await deletingOrphan).error?.message||'',/Orphan became registered/);await removing.query('rollback');
+  const registering=await conn(db,user);await assert.rejects(registering.query('select public.dm_register_asset($1,$2)',[orphan.name,'Race']),/reserved for deletion/);await registering.query('rollback');await h.run(user,'delete from storage.objects where id=$1',[orphan.id]);
  }finally {await db.close();}
 });

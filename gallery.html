@@ -15,8 +15,8 @@
   <!-- SEO_META_END -->
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="css/style.css?v=3">
-  <link rel="stylesheet" href="css/community.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=20261013">
+  <link rel="stylesheet" href="css/community.css?v=13">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -94,11 +94,22 @@
           <div id="albumMeta" class="album-meta"></div>
           <div id="photoGrid" class="photo-grid"></div>
         </div>
+        <details><summary>我的图册与草稿</summary><div id="composeMine"></div></details>
         <p id="galleryStatus" class="status-line"></p>
       </div>
     </section>
   </main>
 
+  <dialog id="albumCreateDialog" class="compose-dialog"><h2>创建图册</h2><label for="albumNewTitle">图册名称</label><input id="albumNewTitle" maxlength="160" placeholder="例如：2026 夏日旅行"><p>创建后，在画廊页面通过资源中心添加图片。</p><button class="btn primary" id="albumCreateConfirm">创建图册</button><button class="btn" id="albumCreateCancel">取消</button><p id="albumCreateStatus" role="status"></p></dialog>
+  <section id="pageComposer" data-type="album" class="container album-page-composer" hidden>
+ <div class="composer-body">
+ <h2>创建 / 编辑图册</h2><label for="composeTitle">图册名称</label><input id="composeTitle" maxlength="160" placeholder="例如：2026 夏日旅行">
+ <label class="sr-only" for="composeText">图册描述</label><textarea id="composeText" rows="4" maxlength="2000" placeholder="记录这一组照片的故事"></textarea>
+ <div id="composeMedia" class="composer-preview"></div><div id="composePreview" class="prose" hidden></div>
+ <div class="composer-bar"><button class="btn" id="composeChoose" type="button">选择资源</button><button class="btn" id="composePreviewButton" type="button">预览</button><button class="btn" id="composeSave" type="button">保存草稿</button><button class="btn primary" id="composeSubmit" type="button">发布 / 提交审核</button><button class="btn" id="composeCancel" type="button">取消</button></div>
+ <p id="composeStatus" class="status-line" role="status" aria-live="polite"></p>
+ <dialog id="composePicker" class="compose-dialog"><h2>资源中心</h2><label class="btn">上传图片<input id="composeUpload" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label><button id="composePickerClose" class="btn" type="button">返回编辑</button><label>搜索我的资源<input id="composeSearch" maxlength="120"></label><button class="btn" id="composeSearchButton" type="button">搜索</button><div id="composeResources"></div><button class="btn" id="composePrev" type="button">上一页</button><button class="btn" id="composeNext" type="button">下一页</button></dialog>
+ </div></section>
   <div class="lightbox" id="lightbox" hidden>
     <button class="lightbox-btn lightbox-close" id="lightboxClose" type="button" aria-label="关闭">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -142,15 +153,16 @@
   <script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=10"></script>
+  <script src="js/blog-data.js?v=13"></script>
   <script src="js/github-credentials.js?v=12"></script>
   <script src="js/urls.js?v=2"></script>
   <script src="js/community-schema.js?v=10"></script>
-  <script src="js/community-public.js?v=12"></script>
+  <script src="js/community-public.js?v=13"></script>
   <script src="js/boot.js?v=9"></script>
   <script src="js/public-cards.js?v=1"></script>
-  <script src="js/site.js?v=12"></script>
+  <script src="js/site.js?v=13"></script>
   <script src="js/community-discussion.js?v=5"></script>
-  <script src="js/gallery.js?v=12"></script>
+  <script src="js/gallery.js?v=13"></script>
+  <script src="js/resumable-upload.js?v=13"></script><script src="js/backend-capabilities.js?v=13"></script><script src="js/community-data.js?v=13"></script><script src="js/page-composer.js?v=13"></script>
 </body>
 </html>

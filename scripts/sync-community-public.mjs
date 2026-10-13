@@ -62,8 +62,10 @@ export async function legacyCatalogue(directory=root){
  put('post','about','关于','关于拾光手记','2026-09-30');return out.sort((a,b)=>(a.target_type+a.target_id).localeCompare(b.target_type+b.target_id));
 }
 export async function reconcile({adapter,directory=root,finalize=false,verify=false,commitSHA=null}){
+ if(adapter.preflight)await adapter.preflight();
  let rows=[];try{
   rows=await adapter.export();
+  const deleted=adapter.deletedExport?await adapter.deletedExport():null;
   const site=adapter.siteExport?await adapter.siteExport():null;
   let siteContent=null;
   if(site){
@@ -74,6 +76,7 @@ export async function reconcile({adapter,directory=root,finalize=false,verify=fa
   }
   if(finalize||verify){
    const saved=publicData.validate(JSON.parse(await readFile(path.join(directory,'data/community-public.json'),'utf8')));
+   if(deleted&&JSON.stringify(saved.deleted||[])!==JSON.stringify(deleted))fail('FINALIZE_FAILED');
    const current=new Map(rows.map(r=>[r.id,r.revision_id]));
    if(saved.items.length!==rows.length||saved.items.some(i=>current.get(i.id)!==i.revision_id))fail('FINALIZE_FAILED');
    for(const i of saved.items){const row=rows.find(r=>r.id===i.id);if(JSON.stringify(i.body)!==JSON.stringify(row.body)||!!i.featured!==!!row.featured||JSON.stringify(i.legacy)!==JSON.stringify(row.legacy)||i.title!==row.title||i.slug!==row.slug||i.assets.length!==row.assets.length||i.assets.some(a=>!row.assets.some(r=>r.id===a.id&&r.mime_type===a.mime_type&&r.original_name===a.name)))fail('FINALIZE_FAILED');}
@@ -86,7 +89,7 @@ export async function reconcile({adapter,directory=root,finalize=false,verify=fa
    if(site&&adapter.siteResult)await adapter.siteResult(site.id,commitSHA);
    return {changed:false,snapshot:saved};
   }
-  const {snapshot,media}=await desiredSnapshot(rows,adapter),legacy=await legacyCatalogue(directory);
+  const {snapshot,media}=await desiredSnapshot(rows,adapter),legacy=await legacyCatalogue(directory);if(deleted){snapshot.deleted=deleted;publicData.validate(snapshot);}
   // Fail collision before any upload or tracked mutation.
   const context={window:{}};vm.runInNewContext(await readFile(path.join(directory,'js/posts.js'),'utf8'),context,{timeout:1000});
   const legacyPosts=context.window.BLOG_POSTS||[],slugs=new Set(legacyPosts.map(p=>p.slug));
@@ -112,7 +115,7 @@ export function serviceAdapter({url,key,fetchImpl=fetch}){
  async function request(route,options={}){try{const response=await fetchImpl(new URL(route,origin),{...options,redirect:'error',signal:AbortSignal.timeout(route.startsWith('/storage/')?120000:30000),headers:{apikey:key,Authorization:'Bearer '+key,...options.headers}});if(!response.ok)fail(route.startsWith('/storage/')?'STORAGE_FAILED':'EXPORT_FAILED');return response;}catch(e){if(e instanceof PublicationError)throw e;fail('EXPORT_FAILED');}}
  async function rpc(name,body={}){return (await request('/rest/v1/rpc/'+name,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();}
  const segment=p=>p.split('/').map(encodeURIComponent).join('/');
- return {export:()=>rpc('community_publication_export'),siteExport:()=>rpc('community_site_settings_export'),siteResult:(id,sha)=>rpc('community_site_settings_result',{p_id:id,p_commit_sha:sha}),legacy:p=>rpc('community_sync_legacy_targets',{p_targets:p}),
+ return {preflight:async()=>{const result=await rpc('community_release_preflight');if(result.version!==20261013)fail('BACKEND_UPGRADE_REQUIRED');},deletedExport:()=>rpc('community_deleted_export'),export:()=>rpc('community_publication_export'),siteExport:()=>rpc('community_site_settings_export'),siteResult:(id,sha)=>rpc('community_site_settings_result',{p_id:id,p_commit_sha:sha}),legacy:p=>rpc('community_sync_legacy_targets',{p_targets:p}),
  result:(id,rev,status,sha,error)=>rpc('community_publication_result',{p_item_id:id,p_revision_id:rev,p_status:status,p_commit_sha:sha,p_error:error}),
  download:async p=>new Uint8Array(await (await request('/storage/v1/object/community-assets/'+segment(p))).arrayBuffer()),
  publicURL:p=>new URL('/storage/v1/object/public/published-media/'+segment(p),origin).href,

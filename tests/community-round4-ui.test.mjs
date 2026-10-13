@@ -85,12 +85,12 @@ test('Round 4 data API: captured sender, private upload/sign, no overwrite/publi
  const query={select(fields){calls.push(['select',fields]);return this;},eq(){return this;},async maybeSingle(){return {data:{id:asset,object_path:path,original_name:'photo'}};}};
  const storage={async upload(...args){calls.push(['upload',...args]);if(uploadWait)await uploadWait.promise;return {data:{}};},async createSignedUrl(...args){calls.push(['signed',...args]);return {data:{signedUrl}};},async remove(paths){calls.push(['remove',...paths]);return {data:[]};}};
  w.BlogAuth.client=()=>({from(table){calls.push(['from',table]);return query;},rpc:async(name,args)=>{calls.push(['rpc',name,args]);return {data:name.includes('prepare')?path:asset};},storage:{from(bucket){calls.push(['bucket',bucket]);return storage;}}});
- try{w.eval(await read('js/message-data.js'));await w.MessageData.send(thread,'message',[]);assert.equal(calls.find(c=>c[0]==='rpc')[2].p_expected_sender_id,user);
+ try{w.BackendCapabilities={requireUpgrade:async()=>{}};w.eval(await read('js/message-data.js'));await w.MessageData.send(thread,'message',[]);assert.equal(calls.find(c=>c[0]==='rpc')[2].p_expected_sender_id,user);
   const file=new w.File(['PNG'],'safe.png',{type:'image/png'});await w.MessageData.upload(file);assert.equal(calls.find(c=>c[0]==='upload')[3].upsert,false);assert.ok(calls.filter(c=>c[0]==='bucket').every(c=>c[1]==='dm-media'));
   const register=calls.find(c=>c[0]==='rpc'&&c[1]==='dm_register_asset');assert.deepEqual(Object.keys(register[2]).sort(),['p_object_path','p_original_name']);
   await w.MessageData.signedAsset(asset);assert.equal(calls.find(c=>c[0]==='signed')[2],60);
   for(const invalid of ['javascript:alert(1)','http://storage.invalid/private','https://evil.invalid/private']){signedUrl=invalid;await assert.rejects(w.MessageData.signedAsset(asset),/地址/);}
-  await w.MessageData.removeAsset(asset);assert.equal(calls.at(-1)[0],'remove');path=other+'/'+randomUUID()+'.png';await assert.rejects(w.MessageData.removeOrphan(asset),/不安全/);
+  await w.MessageData.removeAsset(asset);assert.equal(calls.at(-2)[0],'remove');assert.equal(calls.at(-1)[1],'private_object_finish_deletes');path=other+'/'+randomUUID()+'.png';await assert.rejects(w.MessageData.removeOrphan(asset),/不安全/);
   await assert.rejects(w.MessageData.upload(new w.File(['SVG'],'x.svg',{type:'image/svg+xml'})),/JPG/);
   path=user+'/'+randomUUID()+'.png';uploadWait=deferred();const pending=w.MessageData.upload(file);await flush();const count=calls.filter(c=>c[0]==='rpc'&&c[1]==='dm_register_asset').length;
   state.change({id:other});uploadWait.resolve();await assert.rejects(pending,/账号已变化/);assert.equal(calls.filter(c=>c[0]==='rpc'&&c[1]==='dm_register_asset').length,count);
@@ -115,10 +115,10 @@ test('Round 4 Community comment DOM: approved page, safe text, reply submission 
 });
 test('Round 4 menu unread badge: late counts cannot replace a new account or reappear after logout',options,async()=>{
  const d=await dom('index.html'),w=d.window,state=auth(w),pending=deferred();
- w.BlogData={messageUnreadCount:()=>pending.promise};
- try{const source=await read('js/site.js'),start=source.indexOf('  function updateNotificationBadge('),end=source.indexOf('  function setupRail()',start);
+ w.BlogData={notificationCount:()=>pending.promise,dmUnreadCount:async()=>2};
+ try{const source=await read('js/site.js'),start=source.indexOf('  function updatePendingBadge('),end=source.indexOf('  function setupRail()',start);
   w.eval('(function(){'+source.slice(start,end)+'window.refreshBadge=refreshNotificationBadge;})();');w.refreshBadge();await flush();
-  state.set({id:other});w.BlogData.messageUnreadCount=async()=>7;w.refreshBadge();await flush();pending.resolve(99);await flush();
+  state.set({id:other});w.BlogData.notificationCount=async()=>7;w.refreshBadge();await flush();pending.resolve(99);await flush();
   const badges=w.document.querySelectorAll('.notification-badge');assert.ok(badges.length>0);badges.forEach(b=>{assert.equal(b.textContent,'7');assert.equal(b.hidden,false);});
   state.set(null);w.refreshBadge();await flush();badges.forEach(b=>assert.equal(b.hidden,true));
  }finally{d.window.close();}

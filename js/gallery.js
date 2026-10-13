@@ -180,7 +180,7 @@
 
   function setup() {
     render();refreshPlusVisibility();document.addEventListener('blog-auth-change',function(){refreshPlusVisibility();render();});
-    $('galleryPlus').addEventListener('click',function(){location.assign('account.html#albums');});
+    /* The dedicated album composer binds galleryPlus. */
     $('photoGrid').addEventListener('click',function(event){var img=event.target.closest('img[data-photo-index]');if(img)openLightbox(Number(img.dataset.photoIndex));});
     $('lightboxClose').addEventListener('click', closeLightbox);
     $('lightboxPrev').addEventListener('click', prevPhoto);

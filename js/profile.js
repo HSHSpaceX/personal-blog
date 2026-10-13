@@ -9,8 +9,10 @@
     ['profileUsernameInput','profileDisplayInput','profileBioInput','profileAvatarInput'].forEach(function(id){$(id).value='';});}
   async function load(){
     clear();var token=generation;
+    document.querySelectorAll('[data-private-entry]').forEach(function(el){el.hidden=true;});
     try{
       await auth.ready();if(token!==generation)return;
+      document.querySelectorAll('[data-private-entry]').forEach(function(el){el.hidden=!auth.user();});
       var params=new URLSearchParams(location.search),query=params.get('username')?{username:params.get('username')}:{id:params.get('id')||(auth.user()&&auth.user().id)};
       if(!query.username&&!query.id)query={username:'hshspacex'};
       var loaded=await data.profile(query);if(token!==generation)return;target=loaded;

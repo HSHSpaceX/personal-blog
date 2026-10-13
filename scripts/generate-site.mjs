@@ -90,8 +90,10 @@ const publicPages = [
   ['moments.html', 'moments', '动态 - 拾光手记', '阅读拾光手记的最新动态，看看长文之外的随手记录、即时想法与生活片段，分享日常遇见的小事和新发现。']
 ];
 const fallback = posts.map((post) => `          <a href="${html(postPath(post))}">${html(post.title)}</a>`).join('\n');
-let siteCopy=null;
+let siteCopy=JSON.parse(await read('data/site-settings-initial.json'));
 try {const settings=JSON.parse(await read('data/site-settings-public.json')).settings;schema.validateDocument(settings.aboutDocument,[],100000);siteCopy=settings;}catch(error){if(error.code!=='ENOENT')throw error;}
+schema.validateDocument(siteCopy.aboutDocument,[],100000);
+await write('js/content.js','/* Generated from site-settings-public.json or site-settings-initial.json. */\nwindow.SITE_CONTENT = '+JSON.stringify({...siteCopy,aboutPage:schema.renderDocument(siteCopy.aboutDocument,[],100000)},null,2).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')+';\n');
 for (const [file, route, title, description] of publicPages) {
   let output = pageMeta(await read(file), {
     title, description, address: url(route), image: url('assets/covers/cover-travel.jpg')

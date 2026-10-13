@@ -1,0 +1,12 @@
+begin transaction read only;
+select public.community_release_preflight();
+select public.community_capabilities();
+select target_type,count(*) as imported from public.community_legacy_mappings group by target_type;
+select count(*) as retained_older_settings from public.community_site_settings where source_version is null;
+select count(*) as current_settings from public.community_site_settings where source_version=20261013;
+select bucket_id,count(*) as reserved_deletion_paths from public.private_object_tombstones group by bucket_id;
+select count(*) as unfinished_dm_deletions from public.dm_asset_delete_intents;
+select count(*) as unfinished_resource_deletions from public.community_asset_delete_intents;
+select user_id,role from public.user_roles where role='admin';
+select legacy_author_id from public.community_publication_config where singleton;
+rollback;

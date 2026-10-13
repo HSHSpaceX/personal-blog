@@ -17,7 +17,7 @@
     });
   }
 
-  function isAuthed() { return window.BlogAuth.isAdmin(); }
+  function isAuthed() { return !!window.BlogAuth.user(); }
 
   function siteName() {
     return (window.SITE_CONTENT && window.SITE_CONTENT.siteName) || '拾光手记';
@@ -227,7 +227,7 @@
     var sorted = allMoments().slice().sort(function (a, b) {
       return String(b.time || '').localeCompare(String(a.time || ''));
     });
-    var authed = false;
+    var authed = isAuthed();
     list.innerHTML = sorted.map(function (item) {
       var liked = getLiked(item.id);
       var count = getCachedCount(item.id);
@@ -269,10 +269,10 @@
               '<span class="moment-action-count moment-comment-count">' + commentCount(item.id) + '</span>' +
             '</button>' +
             '<div class="moment-actions-right">' +
-            (authed && !item.community ? '<button class="moment-delete" type="button" data-delete="' + escapeHtml(item.id) + '" aria-label="删除这条动态" title="删除">' +
+            (authed && item.public_item && item.public_item.author.id===window.BlogAuth.user().id ? '<button class="moment-delete" type="button" data-compose-delete="' + escapeHtml(item.public_item.id) + '" aria-label="删除这条动态" title="删除">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
               '</button>' : '') +
-            (authed && !item.community ? '<button class="moment-edit-btn" type="button" data-edit="' + escapeHtml(item.id) + '" aria-label="编辑这条动态" title="编辑">' +
+            (authed && item.public_item && item.public_item.author.id===window.BlogAuth.user().id ? '<button class="moment-edit-btn" type="button" data-compose-edit="' + escapeHtml(item.public_item.revision_id) + '" aria-label="编辑这条动态" title="编辑">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
               '</button>' : '') +
             '</div>' +
@@ -281,6 +281,7 @@
         '</div>' +
       '</article>';
     }).join('');
+    document.dispatchEvent(new Event('moments-feed-render'));
     refreshLikeCounts();
     allMoments().forEach(function (m) { window.BlogData.listComments(commentSlug(m.id)).then(function (rows) { commentCache[m.id] = rows; updateCommentCount(m.id); }).catch(function () {}); });
     if (window.SiteLightbox) window.SiteLightbox.watch(list);

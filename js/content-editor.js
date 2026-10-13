@@ -50,6 +50,12 @@
       else {editor.replaceChildren();var value=String(body.text||body.description||'');if(value)value.split(/\n\n/).forEach(function(part){var p=document.createElement('p');p.textContent=part;editor.appendChild(p);});}
       lastText=body.text||body.description||'';if(text)text.value=lastText;
     }
+    function Editor_ParseSource(source,ids,max) {
+      var parsed=new DOMParser().parseFromString(source,'text/html');
+      if(parsed.head.childNodes.length||parsed.documentElement.attributes.length||parsed.body.attributes.length)throw Error('源码不支持页面头部、脚本或页面属性。');
+      if(Array.from(parsed.body.querySelectorAll('*')).some(function(n){return !['P','DIV','H2','H3','BLOCKQUOTE','PRE','UL','OL','LI','STRONG','B','EM','I','A','BR','SPAN'].includes(n.tagName)||Array.from(n.attributes).some(function(a){return !(n.tagName==='A'&&(a.name==='href'||a.name==='rel'&&a.value==='noopener noreferrer nofollow'))&&!(n.tagName==='P'&&a.name==='data-content-asset');});}))throw Error('源码只支持工具栏对应的安全 HTML 与资源引用。');
+      var original=editor,originalText=text;try{editor=parsed.body;text=null;var doc=Editor_ReadDocument();schema.validateDocument(doc,ids||[],max||100000);return doc;}finally{editor=original;text=originalText;}
+    }
     function Editor_RunTool(tool) {
       Editor_RestoreSelection();
       if(options.sourceMode && options.sourceMode()){if(tool.snippet){var start=text.selectionStart||0,end=text.selectionEnd||0;text.setRangeText(tool.snippet,start,end,'end');text.focus();}else if(options.onTool)options.onTool(tool);return;}
@@ -65,7 +71,7 @@
     editor.addEventListener('keyup',Editor_RememberSelection);editor.addEventListener('mouseup',Editor_RememberSelection);
     editor.addEventListener('paste',function(e){e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));Editor_SyncText();});
     editor.addEventListener('drop',function(e){e.preventDefault();});
-    return {setBody:Editor_SetBody,getDocument:Editor_ReadDocument,clear:function(){editor.replaceChildren();lastText='';savedRange=null;if(text)text.value='';},
+    return {setBody:Editor_SetBody,getDocument:Editor_ReadDocument,parseSource:Editor_ParseSource,getSource:function(){var doc=Editor_ReadDocument();return schema.renderDocument(doc,doc.blocks.filter(function(b){return b.type==='asset';}).map(function(b){return b.asset_id;}),options.maxLength||100000);},clear:function(){editor.replaceChildren();lastText='';savedRange=null;if(text)text.value='';},
       getHTML:function(){return options.sourceMode&&options.sourceMode()?text.value:editor.innerHTML;},setHTML:function(html){if(!legacy)throw Error('Community 不接受 HTML。');savedRange=null;editor.innerHTML=html||'<p></p>';if(text)text.value=html||'<p></p>';},
       insertAsset:function(id,asset){if(!schema.uuid(id))throw Error('无效资源 UUID。');Editor_RestoreSelection();var block=document.createElement('p');block.dataset.contentAsset=id;block.contentEditable='false';block.textContent=asset?asset.original_name:'附件';var anchor=savedRange&&savedRange.startContainer;while(anchor&&anchor.parentNode!==editor)anchor=anchor.parentNode;if(anchor&&anchor.parentNode===editor&&savedRange&&['P','DIV','H2','H3','BLOCKQUOTE','PRE'].includes(anchor.tagName)&&!anchor.dataset.contentAsset){
         savedRange.deleteContents();var tailRange=savedRange.cloneRange();tailRange.setEnd(anchor,anchor.childNodes.length);var tail=document.createElement(anchor.tagName);tail.appendChild(tailRange.extractContents());editor.insertBefore(block,anchor.nextSibling);editor.insertBefore(tail,block.nextSibling);var caret=document.createRange();caret.selectNodeContents(tail);caret.collapse(true);savedRange=caret;

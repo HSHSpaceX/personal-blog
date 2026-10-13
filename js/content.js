@@ -1,4 +1,4 @@
-/* 页面文案：在后台“页面内容”中修改。 */
+/* Generated from site-settings-public.json or site-settings-initial.json. */
 window.SITE_CONTENT = {
   "siteName": "拾光手记",
   "introTitle": "记录思考，也记录生活。",
@@ -6,5 +6,84 @@ window.SITE_CONTENT = {
   "aboutTitle": "关于这个博客",
   "aboutText": "这是一个安静的个人空间。文章以技术笔记、阅读记录和旅途见闻为主，偶尔也会写一些不成体系的思考。内容不多，但每篇都认真对待。",
   "contactEmail": "HSH20130730@outlook.com",
-  "aboutPage": "<p>你好，我是HSH，一位初中生，欢迎来到拾光手记。这里是我用来安放文字和想法的小角落。</p>\n<p>我平时写代码,开发飞控，制作水火箭，也读书、拍照、去山里走走。这个博客不追求更新频率，只希望留下的每一篇，过一段时间回头看仍然觉得值得。</p>\n<h2>我在写什么</h2>\n<ul>\n<li>技术笔记：以实用和长期有效为标准，记录踩坑和思考。</li>\n<li>读书清单：把读过的书和当时的感受放在一起。</li>\n<li>生活记录：旅行、散步、季节变化，以及一些不成体系的想法。</li>\n</ul>\n<h2>联系我</h2>\n<p>欢迎通过邮件交流：<a href=\"mailto:HSH20130730@outlook.com\">HSH20130730@outlook.com</a></p>"
+  "aboutDocument": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "paragraph",
+        "runs": [
+          {
+            "text": "你好，我是HSH，一位初中生，欢迎来到拾光手记。一个有我与"
+          },
+          {
+            "text": "aleistercrowleybeast666(GitHub账户名)",
+            "href": "https://github.com/aleistercrowleybeast666"
+          },
+          {
+            "text": "共同搭建的一个博客/交流平台。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "runs": [
+          {
+            "text": "我平时写代码,开发飞控，制作水火箭，也读书、拍照、去山里走走。这个博客不追求更新频率，只希望留下的每一篇，过一段时间回头看仍然觉得值得。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "runs": [
+          {
+            "text": "我在写什么"
+          }
+        ],
+        "level": 2
+      },
+      {
+        "type": "list",
+        "ordered": false,
+        "items": [
+          [
+            {
+              "text": "技术笔记：不断跟进我们每个人的进步，记录开发过程并发布开源内容。"
+            }
+          ],
+          [
+            {
+              "text": "科技时局：把我觉得有趣的科技成果发表。"
+            }
+          ],
+          [
+            {
+              "text": "琐碎杂谈：旅行、散步、季节变化，碎嘴等文字。"
+            }
+          ]
+        ]
+      },
+      {
+        "type": "heading",
+        "runs": [
+          {
+            "text": "联系我"
+          }
+        ],
+        "level": 2
+      },
+      {
+        "type": "paragraph",
+        "runs": [
+          {
+            "text": "欢迎通过邮件交流："
+          },
+          {
+            "text": "HSH20130730@outlook.com",
+            "href": "mailto:HSH20130730@outlook.com"
+          }
+        ]
+      }
+    ]
+  },
+  "aboutPage": "\u003cp\u003e你好，我是HSH，一位初中生，欢迎来到拾光手记。一个有我与\u003ca href=\"https://github.com/aleistercrowleybeast666\" rel=\"noopener noreferrer nofollow\"\u003ealeistercrowleybeast666(GitHub账户名)\u003c/a\u003e共同搭建的一个博客/交流平台。\u003c/p\u003e\u003cp\u003e我平时写代码,开发飞控，制作水火箭，也读书、拍照、去山里走走。这个博客不追求更新频率，只希望留下的每一篇，过一段时间回头看仍然觉得值得。\u003c/p\u003e\u003ch2\u003e我在写什么\u003c/h2\u003e\u003cul\u003e\u003cli\u003e技术笔记：不断跟进我们每个人的进步，记录开发过程并发布开源内容。\u003c/li\u003e\u003cli\u003e科技时局：把我觉得有趣的科技成果发表。\u003c/li\u003e\u003cli\u003e琐碎杂谈：旅行、散步、季节变化，碎嘴等文字。\u003c/li\u003e\u003c/ul\u003e\u003ch2\u003e联系我\u003c/h2\u003e\u003cp\u003e欢迎通过邮件交流：\u003ca href=\"mailto:HSH20130730@outlook.com\" rel=\"noopener noreferrer nofollow\"\u003eHSH20130730@outlook.com\u003c/a\u003e\u003c/p\u003e"
 };

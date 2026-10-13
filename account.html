@@ -8,11 +8,11 @@
   <meta name="description" content="拾光手记邀请制用户的账号中心。">
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=20261013">
   <link rel="stylesheet" href="assets/vendor/katex-0.16.11/katex.min.css"><link rel="stylesheet" href="css/admin.css?v=2">
-  <link rel="stylesheet" href="css/community.css?v=12">
+  <link rel="stylesheet" href="css/community.css?v=13">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
-  <link rel="stylesheet" href="css/workspace.css?v=12">
+  <link rel="stylesheet" href="css/workspace.css?v=13">
 </head>
 <body>
   <a class="skip-link" href="account.html#main" rel="nofollow">跳到账号中心</a>
@@ -72,13 +72,13 @@
               <button class="btn" id="communitySave" type="button">保存草稿</button><button class="btn primary" id="communitySubmit" type="button">保存并提交</button></div>
           </div><div class="tb-row"><span id="communityToolbar" class="tb-group"></span><span class="sr-only" id="communityTextLabel">正文</span></div></div>
           <div id="communityMeta" class="editor-meta" hidden><div id="communityArticleFields" class="editor-meta-fields">
-            <div class="field"><label for="communityCategory">分类（纯文本，1–40 字）</label><input id="communityCategory" maxlength="40" value="用户投稿"></div>
+            <div class="field"><label for="communityCategory">文章分类</label><select id="communityCategory"></select><p id="communityCategoryNotice" role="status"></p></div>
             <div class="field"><label for="communitySummary">摘要（最多 500 字）</label><textarea id="communitySummary" maxlength="500" rows="2"></textarea></div>
             <div class="field"><label for="communityCover">封面（从已选图片中选择）</label><select id="communityCover"><option value="">自动选择首张图片</option></select></div>
             <div class="field"><label for="communityTags">标签（英文逗号分隔，最多 10 个）</label><input id="communityTags"></div>
           </div><div class="meta-full"><button class="btn" id="communityChooseAssets" type="button">资源管理</button><fieldset><legend id="communityAssetLegend">选择我的资源</legend><div id="communityAssetChoices"></div></fieldset></div></div>
           <div id="communityRichEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea>
-          <div id="communitySourceWrap" hidden><p class="hint">安全结构化源码：仅接受 version 1 的正文块，不接受 HTML、脚本或任意媒体 URL。</p><textarea id="communitySource" class="source-textarea" aria-label="安全正文源码" spellcheck="false"></textarea></div>
+          <div id="communitySourceWrap" hidden><p class="hint">受控 HTML 源码：支持段落、标题、列表、链接和已选资源；保存时转为安全正文，不接受脚本、事件或任意媒体地址。</p><textarea id="communitySource" class="source-textarea" aria-label="安全正文源码" spellcheck="false"></textarea></div>
         </section>
         <section id="communityPreview" hidden>
           <div id="communityPreviewAuthor"></div><h3 id="communityPreviewTitle"></h3><p id="communityPreviewState"></p>
@@ -137,9 +137,9 @@
       <section class="admin-card wide" id="review-center" data-workspace-panel data-admin-panel="true" hidden>
         <h2>审核中心</h2>
         <p>审核队列与个人通知分开。选择待审版本，预览后通过或填写原因拒绝。</p>
-        <button class="btn" id="communityRefreshReviews" type="button">刷新待审内容</button>
+        <div id="reviewWorkspace"><div class="review-filters"><label>类型<select id="reviewType"><option value="all">全部</option><option value="article">文章</option><option value="moment">动态</option><option value="album">图册</option><option value="comment">评论</option></select></label><label>状态<select id="reviewFilter"><option value="pending">待审</option><option value="approved">已通过</option><option value="returned">退回修改</option><option value="trashed">回收站</option><option value="all">全部</option></select></label><label>作者<input id="reviewSearch" maxlength="120" placeholder="用户名、名称或 UUID"></label><label>时间<select id="reviewSort"><option value="oldest">最早优先</option><option value="newest">最新优先</option></select></label><button class="btn" id="reviewRefresh" type="button">查询 / 刷新</button></div><p id="reviewStatus" role="status" aria-live="polite"></p><div class="review-layout"><div><div id="reviewQueue"></div><div class="admin-row"><button class="btn" id="reviewPrev" type="button">上一页</button><span id="reviewPage"></span><button class="btn" id="reviewNext" type="button">下一页</button></div></div><section id="reviewDetail" hidden><button class="btn" id="reviewBack" type="button">返回队列</button><h3 id="reviewTitle"></h3><p id="reviewMeta"></p><div id="reviewBody" class="prose"></div><details id="reviewPrevious" hidden><summary>对照原公开版本</summary><div id="reviewPreviousBody" class="prose"></div></details><div id="reviewDecisions"><label for="reviewReason">退回 / 拒绝原因</label><textarea id="reviewReason" maxlength="2000" rows="3"></textarea><div class="admin-row"><button class="btn primary" data-review-decision="approved">通过</button><button class="btn" data-review-decision="returned">退回修改</button><button class="btn" data-review-decision="trashed">拒绝并移入回收站</button></div></div><button id="reviewRestore" class="btn" hidden>允许恢复并重新投稿</button></section></div></div><div hidden><button class="btn" id="communityRefreshReviews" type="button">刷新待审内容</button>
         <div id="communityReviewQueue"></div><h3>评论编辑审核</h3><div id="accountCommentQueue"></div><div class="admin-row"><button class="btn" id="accountCommentQueuePrev" type="button" disabled>上一页编辑</button><button class="btn" id="accountCommentQueueNext" type="button" disabled>下一页编辑</button></div>
-        <div id="accountReviewLinks" class="admin-row"></div>
+        <div id="accountReviewLinks" class="admin-row"></div></div>
       </section>
       <section class="admin-card wide" id="review-policies" data-workspace-panel data-admin-panel="true" hidden>
         <h2>审核规则</h2>
@@ -162,12 +162,13 @@
   <script src="assets/vendor/katex-0.16.11/katex.min.js"></script><script src="assets/vendor/katex-0.16.11/auto-render.min.js"></script><script src="js/theme.js?v=1"></script>
   <script src="js/config.js?v=3"></script>
   <script src="js/auth.js?v=4"></script>
-  <script src="js/blog-data.js?v=10"></script>
+  <script src="js/blog-data.js?v=13"></script>
   <script src="js/github-credentials.js?v=12"></script>
+  <script src="js/categories.js"></script>
   <script src="js/community-schema.js?v=10"></script>
-  <script src="js/resumable-upload.js?v=12"></script><script src="js/community-data.js?v=13"></script>
-  <script src="js/public-cards.js?v=1"></script><script src="js/content-editor.js?v=12"></script><script src="js/workspace.js?v=2"></script><script src="js/community-ui.js?v=13"></script>
+  <script src="js/resumable-upload.js?v=12"></script><script src="js/backend-capabilities.js?v=13"></script><script src="js/community-data.js?v=13"></script>
+  <script src="js/public-cards.js?v=1"></script><script src="js/content-editor.js?v=13"></script><script src="js/workspace.js?v=13"></script><script src="js/community-ui.js?v=13"></script>
   <script src="js/resource-manager.js?v=12"></script><script src="js/asset-center.js?v=12"></script><script src="js/comment-edit-data.js?v=10"></script><script src="js/account-comments.js?v=2"></script>
-  <script src="js/posts.js?v=9"></script><script src="js/moments.js?v=9"></script><script src="js/albums.js?v=9"></script><script src="js/content.js?v=10"></script><script src="js/legacy-content.js?v=12"></script><script src="js/management.js?v=12"></script><script src="js/account.js?v=12"></script>
+  <script src="js/posts.js?v=9"></script><script src="js/moments.js?v=9"></script><script src="js/albums.js?v=9"></script><script src="js/content.js?v=10"></script><script src="js/legacy-content.js?v=12"></script><script src="js/management.js?v=13"></script><script src="js/review-center.js?v=13"></script><script src="js/account.js?v=13"></script>
 </body>
 </html>

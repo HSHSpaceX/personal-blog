@@ -1,4 +1,5 @@
 import { readFile, readdir } from 'node:fs/promises';
+import {Install_Transform} from '../../scripts/build-compatible-install.mjs';
 export const modulePath = process.env.PGLITE_MODULE;
 export const actors = {
   user: '00000001-0000-4000-8000-000000000001',
@@ -6,11 +7,11 @@ export const actors = {
   admin: '00000003-0000-4000-8000-000000000003',
   admin2: '00000004-0000-4000-8000-000000000004'
 };
-export async function createDatabase({ through } = {}) {
+export async function createDatabase({ through,compatible=false } = {}) {
   const { PGlite } = await import(modulePath);
   const db = new PGlite();
   try {
-    await prepareDatabase(db, {through});
+    await prepareDatabase(db, {through,compatible});
     return db;
   } catch (error) { await db.close(); throw error; }
 }
@@ -31,7 +32,7 @@ export async function asActor(db, role, id, sql, params = []) {
   } catch (error) { await db.exec('rollback'); throw error; }
 }
 
-export async function prepareDatabase(db, {through} = {}) {
+export async function prepareDatabase(db, {through,compatible=false} = {}) {
     await db.exec(`
       create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
       create schema auth; create schema storage;
@@ -42,7 +43,7 @@ export async function prepareDatabase(db, {through} = {}) {
         $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
       create table auth.users(id uuid primary key, raw_user_meta_data jsonb default '{}');
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-      create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text, metadata jsonb);
+      create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text, metadata jsonb, unique(bucket_id,name));
       alter table storage.objects enable row level security;
       grant select, insert, update, delete on storage.objects to anon, authenticated;
       create function storage.foldername(name text) returns text[] language sql immutable as
@@ -50,7 +51,9 @@ export async function prepareDatabase(db, {through} = {}) {
     `);
     for (const name of (await readdir(new URL('../../supabase/migrations/', import.meta.url))).sort()) {
       if (through && name > through) continue;
-      const sql = (await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8'))
+      let sql = await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8');
+      if(compatible)sql=Install_Transform(name,sql);
+      sql=sql
         .replace('create extension if not exists pgcrypto;', '');
       await db.exec(sql);
     }

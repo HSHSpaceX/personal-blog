@@ -9,7 +9,7 @@ import {reconcile,desiredSnapshot,validateMedia,legacyCatalogue,serviceAdapter} 
 import {fixture,ids,attack} from './fixtures/community-publish/source.mjs';
 const require=createRequire(import.meta.url),publicData=require('../js/community-public.js'),search=require('../js/search-core.js');
 const root=new URL('../',import.meta.url),sha='a'.repeat(40);
-export async function fixtureSite(){const directory=await mkdtemp(path.join(tmpdir(),'community-publication-'));await cp(root,directory,{recursive:true,filter:src=>!/(?:^|[\\/])(?:\.git|node_modules)(?:[\\/]|$)/.test(src)});await writeFile(directory+'/data/community-public.json',JSON.stringify({version:1,items:[]},null,2)+'\n');return directory;}
+export async function fixtureSite(){const directory=await mkdtemp(path.join(tmpdir(),'community-publication-'));await cp(root,directory,{recursive:true,filter:src=>!/(?:^|[\\/])(?:\.git|node_modules|work)(?:[\\/]|$)/.test(src)});await writeFile(directory+'/data/community-public.json',JSON.stringify({version:1,items:[]},null,2)+'\n');return directory;}
 function generate(dir){execFileSync(process.execPath,['scripts/generate-site.mjs'],{cwd:dir,stdio:'pipe'});}
 test('publisher full desired state: current pointer only, referenced media only, stable identity, idempotence, replacement/deletion and cleanup',async()=>{
  const f=fixture(),dir=await fixtureSite();try{
@@ -60,6 +60,8 @@ test('service HTTP adapter stays in exact bucket boundaries, cleans only generat
  const adapter=serviceAdapter({url:'https://fixture.supabase.invalid',key,fetchImpl:async(url,options)=>{
   assert.equal(options.headers.apikey,key);assert.equal(options.headers.Authorization,'Bearer '+key);const u=new URL(url);requests.push([u.pathname,options.method||'GET']);const args=options.headers['Content-Type']==='application/json'?JSON.parse(options.body):null;
   if(u.pathname.endsWith('/community_publication_export'))return response(f.rows);
+  if(u.pathname.endsWith('/community_release_preflight'))return response({version:20261013});
+  if(u.pathname.endsWith('/community_deleted_export'))return response([]);
   if(u.pathname.endsWith('/community_site_settings_export'))return response(null);
   if(u.pathname.endsWith('/community_sync_legacy_targets'))return response(null);
   if(u.pathname.endsWith('/community_publication_result')){f.results.push(args);return response(true);}

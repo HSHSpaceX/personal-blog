@@ -72,3 +72,26 @@ a.moment-avatar img { width: 100%; height: 100%; border-radius: inherit; object-
 #dmImagePreview img { display: block; max-width: 100%; max-height: 70dvh; object-fit: contain; }
 .dm-image { cursor: zoom-in; }
 @media(max-width:650px){#dmPanel.chat-open .dm-conversations{display:none}#dmPanel:not(.chat-open) .dm-chat{display:none}#dmBack{display:inline-flex}.dm-chat{padding:12px}#dmHistory{height:42dvh}.message-center .admin-card{padding:16px}}
+
+/* Original page composers retain their own small forms. */
+.compose-dialog { width:min(900px,calc(100vw - 24px)); max-height:90dvh; overflow:auto; border:1px solid var(--glass-border); border-radius:24px; background:var(--glass-strong); color:var(--ink); backdrop-filter:var(--blur); box-shadow:var(--shadow-lg); }
+.compose-dialog::backdrop { background:rgba(0,0,0,.4); backdrop-filter:blur(6px); }
+#pageComposer .composer-body { min-width:0; width:100%; }
+#pageComposer input:not([type=file]),#pageComposer textarea { width:100%; box-sizing:border-box; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px; font:inherit; }
+#pageComposer .composer-bar { display:flex; flex-wrap:wrap; gap:8px; }
+#composeMedia { display:flex; gap:12px; flex-wrap:wrap; }
+.compose-media-card { width:200px; max-width:100%; margin:8px 0; }
+.compose-media-card img,.compose-media-card video { width:100%; height:140px; object-fit:cover; border-radius:12px; }
+.compose-media-card .btn { padding:6px 10px; }
+.user-avatar { overflow:visible; }
+.user-avatar .menu-badge { z-index:2; border:2px solid var(--bg); }
+.album-page-composer { margin-block:24px 48px; padding:28px; border:1px solid var(--glass-border); border-radius:24px; background:var(--glass-strong); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); box-shadow:var(--shadow-lg); scroll-margin-top:110px; }
+.album-page-composer h2 { margin:0 0 20px; }
+#composeMedia { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); margin-block:16px; }
+.compose-media-card { width:auto; }
+.compose-dialog { padding:24px; }
+.compose-dialog input:not([type=file]) { max-width:100%; width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; margin-block:8px 16px; }
+.compose-dialog .community-row { display:flex; align-items:center; gap:12px; padding:12px 0; overflow-wrap:anywhere; }
+.compose-dialog .community-row span { flex:1; min-width:0; }
+.compose-dialog .resource-thumb { width:52px; height:52px; object-fit:cover; border-radius:10px; }
+@media(max-width:700px){.album-page-composer{padding:20px}.compose-dialog{padding:16px}}

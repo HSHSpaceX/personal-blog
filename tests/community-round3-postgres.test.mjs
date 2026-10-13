@@ -118,13 +118,8 @@ test('Round 3 assets and concurrency: private pages/rename/reference deletion, o
  await c.deny(other,'select public.community_prepare_orphan_delete($1)',[orphan.o]);await c.deny(admin,'select public.community_prepare_orphan_delete($1)',[orphan.o]);
  await c.deny(user,'select public.community_prepare_orphan_delete($1)',[o.o],/registered/);
  c.eq((await c.run(user,'select public.community_prepare_orphan_delete($1) as path',[orphan.o])).rows[0].path,orphan.name);
- // Registration racing with Storage deletion after orphan preparation must win safely.
- const registering=await connection(db,user),removing=await connection(db,user);await registering.query('select public.community_register_asset($1,$2)',[orphan.name,'Racing registry']);
- const pid=(await removing.query('select pg_backend_pid() as pid')).rows[0].pid;
- const deletion=removing.query('delete from storage.objects where id=$1',[orphan.o]).then(()=>({ok:true}),error=>({error}));
- await waitLock(db,pid);await registering.query('commit');const result=await deletion;assert.match(result.error?.message||'',/Orphan became registered/);await removing.query('rollback');
- const registered=(await db.query('select id from public.user_assets where storage_object_id=$1',[orphan.o])).rows[0].id;
- await c.run(user,'select public.community_prepare_asset_delete($1)',[registered]);await c.rows(user,'delete from storage.objects where id=$1 returning id',[orphan.o],1);
+ // Once deletion is prepared, the path is reserved; registration must fail.
+ const registering=await connection(db,user);await assert.rejects(registering.query('select public.community_register_asset($1,$2)',[orphan.name,'Racing registry']),/reserved for deletion/);await registering.query('rollback');await c.rows(user,'delete from storage.objects where id=$1 returning id',[orphan.o],1);
  const clean=await c.object(user);await c.run(user,'select public.community_prepare_orphan_delete($1)',[clean.o]);await c.rows(user,'delete from storage.objects where id=$1 returning id',[clean.o],1);
  await c.deny(user,'select * from public.community_asset_delete_intents');await c.deny(user,"update public.user_assets set original_name='bypass'");
  c.eq((await db.query("select public from storage.buckets where id='community-assets'")).rows[0].public,false);

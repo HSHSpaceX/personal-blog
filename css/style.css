@@ -619,6 +619,7 @@ img[src$="icon.jpg"] {
   gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 4px;
   padding: 4px 4px 18px;
   margin: 0 -4px;
   scrollbar-width: none;

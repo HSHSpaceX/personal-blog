@@ -10,6 +10,7 @@
     var logged = !!auth.user();
     document.querySelectorAll('.btn-login').forEach(function (el) { el.hidden = logged; });
     document.querySelectorAll('.user-menu-wrap').forEach(function (el) { el.hidden = !logged; });
+    document.querySelectorAll('.user-menu').forEach(function(menu){if(!menu.querySelector('.dm-badge')){var link=document.createElement('a'),badge=document.createElement('span');link.className='user-menu-item';link.href='messages.html?tab=dm';link.rel='nofollow';link.textContent='私信 ';badge.className='menu-badge dm-badge';badge.hidden=true;link.appendChild(badge);var notification=menu.querySelector('.notification-badge');if(notification)notification.closest('a').after(link);}});
     document.querySelectorAll('[data-admin-links]').forEach(function (slot) {
       slot.replaceChildren();
       if (!logged || !auth.isAdmin()) return;
@@ -17,16 +18,18 @@
         var link = document.createElement('a');
         link.className = 'user-menu-item'; link.href = entry[0]; link.rel = 'nofollow';
         link.textContent = entry[1];
-        if (entry[0] === 'admin.html#messages') {
-          var badge = document.createElement('span'); badge.className = 'menu-badge'; badge.hidden = true;
+        if (entry[0] === 'account.html#review-center') {
+          var badge = document.createElement('span'); badge.className = 'menu-badge review-badge'; badge.hidden = true;
           link.appendChild(badge);
         }
         slot.appendChild(link);
       });
     });
     if (!logged) closeUserMenus();
-    if (logged) window.BlogData.getProfile(auth.user().id).then(function (profile) {
-      if (profile && profile.avatar_url) document.querySelectorAll('.user-avatar img').forEach(function (img) { img.src = profile.avatar_url; });
+    var actor=logged?auth.user().id:null;
+    document.querySelectorAll('.user-avatar img').forEach(function(img){img.src='assets/avatar-default.jpg';});
+    if (logged) window.BlogData.getProfile(actor).then(function (profile) {
+      if (auth.user()&&auth.user().id===actor&&profile && profile.avatar_url) document.querySelectorAll('.user-avatar img').forEach(function (img) { img.src = profile.avatar_url; });
     }).catch(function () {});
   }
   function closeUserMenus() {
@@ -128,7 +131,7 @@
 
   function Featured_RenderPage() {
     var grid=document.getElementById('featuredGrid');if(!grid)return;
-    var selected=posts.filter(function(p){return p.featured===true;}).sort(function(a,b){return b.date.localeCompare(a.date);}),page=Math.max(1,Math.min(Math.ceil(selected.length/12)||1,Math.floor(Number(new URLSearchParams(location.search).get('page')))||1));
+    var selected=posts.filter(function(p){return p.featured===true;}).sort(Featured_CompareDate),page=Math.max(1,Math.min(Math.ceil(selected.length/12)||1,Math.floor(Number(new URLSearchParams(location.search).get('page')))||1));
     grid.innerHTML=selected.slice((page-1)*12,page*12).map(renderPostCard).join('')||'<p>暂无精选文章。</p>';
     document.getElementById('featuredPage').textContent='第 '+page+' 页';
     [['featuredPrev',page-1,page===1],['featuredNext',page+1,page*12>=selected.length]].forEach(function(entry){var button=document.getElementById(entry[0]);button.disabled=entry[2];button.onclick=function(){var url=new URL(location.href);url.searchParams.set('page',entry[1]);location.assign(url.href);};});
@@ -165,23 +168,22 @@
       '<span>' + escapeHtml(post.readingTime) + ' 分钟阅读</span></div></article>';
   }
 
+  function Featured_CompareDate(a,b) { return Date.parse(b.published_at||b.date)-Date.parse(a.published_at||a.date)||a.slug.localeCompare(b.slug); }
   function renderHome() {
     var gridEl = document.getElementById('postGrid');
     var statsEl = document.getElementById('introStats');
     var categoryEl = document.getElementById('categoryList');
 
-    var sorted = posts.slice().sort(function (a, b) {
-      return b.date.localeCompare(a.date);
-    });
+    var sorted = posts.slice().sort(Featured_CompareDate);
 
     var railEl = document.getElementById('featuredRail');
     if (railEl) {
-      var featured = sorted.filter(function (post) { return post.featured === true; });
+      var featured = sorted.filter(function (post) { return post.featured === true; }).slice(0,4);
       railEl.innerHTML = featured.map(renderRailCard).join('');
       var section = document.getElementById('featuredSection');
       if (section) section.hidden = featured.length === 0;
       var nav = railEl.parentElement.querySelector('.rail-nav');
-      if (nav) nav.hidden = featured.length < 2;
+      if (nav) nav.hidden = featured.length === 0;
       ['railPrev', 'railNext'].forEach(function (id) {
         var button = document.getElementById(id);
         if (button) button.disabled = featured.length < 2;
@@ -967,7 +969,7 @@
   }
 
   function updatePendingBadge(count) {
-    document.querySelectorAll('.menu-badge:not(.notification-badge)').forEach(function (el) {
+    document.querySelectorAll('.review-badge').forEach(function (el) {
       if (count > 0) {
         el.textContent = count > 99 ? '99+' : String(count);
         el.hidden = false;
@@ -977,32 +979,16 @@
     });
   }
 
-  function refreshPendingBadge() {
-    if (!isAuthed()) { updatePendingBadge(0); return; }
-    window.BlogData.listModeration().then(function (rows) {
-      updatePendingBadge(rows.filter(function (row) { return row.status === 'pending'; }).length);
-    }).catch(function () { updatePendingBadge(0); });
-  }
-
-  function updateNotificationBadge(count) {
-    document.querySelectorAll('.notification-badge').forEach(function (el) {
-      if (count > 0) {
-        el.textContent = count > 99 ? '99+' : String(count);
-        el.hidden = false;
-      } else {
-        el.hidden = true;
-      }
+  var notificationBadgeGeneration=0, notificationBadgeActor=null, unreadNotifications=null, unreadDirect=null;
+  function Badge_Set(selector,count,label){document.querySelectorAll(selector).forEach(function(el){el.hidden=!(count>0);el.textContent=count>99?'99+':String(count||0);el.setAttribute('aria-label',label+' '+count);});}
+  function refreshPendingBadge(){var actor=window.BlogAuth.user();if(!actor||!window.BlogAuth.isAdmin()){updatePendingBadge(0);return;}var request=window.BlogData.reviewCount?window.BlogData.reviewCount():window.BlogData.listModeration().then(function(rows){return rows.filter(function(r){return r.status==='pending';}).length;});request.then(function(n){if(window.BlogAuth.user()&&window.BlogAuth.user().id===actor.id&&window.BlogAuth.isAdmin())updatePendingBadge(n);}).catch(function(){});}
+  function refreshNotificationBadge(){var token=++notificationBadgeGeneration,actor=window.BlogAuth.user();if(notificationBadgeActor!==(actor&&actor.id)){unreadNotifications=null;unreadDirect=null;notificationBadgeActor=actor&&actor.id;Badge_Set('.notification-badge, .dm-badge, .user-avatar .menu-badge',0,'未读消息');updatePendingBadge(0);}if(!actor)return;
+    Promise.allSettled([window.BlogData.notificationCount(),window.BlogData.dmUnreadCount()]).then(function(results){if(token!==notificationBadgeGeneration||!window.BlogAuth.user()||window.BlogAuth.user().id!==actor.id)return;
+      if(results[0].status==='fulfilled'){unreadNotifications=results[0].value;Badge_Set('.notification-badge',unreadNotifications,'未读通知');}
+      if(results[1].status==='fulfilled'){unreadDirect=results[1].value;Badge_Set('.dm-badge',unreadDirect,'未读私信');}
+      if(unreadNotifications!==null&&unreadDirect!==null)Badge_Set('.user-avatar .menu-badge',unreadNotifications+unreadDirect,'未读消息');
+      if(results.some(function(r){return r.status==='rejected';}))document.querySelectorAll('.user-avatar .menu-badge').forEach(function(el){el.setAttribute('aria-label','部分未读消息暂时无法更新');});
     });
-  }
-
-  var notificationBadgeGeneration = 0;
-  function refreshNotificationBadge() {
-    var token = ++notificationBadgeGeneration, actor = window.BlogAuth.user();
-    updateNotificationBadge(0);
-    if (!window.BlogAuth.user()) { updateNotificationBadge(0); return; }
-    window.BlogData.messageUnreadCount().then(function (count) {
-      if (token === notificationBadgeGeneration && window.BlogAuth.user() && window.BlogAuth.user().id === actor.id) updateNotificationBadge(count);
-    }).catch(function () { if (token === notificationBadgeGeneration) updateNotificationBadge(0); });
   }
 
   function setupRail() {
@@ -1011,12 +997,13 @@
     var next = document.getElementById('railNext');
     if (!rail || !prev || !next) return;
 
-    function scrollRail(direction) {
-      rail.scrollBy({
-        left: direction * Math.max(rail.clientWidth - 100, 260),
-        behavior: 'smooth'
-      });
-    }
+    function Rail_Positions(){var start=rail.getBoundingClientRect().left+parseFloat(getComputedStyle(rail).paddingLeft||0);return Array.from(rail.children).map(function(card){return Math.min(rail.scrollWidth-rail.clientWidth,Math.max(0,card.getBoundingClientRect().left-start+rail.scrollLeft));});}
+    function Rail_Update(){prev.disabled=rail.scrollLeft<=2;next.disabled=rail.scrollLeft>=rail.scrollWidth-rail.clientWidth-2;}
+    function scrollRail(direction) {var positions=Rail_Positions(),left=rail.scrollLeft,target=direction>0?positions.find(function(x){return x>left+2;}):positions.reverse().find(function(x){return x<left-2;});if(target!==undefined)rail.scrollTo({left:target,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
+    rail.addEventListener('scroll',Rail_Update,{passive:true});window.addEventListener('resize',Rail_Update);
+    rail.querySelectorAll('img').forEach(function(img){img.addEventListener('load',Rail_Update);});
+    if(window.ResizeObserver)new ResizeObserver(Rail_Update).observe(rail);
+    var pointer=null,dragged=false;rail.addEventListener('pointerdown',function(e){pointer={x:e.clientX,y:e.clientY};dragged=false;},{passive:true});rail.addEventListener('pointermove',function(e){if(pointer&&Math.abs(e.clientX-pointer.x)>10)dragged=true;},{passive:true});rail.addEventListener('pointerup',function(){pointer=null;},{passive:true});rail.addEventListener('click',function(e){if(dragged){e.preventDefault();dragged=false;}},true);Rail_Update();
 
     prev.addEventListener('click', function () {
       scrollRail(-1);
@@ -1049,6 +1036,9 @@
     setupMenu();
     setupReveal();
     setupRail();
+    document.addEventListener('visibilitychange',function(){if(!document.hidden){refreshNotificationBadge();refreshPendingBadge();}});document.addEventListener('blog-review-change',refreshPendingBadge);
+    window.addEventListener('pageshow',refreshNotificationBadge);
+    window.setInterval(function(){if(!document.hidden)refreshNotificationBadge();},30000);
   }
 
   // 本站仓库的 GitHub 提交热力图:悬停显示当天提交次数,不跳转
