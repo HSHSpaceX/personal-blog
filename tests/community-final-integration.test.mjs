@@ -1,7 +1,8 @@
+import {Fixture_CopySite} from './helpers/site-fixture.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {readFile,mkdtemp,cp,rm} from 'node:fs/promises';
+import {readFile,mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {createDatabase,seedActors,asActor,actors,modulePath} from './helpers/postgres.mjs';
 import {createNativeDatabase,nativeConfigured} from './helpers/native-postgres.mjs';
@@ -64,7 +65,7 @@ test('Legacy conversion/import dry-run preserves real main documents, rejects un
  }finally{dom.window.close();}
 });
 test('Publisher mapped legacy preserves URLs/dates/featured and replaces exactly one card; source collisions fail before mutations',async()=>{
- const root=new URL('../',import.meta.url),dir=await mkdtemp(tmpdir()+'/legacy-publisher-'),f=fixture();try{await cp(root,dir,{recursive:true,filter:p=>!/(?:^|[\\/])(?:\.git|node_modules|work)(?:[\\/]|$)/.test(p)});
+ const root=new URL('../',import.meta.url),dir=await mkdtemp(tmpdir()+'/legacy-publisher-'),f=fixture();try{await Fixture_CopySite(root,dir);
   const plan=await Legacy_Plan(dir),e=plan.entries.find(e=>e.type==='article'),row=f.rows[0];row.slug=e.target_id;row.featured=true;row.legacy={target_type:'post',target_id:e.target_id,source_sha256:e.source_sha256,published_at:e.published_at};
   const result=await reconcile({adapter:f.adapter,directory:dir});const posts=publicData.mergePosts(plan.entries.filter(e=>e.type==='article').map(e=>e.row),result.snapshot);assert.equal(posts.filter(p=>p.slug===row.slug).length,1);const mapped=posts.find(p=>p.slug===row.slug);assert.equal(mapped.date,e.row.date);assert.equal(mapped.featured,true);assert.equal(mapped.community,false);
   const previous=await readFile(dir+'/data/community-public.json','utf8'),uploads=f.calls.filter(c=>c[0]==='upload').length;row.legacy.source_sha256='b'.repeat(64);await assert.rejects(reconcile({adapter:f.adapter,directory:dir}),/INVALID_SNAPSHOT/);assert.equal(await readFile(dir+'/data/community-public.json','utf8'),previous);assert.equal(f.calls.filter(c=>c[0]==='upload').length,uploads);

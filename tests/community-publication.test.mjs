@@ -1,6 +1,7 @@
+import {Fixture_CopySite} from './helpers/site-fixture.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,cp,readFile,writeFile,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {tmpdir} from 'node:os';
@@ -9,7 +10,7 @@ import {reconcile,desiredSnapshot,validateMedia,legacyCatalogue,serviceAdapter} 
 import {fixture,ids,attack} from './fixtures/community-publish/source.mjs';
 const require=createRequire(import.meta.url),publicData=require('../js/community-public.js'),search=require('../js/search-core.js');
 const root=new URL('../',import.meta.url),sha='a'.repeat(40);
-export async function fixtureSite(){const directory=await mkdtemp(path.join(tmpdir(),'community-publication-'));await cp(root,directory,{recursive:true,filter:src=>!/(?:^|[\\/])(?:\.git|node_modules|work)(?:[\\/]|$)/.test(src)});await writeFile(directory+'/data/community-public.json',JSON.stringify({version:1,items:[]},null,2)+'\n');return directory;}
+export async function fixtureSite(){const directory=await mkdtemp(path.join(tmpdir(),'community-publication-'));await Fixture_CopySite(root,directory);await writeFile(directory+'/data/community-public.json',JSON.stringify({version:1,items:[]},null,2)+'\n');return directory;}
 function generate(dir){execFileSync(process.execPath,['scripts/generate-site.mjs'],{cwd:dir,stdio:'pipe'});}
 test('publisher full desired state: current pointer only, referenced media only, stable identity, idempotence, replacement/deletion and cleanup',async()=>{
  const f=fixture(),dir=await fixtureSite();try{

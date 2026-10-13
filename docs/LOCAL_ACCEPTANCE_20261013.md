@@ -14,6 +14,8 @@
 
 ## 测试证据
 
+首次推送后的 Linux CI 发现夹具复制过滤误命中 Runner 的 `/home/runner/work` 祖先目录，导致 8 项缺文件失败；已改为仅判断仓库内相对路径，并增加实际包含 `work` 祖先的复制回归。该问题属于测试夹具，前端与 SQL 不受影响。最终提交的 CI 结果以交接包为准。
+
 完整 `node --test tests/*.test.cjs tests/*.test.mjs`：**118 项通过，0 失败，0 skipped**。含 PGlite、原生 PostgreSQL 18.4 多连接竞争、DOM、实际 Edge/Chromium、供应链。最后对原页状态、目录记忆、恢复队列等调整后，33 项受影响回归再次全部通过；交接包保存最终合同测试日志。
 
 `generate-site.mjs`、SEO、secret scan、供应链字节/许可保护和 `git diff --check` 通过。依赖只在忽略的 `work` 目录：沿用 CI 固定的 PGlite 0.3.14、pg 8.16.3、jsdom 26.1.0、playwright-core 1.56.1；Windows PostgreSQL 使用同版本平台包 18.4.0-beta.17。没有新增应用 npm 依赖、替换 vendored 文件或修改供应链 hash。Windows 原生测试监听随机 loopback 端口；Linux 仍使用本地 Unix socket。
