@@ -50,7 +50,7 @@
     catch (error) {
       if (Community_ActorActive(actor)) {
         var cleanup = await db.storage.from('community-assets').remove([path]);
-        if (cleanup.error) throw Error('资源登记失败且清理未完成：'+error.message+'；对象路径：'+path);
+        if (cleanup.error) throw Error('资源登记失败，自动清理尚未完成。请在资源中心检查未登记上传后重试；本次未保存资源引用。');
       }
       throw error;
     }

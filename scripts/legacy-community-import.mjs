@@ -1,6 +1,7 @@
 // Operator tool: inspect locally; writes require a reviewed main Actions run.
 import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import vm from 'node:vm';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
@@ -58,6 +59,11 @@ export async function Legacy_Import(plan,{directory=root,owner,DOMParser,adapter
  const results=[];for(const {entry,body} of prepared){const mapped=JSON.parse(JSON.stringify(body));if(mapped.asset_ids)mapped.asset_ids=mapped.asset_ids.map(id=>registered.get(id));if(mapped.cover_asset_id)mapped.cover_asset_id=registered.get(mapped.cover_asset_id);if(mapped.photos)mapped.photos.forEach(p=>{p.asset_id=registered.get(p.asset_id);});if(mapped.document)mapped.document.blocks.forEach(b=>{if(b.type==='asset')b.asset_id=registered.get(b.asset_id);});results.push(await adapter.import(owner,entry,mapped));}
  return results;
 }
+export function Legacy_ValidateExecution(env,sourceSHA){
+ if(env.GITHUB_ACTIONS!=='true'||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_EVENT_NAME!=='workflow_dispatch')throw Error('Apply requires a reviewed main workflow_dispatch');
+ if(!/^[a-f0-9]{40}$/.test(env.LEGACY_SOURCE_SHA||'')||env.LEGACY_SOURCE_SHA!==sourceSHA||env.GITHUB_SHA!==sourceSHA)throw Error('Reviewed source SHA mismatch; regenerate and review the plan on the current main commit');
+ if(!env.SUPABASE_URL?.trim()||!env.SUPABASE_SERVICE_ROLE_KEY?.trim())throw Error('Import configuration missing: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required; no writes performed');
+}
 export function Legacy_ServiceAdapter(url,key,fetchImpl=fetch){
  const origin=new URL(url);if(origin.protocol!=='https:'||origin.pathname!=='/'||origin.username||origin.password||origin.search||origin.hash)throw Error('Invalid service origin');
  async function Legacy_Request(route,options={}){const r=await fetchImpl(new URL(route,origin),{...options,redirect:'error',signal:AbortSignal.timeout(120000),headers:{apikey:key,Authorization:'Bearer '+key,...options.headers}});if(!r.ok)throw Error('Legacy server operation failed; inspect protected server logs');return r;}
@@ -70,7 +76,7 @@ export function Legacy_ServiceAdapter(url,key,fetchImpl=fetch){
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{if(process.argv.includes('--apply')){
-  if(process.env.GITHUB_ACTIONS!=='true'||process.env.GITHUB_REF!=='refs/heads/main'||process.env.GITHUB_EVENT_NAME!=='workflow_dispatch')throw Error('Apply requires a reviewed main workflow_dispatch');
+  Legacy_ValidateExecution(process.env,execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim());
   const planFile=process.argv[process.argv.indexOf('--apply')+1],plan=JSON.parse(await readFile(planFile,'utf8'));if(digest(JSON.stringify(plan))!==process.env.LEGACY_PLAN_SHA256)throw Error('Reviewed plan digest mismatch');
   const {JSDOM}=await import(process.env.COMMUNITY_DOM_MODULE),dom=new JSDOM('');try{await Legacy_Import(plan,{owner:process.env.LEGACY_OWNER_ID,DOMParser:dom.window.DOMParser,adapter:Legacy_ServiceAdapter(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY)});}finally{dom.window.close();}console.log('Audited import completed; run the publication workflow and verify actual Pages deployment.');
  }else{const output=process.argv[process.argv.indexOf('--output')+1];if(!process.argv.includes('--output')||!output)throw Error('Use --output <reviewed-plan.json>');const plan=await Legacy_Plan();await writeFile(output,JSON.stringify(plan,null,2)+'\n');console.log('Dry-run only: '+plan.entries.length+' public entries; digest '+digest(JSON.stringify(plan))+'. No network or database writes.');}}

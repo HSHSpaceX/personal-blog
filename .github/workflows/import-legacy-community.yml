@@ -2,6 +2,9 @@ name: Reviewed legacy Community import
 on:
   workflow_dispatch:
     inputs:
+      source_sha:
+        description: Exact reviewed current main Git SHA (40 lowercase hex characters)
+        required: true
       plan_digest:
         description: SHA256 printed by the reviewed dry-run on this exact main commit
         required: true
@@ -27,6 +30,7 @@ jobs:
       - run: node scripts/legacy-community-import.mjs --output /tmp/legacy-plan.json
       - run: node scripts/legacy-community-import.mjs --apply /tmp/legacy-plan.json
         env:
+          LEGACY_SOURCE_SHA: ${{ inputs.source_sha }}
           LEGACY_PLAN_SHA256: ${{ inputs.plan_digest }}
           LEGACY_OWNER_ID: ${{ inputs.owner_id }}
           COMMUNITY_DOM_MODULE: file:///tmp/legacy-dom/node_modules/jsdom/lib/api.js

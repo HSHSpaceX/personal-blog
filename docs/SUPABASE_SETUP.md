@@ -1,10 +1,12 @@
 # Supabase 邀请制部署
 
+> 当前完整 27 项安装、已有库分流和生产操作以 [最终部署手册](FINAL_DEPLOYMENT_GUIDE_20261018.md) 与 [Supabase 专项包](SUPABASE_OPERATOR_PACK_20261018.md) 为准。已有库不能重复运行下面提到的历史初始化文件。
+
 正式站点：`https://hsh-personal-blog.pages.dev/`。此仓库只提交公开的 Supabase URL 和 publishable/anon key。**service_role、数据库密码、SMTP 密码、GitHub PAT 不得写入仓库或网页配置。**
 
 1. 在 Supabase 创建项目。在 **Authentication → Providers → Email** 启用邮箱密码；在 **Authentication → Settings** 关闭 **Allow new users to sign up**（公开注册）。按项目当前 Dashboard 的提示配置邮件服务；生产环境建议使用自己的 SMTP。不要在页面提供 `signUp` 按钮。
 2. 在 **Authentication → URL Configuration** 将 Site URL 设为 `https://hsh-personal-blog.pages.dev/`，允许重定向 URL 加入 `https://hsh-personal-blog.pages.dev/login.html?reset=1`，也可加入 Cloudflare 无扩展名形式 `/login?reset=1`。邀请邮件/重置邮件须使用正确正式域名。
-3. 在 **SQL Editor** 依次执行 `supabase/migrations/202609300001_invite_auth.sql`、`supabase/migrations/202609300002_private_reactions.sql`、`supabase/migrations/202610010003_security_hardening.sql`。检查 `profiles`、`user_roles`、`comments`、`likes`、`follows` 已启用 RLS；原始点赞／关注关系只允许本人读取，公开计数经 `like_counts`、`follower_count`、`user_like_count` RPC；`avatars` bucket 公开可读、单文件 2 MB、仅 JPG/PNG/WebP。迁移先于邀请用户执行；若已有 Auth 用户，请手工为每个用户补 `profiles` 和 `user_roles`。
+3. 在 **SQL Editor** 先运行 `supabase/preflight.sql` 和 `supabase/postflight.sql`，按专项包区分空库、完整旧库及部分安装。空库使用全 27 项兼容安装包；已有库只执行缺少的完整 migration。最初三份 Auth migration 的历史名称保留在专项包顺序表，不能只装三份就开始 Community 验收。检查 `profiles`、`user_roles`、`comments`、`likes`、`follows` RLS、计数 RPC 以及 `avatars` 限制；已有 Auth 用户缺少资料/角色时停止并审阅补齐方案。
 4. 在 **Authentication → Users** 用 Dashboard 手动邀请/创建站长账号。复制其 UUID。在 SQL Editor 执行以下命令，将占位 UUID 替换成真实 UUID：
 
    ```sql

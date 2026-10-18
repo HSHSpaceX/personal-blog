@@ -10,4 +10,4 @@
 
 退出、账号切换和权限降级优先清除私有编辑内容及签名预览，未保存提醒不能阻止安全清理。正文与签名不写入额外本机持久存储；保存失败保留 dirty，已保存但提交失败明确区分状态并重用 revision。
 
-Auth 回跳、密码重置、SMTP、独立 RC、22 项迁移、历史导入、GitHub publisher 和 Cloudflare Pages 验收以 [发布手册](COMMUNITY_V2_RELEASE.md) 为准。本机没有连接生产 Supabase，CI 全绿不代表真实 Storage/Auth 已验收；不要自动合并 PR #4。
+Auth 回跳、密码重置、SMTP、27 项迁移、历史导入、GitHub Publisher 和 Cloudflare Pages 验收以 [最终部署手册](FINAL_DEPLOYMENT_GUIDE_20261018.md) 为准。本机没有连接生产 Supabase，CI 全绿不代表真实 Storage/Auth 已验收；不需要合并历史 PR。
