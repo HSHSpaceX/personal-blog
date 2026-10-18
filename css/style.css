@@ -4048,6 +4048,10 @@ a.tag-chip:hover {
 }
 
 /* Archive glass card */
+.post-pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px; margin-top:36px; padding-block:8px; }
+.post-pagination .btn { min-height:44px; min-width:88px; padding:10px 20px; border-radius:999px; background:var(--glass); border:1px solid var(--glass-border); color:var(--ink); backdrop-filter:var(--blur); box-shadow:var(--shadow); }
+.post-pagination .btn:disabled { opacity:.45; cursor:default; box-shadow:none; }
+.post-pagination span { color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
 .glass-card {
   border: 1px solid var(--glass-border);
   border-radius: 16px;

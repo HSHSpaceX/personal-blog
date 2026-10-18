@@ -51,8 +51,8 @@
       if (!workspace) { $('review-center').hidden = false; $('review-policies').hidden = false; }
     }
     if (workspace) {
-      $('accountAdminNav').querySelectorAll('a').forEach(function(a){a.className='';var route=a.hash.slice(1);if(a.pathname.endsWith('/account.html'))a.dataset.workspaceRoute=route;var icon=document.createElement('span');icon.dataset.menuIcon='';icon.setAttribute('aria-hidden','true');icon.textContent='◇';a.prepend(icon);});
-      document.querySelectorAll('[data-menu-icon]').forEach(function(icon,index){var paths=['<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>','<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/>','<rect x="3" y="4" width="18" height="16" rx="3"/><path d="m4 17 5-5 4 3 4-6 4 5"/>'];icon.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[index%paths.length]+'</svg>';});workspace.setEnabled(true);
+      $('accountAdminNav').querySelectorAll('a').forEach(function(a){a.className='';var route=a.hash.slice(1);if(a.pathname.endsWith('/account.html'))a.dataset.workspaceRoute=route;var icon=document.createElement('span');icon.dataset.menuIcon='';icon.setAttribute('aria-hidden','true');icon.innerHTML="<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">PLACEHOLDER</svg>".replace('PLACEHOLDER',({"review-center":"<rect x=\"4\" y=\"4\" width=\"16\" height=\"17\" rx=\"2\"/><path d=\"M9 4V2h6v2M8 10l2 2 5-5M8 17h8\"/>","review-policies":"<path d=\"M4 6h4M12 6h8M4 12h10M18 12h2M4 18h2M10 18h10\"/><circle cx=\"10\" cy=\"6\" r=\"2\"/><circle cx=\"16\" cy=\"12\" r=\"2\"/><circle cx=\"8\" cy=\"18\" r=\"2\"/>","featured-management":"<path d=\"m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z\"/>","site-settings":"<path d=\"M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M14 6l4-4 4 4-10 10-5 1 1-5Z\"/>","comment-moderation":"<path d=\"M21 11a8 8 0 0 1-8 8H7l-4 3V11a8 8 0 0 1 18 0ZM8 11l3 3 5-6\"/>"})[route]||'');a.prepend(icon);});
+      workspace.setEnabled(true);
     }
     status('欢迎回到账号中心。', 'ok');
     if (window.CommunityUI) window.CommunityUI.refresh();

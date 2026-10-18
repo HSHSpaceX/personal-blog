@@ -129,12 +129,22 @@
       '</article>';
   }
 
+  function Posts_CreatePage(rows,size){
+    var total=Math.max(1,Math.ceil(rows.length/size)),requested=Math.floor(Number(new URLSearchParams(location.search).get('page')))||1,page=Math.max(1,Math.min(total,Number.isFinite(requested)?requested:1));
+    return {rows:rows.slice((page-1)*size,page*size),page:page,total:total};
+  }
+  function Posts_RenderPager(page,host){
+    var nav=document.createElement('nav');nav.className='post-pagination';nav.setAttribute('aria-label','文章分页');
+    [['上一页',page.page-1,page.page===1],['下一页',page.page+1,page.page===page.total]].forEach(function(entry,index){
+      if(index){var label=document.createElement('span');label.textContent='第 '+page.page+' 页 / 共 '+page.total+' 页';if(host.id==='featuredPagination')label.id='featuredPage';label.setAttribute('aria-live','polite');nav.appendChild(label);}
+      var button=document.createElement('button');button.className='btn';button.type='button';if(host.id==='featuredPagination')button.id=index?'featuredNext':'featuredPrev';button.textContent=entry[0];button.disabled=entry[2];button.addEventListener('click',function(){var url=new URL(location.href);url.searchParams.set('page',String(entry[1]));location.assign(url.href);});nav.appendChild(button);
+    });host.appendChild(nav);
+  }
   function Featured_RenderPage() {
     var grid=document.getElementById('featuredGrid');if(!grid)return;
-    var selected=posts.filter(function(p){return p.featured===true;}).sort(Featured_CompareDate),page=Math.max(1,Math.min(Math.ceil(selected.length/12)||1,Math.floor(Number(new URLSearchParams(location.search).get('page')))||1));
-    grid.innerHTML=selected.slice((page-1)*12,page*12).map(renderPostCard).join('')||'<p>暂无精选文章。</p>';
-    document.getElementById('featuredPage').textContent='第 '+page+' 页';
-    [['featuredPrev',page-1,page===1],['featuredNext',page+1,page*12>=selected.length]].forEach(function(entry){var button=document.getElementById(entry[0]);button.disabled=entry[2];button.onclick=function(){var url=new URL(location.href);url.searchParams.set('page',entry[1]);location.assign(url.href);};});
+    var selected=posts.filter(function(p){return p.featured===true;}).sort(Featured_CompareDate),page=Posts_CreatePage(selected,12);
+    grid.innerHTML=page.rows.map(renderPostCard).join('')||'<p>暂无精选文章。</p>';
+    var pager=document.getElementById('featuredPagination');pager.replaceChildren();Posts_RenderPager(page,pager);
   }
   function renderRailCard(post, index) {
     return '' +
@@ -191,7 +201,8 @@
     }
 
     if (gridEl) {
-      gridEl.innerHTML = sorted.slice(0, 9).map(renderPostCard).join('');
+      var homePage=Posts_CreatePage(sorted,9);gridEl.innerHTML = homePage.rows.map(renderPostCard).join('');
+      var homePager=document.getElementById('postPagination');if(homePager){homePager.replaceChildren();Posts_RenderPager(homePage,homePager);}
       var latestMoreEl = document.getElementById('latestMore');
       if (latestMoreEl) {
         latestMoreEl.innerHTML = sorted.length > 9
@@ -353,6 +364,7 @@
       if (showFeatured && !post.featured) return false;
       return true;
     });
+    filtered.sort(Featured_CompareDate);var archivePage=Posts_CreatePage(filtered,12);
     var icon = group && group.cats[0] ? group.cats[0].icon : '';
     if (!group && activeCategory) {
       groups.forEach(function (item) { item.cats.forEach(function (cat) { if (cat.name === activeCategory) icon = cat.icon; }); });
@@ -382,7 +394,8 @@
         }).join('') : '') +
       '</div>' +
       '<div class="archive-list-inner">' +
-      (filtered.length ? filtered.map(renderArchiveRow).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') + '</div>';
+      (filtered.length ? archivePage.rows.map(renderArchiveRow).join('') : '<p class="empty-state">没有找到匹配的文章。</p>') + '</div>';
+    Posts_RenderPager(archivePage,listEl);
   }
 
   function renderTimeline() {

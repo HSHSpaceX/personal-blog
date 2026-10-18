@@ -11,6 +11,7 @@
     function Workspace_SetExpanded(expanded,remember) {
       root.classList.toggle('directory-open',expanded);toggle.setAttribute('aria-expanded',String(expanded));
       toggle.setAttribute('aria-label',expanded?'收起目录':'展开目录');
+      toggle.title=expanded?'收起目录':'展开目录';
       if(backdrop)backdrop.hidden=!expanded;
       var mobile=window.matchMedia('(max-width: 700px)').matches,body=root.querySelector('.workspace-body');
       if(body)body.inert=mobile&&expanded;

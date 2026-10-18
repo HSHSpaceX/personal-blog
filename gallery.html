@@ -15,8 +15,8 @@
   <!-- SEO_META_END -->
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="css/style.css?v=20261013">
-  <link rel="stylesheet" href="css/community.css?v=13">
+  <link rel="stylesheet" href="css/style.css?v=20261018">
+  <link rel="stylesheet" href="css/community.css?v=14">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
@@ -81,7 +81,8 @@
 
     <section class="band gallery-band">
       <div class="container">
-        <div id="galleryGrid" class="album-grid"></div>
+        <div class="content-filter" id="composeFilter" role="group" aria-label="图册筛选"><button type="button" class="btn" data-content-view="public" aria-pressed="true">全部公开</button><button type="button" class="btn" data-content-view="mine" aria-pressed="false" hidden>我的创作</button></div>
+        <div id="composePublic"><div id="galleryGrid" class="album-grid"></div>
         <div id="albumView" class="album-view" hidden>
           <div class="album-view-head">
             <a class="text-link" href="gallery.html">
@@ -94,7 +95,7 @@
           <div id="albumMeta" class="album-meta"></div>
           <div id="photoGrid" class="photo-grid"></div>
         </div>
-        <details><summary>我的图册与草稿</summary><div id="composeMine"></div></details>
+        </div><div id="composeMine" class="content-mine" hidden></div><p id="composeMineStatus" class="status-line" role="status" hidden></p>
         <p id="galleryStatus" class="status-line"></p>
       </div>
     </section>
@@ -108,7 +109,7 @@
  <div id="composeMedia" class="composer-preview"></div><div id="composePreview" class="prose" hidden></div>
  <div class="composer-bar"><button class="btn" id="composeChoose" type="button">选择资源</button><button class="btn" id="composePreviewButton" type="button">预览</button><button class="btn" id="composeSave" type="button">保存草稿</button><button class="btn primary" id="composeSubmit" type="button">发布 / 提交审核</button><button class="btn" id="composeCancel" type="button">取消</button></div>
  <p id="composeStatus" class="status-line" role="status" aria-live="polite"></p>
- <dialog id="composePicker" class="compose-dialog"><h2>资源中心</h2><label class="btn">上传图片<input id="composeUpload" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label><button id="composePickerClose" class="btn" type="button">返回编辑</button><label>搜索我的资源<input id="composeSearch" maxlength="120"></label><button class="btn" id="composeSearchButton" type="button">搜索</button><div id="composeResources"></div><button class="btn" id="composePrev" type="button">上一页</button><button class="btn" id="composeNext" type="button">下一页</button></dialog>
+ <dialog class="resource-picker rm-modal" id="composePicker" aria-labelledby="composePickerTitle"><div class="rm-head"><h2 id="composePickerTitle">资源中心</h2><button class="btn" id="composePickerClose" type="button">返回编辑器</button></div><div class="rm-upload-bar"><label>搜索文件<input id="composeSearch" maxlength="120" type="search"></label><label>类型<select id="composeKind"><option value="image">图片</option></select></label><button class="btn" id="composeSearchButton" type="button">搜索</button><label class="btn" role="button" tabindex="0">上传文件<input id="composeUpload" type="file" accept="image/jpeg,image/png,image/webp" hidden multiple></label></div><p class="status-line" id="composePickerStatus" role="status" aria-live="polite"></p><div id="composeResources" class="rm-body"></div><div id="composeViewer" class="resource-preview" aria-live="polite"></div><div class="rm-foot"><button class="btn" id="composePrev" type="button">上一页</button><span id="composePage" aria-live="polite"></span><button class="btn" id="composeNext" type="button">下一页</button></div></dialog>
  </div></section>
   <div class="lightbox" id="lightbox" hidden>
     <button class="lightbox-btn lightbox-close" id="lightboxClose" type="button" aria-label="关闭">
@@ -160,9 +161,9 @@
   <script src="js/community-public.js?v=13"></script>
   <script src="js/boot.js?v=9"></script>
   <script src="js/public-cards.js?v=1"></script>
-  <script src="js/site.js?v=13"></script>
+  <script src="js/site.js?v=14"></script>
   <script src="js/community-discussion.js?v=5"></script>
   <script src="js/gallery.js?v=13"></script>
-  <script src="js/resumable-upload.js?v=13"></script><script src="js/backend-capabilities.js?v=13"></script><script src="js/community-data.js?v=13"></script><script src="js/page-composer.js?v=13"></script>
+  <script src="js/resumable-upload.js?v=13"></script><script src="js/backend-capabilities.js?v=13"></script><script src="js/community-data.js?v=14"></script><script src="js/resource-manager.js?v=2"></script><script src="js/content-cards.js?v=1"></script><script src="js/page-composer.js?v=14"></script>
 </body>
 </html>

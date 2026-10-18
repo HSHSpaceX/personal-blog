@@ -12,10 +12,11 @@
   async function client() { await auth.ready(); auth.requireUser(); return auth.client(); }
   async function rpc(name, args) { var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);if(!['community_assets_page','community_asset_references','community_orphan_assets','community_review_cycle_status','community_review_queue'].includes(name)){await window.BackendCapabilities.requireUpgrade();Community_CheckActor(actor);}var result=await db.rpc(name,args);Community_CheckActor(actor);return value(result); }
   async function listItems() {
-    var db = await client();
-    return value(await db.from('content_items').select(itemFields+',community_publication_state(status,last_error,published_revision_id),content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no)')
-      .eq('author_id',auth.user().id).order('created_at',{ascending:false}).limit(50)
-      .order('revision_no',{referencedTable:'content_revisions',ascending:false}).limit(1,{referencedTable:'content_revisions'}));
+    var actor=Community_CaptureActor(),db = await client();Community_CheckActor(actor);
+    var result=await db.from('content_items').select(itemFields+',created_at,community_publication_state(status,last_error,published_revision_id),content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no,created_at,summary:body->>summary)')
+      .eq('author_id',actor.id).order('created_at',{ascending:false}).limit(50)
+      .order('revision_no',{referencedTable:'content_revisions',ascending:false}).limit(1,{referencedTable:'content_revisions'});
+    Community_CheckActor(actor);return value(result);
   }
   async function getRevision(id) {
     if (!schema.uuid(id)) throw Error('无效版本链接。');
