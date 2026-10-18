@@ -75,6 +75,8 @@
 
 生成器、SEO（8 个 canonical URL）、Secrets 检查、供应链字节/许可证 3 项、`git diff --check` 均通过。重复生成器的全部生成文件字节变化为 0；既有 27 项 SQL 与第二轮提交逐文件 LF 内容一致。未删除文章、媒体、旧测试或引入生产密钥。公开页缓存更新属于实际脚本修复；提交后会再次核对由真实页面提交日期产生的 sitemap 变化及生成幂等。
 
+实现提交 `2e2968d84a7d573645973732e38fb9c3d1d24f68` 后再次生成，仅 gallery/moments 两个实际更新脚本缓存的页面 lastmod 变为 2026-10-19；旧文章 lastmod 仍为 2026-10-05，其他 URL 不变。这两处按真实页面提交日期生成并单独提交，不手工刷新旧文章日期。再次生成和 SEO/Secrets 校验保持通过。
+
 ## 8. Publisher 真实状态与后续阻塞
 
 本轮重新查询到起始最新运行 [39131784521](https://github.com/HSHSpaceX/personal-blog/actions/runs/39131784521)，2026-10-18 21:29:45（上海），head 944ac7b。失败在 Reconcile，后续生成/verify/push/finalize 未执行。该次实际日志中的两个环境变量为空，`EXPORT_FAILED`；只记录是否为空，不输出真实密钥，也没有读取 Secrets 值。
