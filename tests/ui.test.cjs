@@ -8,10 +8,10 @@ const read = file => readFileSync(path.join(root, file), 'utf8');
 const postUrl = slug => 'posts/' + encodeURIComponent(slug) + '.html';
 const fixture = (i, featured = true) => ({slug:'post-'+i, title:'Title '+i, category:'分类',tags:['标签'],date:'2026-09-'+String(i+1).padStart(2,'0'),readingTime:3,cover:'assets/icon.jpg',excerpt:'Excerpt '+i,featured});
 function siteHarness(posts, search='') {
-  const element = () => ({innerHTML:'',hidden:false,disabled:false,style:{},closest:()=>({style:{}})});
-  const ids = Object.fromEntries(['featuredRail','featuredSection','railPrev','railNext','postGrid','archiveList','archiveCategories'].map(id=>[id,element()]));
+  const element = () => ({innerHTML:'',hidden:false,disabled:false,style:{},children:[],attributes:{},handlers:{},closest:()=>({style:{}}),appendChild(node){this.children.push(node);return node;},replaceChildren(...nodes){this.children=nodes;},setAttribute(name,value){this.attributes[name]=value;},addEventListener(name,fn){this.handlers[name]=fn;}});
+  const ids = Object.fromEntries(['featuredRail','featuredSection','railPrev','railNext','postGrid','postPagination','archiveList','archiveCategories'].map(id=>[id,element()]));
   const nav = element(); ids.featuredRail.parentElement={querySelector:()=>nav};
-  const context = {window:{BLOG_POSTS:posts,BlogUrls:{postUrl},location:{search}},document:{getElementById:id=>ids[id]||null},URLSearchParams};
+  const location={search};const context = {window:{BLOG_POSTS:posts,BlogUrls:{postUrl},location},location,document:{getElementById:id=>ids[id]||null,createElement:element},URLSearchParams};
   const source=read('js/site.js');
   // Expose real renderers in the isolated VM without running unrelated page boot.
   const start=source.lastIndexOf('  if (window.BLOG_POSTS) {');

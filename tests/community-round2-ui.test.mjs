@@ -33,7 +33,7 @@ async function harness(role='user',revision){
  async signedAsset(id){calls.push(['signed',id]);return {asset:files.find(f=>f.id===id),url:'https://test.supabase.co/storage/v1/object/sign/community-assets/private?token=short',expiresAt:Date.now()+60000};}
  };
  w.BlogAuth=auth;w.CommunityData=data;const timers=[];w.setTimeout=fn=>{timers.push(fn);return timers.length;};w.clearTimeout=()=>{};
- w.eval(await read('js/categories.js'));w.eval(await read('js/community-schema.js'));w.eval(await read('js/community-ui.js'));
+ w.eval(await read('js/categories.js'));w.eval(await read('js/community-schema.js'));w.eval(await read('js/resource-manager.js'));w.eval(await read('js/content-cards.js'));w.eval(await read('js/community-ui.js'));
  const $=id=>w.document.getElementById(id);
  async function click(id){$(id).click();await settle();}
  return {d,w,$,click,calls,revs,items,timers,files,logout(){actor=null;w.CommunityUI.clear();},data};
