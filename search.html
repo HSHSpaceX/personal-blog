@@ -8,8 +8,8 @@
   <meta name="robots" content="noindex,follow">
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="css/style.css?v=20261013">
-  <link rel="stylesheet" href="css/community.css?v=13">
+  <link rel="stylesheet" href="css/style.css?v=20261018r2">
+  <link rel="stylesheet" href="css/community.css?v=20261018r2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 </head>
 <body>
@@ -66,10 +66,12 @@
     <section class="band">
       <div class="container" style="max-width:720px">
         <div class="search-bar-wrap">
-          <input id="searchInput" type="search" placeholder="搜索文章、动态、评论…" autocomplete="off" autofocus>
+          <input id="searchInput" type="search" aria-label="搜索关键词" maxlength="120" placeholder="搜索文章、动态、评论、用户…" autocomplete="off" autofocus>
         </div>
         <div class="search-tabs" id="searchTabs" aria-label="搜索结果类型"></div>
-        <div id="searchResults" class="search-results"></div>
+        <div class="search-filters"><button class="filter-chip" id="searchFeatured" type="button" aria-pressed="false">仅看精选</button><span id="searchScope" role="status" aria-live="polite"></span></div>
+        <div id="searchResults" class="search-results" aria-live="polite"></div>
+        <section id="searchUserSection" hidden aria-labelledby="searchUserHeading"><h2 id="searchUserHeading">公开用户</h2><p id="searchUserStatus" role="status" aria-live="polite"></p><div id="searchUserResults" class="search-results"></div><button id="searchUserMore" class="btn" type="button" hidden>查看更多用户</button></section>
       </div>
     </section>
   </main>
@@ -89,12 +91,13 @@
   <script src="js/blog-data.js?v=13"></script>
   <script src="js/github-credentials.js?v=12"></script>
   <script src="js/urls.js?v=2"></script>
-  <script src="js/search-core.js?v=9"></script>
+  <script src="js/search-core.js?v=10"></script>
   <script src="js/community-schema.js?v=10"></script>
-  <script src="js/community-public.js?v=13"></script>
+  <script src="js/community-public.js?v=14"></script>
   <script src="js/boot.js?v=9"></script>
   <script src="js/public-cards.js?v=1"></script>
+  <script src="js/public-profile-data.js?v=11"></script>
   <script src="js/site.js?v=13"></script>
-  <script src="js/search.js?v=12"></script>
+  <script src="js/search.js?v=13"></script>
 </body>
 </html>

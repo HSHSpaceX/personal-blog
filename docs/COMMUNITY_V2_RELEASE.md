@@ -6,7 +6,7 @@
 
 ## A. migration 正式顺序
 
-当前共 26 个 migration。先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复执行。新测试/RC 项目按下列顺序完整执行；生产库只执行尚未应用的 migration，不能重新运行已经执行过的历史 migration。
+当前共 27 个 migration。先备份数据库/Storage 配置，核对 schema_migrations 已执行记录；已有 migration 不重写、不重复执行。新测试/RC 项目按下列顺序完整执行；生产库只执行尚未应用的 migration，不能重新运行已经执行过的历史 migration。
 
 1. 202609300001_invite_auth.sql
 2. 202609300002_private_reactions.sql
@@ -34,6 +34,9 @@
 24. 202610130002_release_contract.sql
 25. 202610130003_review_queue.sql
 26. 202610130004_moment_deletion.sql
+27. 202610180001_article_settings_and_profile_search.sql
+
+第 27 项为第二轮新增，站长尚未在生产执行。它只新增管理员文章草稿精选意图及原子提交 RPC、受限公开用户搜索，并替换精选通知文案函数。接在完整 26 项后执行一次；历史 SQL 不变。兼容 fresh-install 生成器会自动包含此文件。其本地升级、兼容初始化、权限、回滚和多连接并发证据见 `UI_ROUND2_ACCEPTANCE_20261018.md`；不代表托管 Supabase 已验收。原 `community_capabilities().version=20261013` 的基础发布契约保留，新功能还要求实际存在第 27 项 RPC；缺少时界面明确失败，不能忽略缺函数错误。
 
 第 18 项必须在 202610070004_category_raw_length.sql 之后执行，用于统一富文本编辑器的安全结构化正文 `body.document = { version: 1, blocks: [...] }`。未应用时，新版 Community 富文本保存可能失败；前端错误提示不能代替迁移，也不能通过放松 RLS 修复。
 

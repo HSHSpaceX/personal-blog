@@ -33,7 +33,7 @@
     (posts || []).forEach(function (post) {
       var body = stripHtml(post.content);
       records.push({
-        type: 'post', slug: post.slug, title: post.title || '', date: post.date || '',
+        type: 'post', slug: post.slug, title: post.title || '', date: post.date || '', featured:post.featured===true,
         excerpt: post.excerpt || '', body: body,
         fields: { title: post.title || '', tags: (post.tags || []).join(' '), category: post.category || '', excerpt: post.excerpt || '', body: body }
       });
@@ -66,10 +66,10 @@
     var end = Math.min(text.length, first + 85);
     return (start ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '');
   }
-  function search(index, query) {
+  function search(index, query, options) {
     var terms = termsFor(query);
     if (!terms.length) return [];
-    return index.map(function (record) {
+    return index.filter(function(record){return !options||!options.featured||record.type==='post'&&record.featured===true;}).map(function (record) {
       var matched = 0;
       var score = 0;
       terms.forEach(function (term) {
@@ -84,7 +84,7 @@
         ? (terms.some(function (term) { return record.normalizedFields.body.includes(term); }) ? context(record.body, terms) : context(record.excerpt || record.body, terms))
         : context(record.fields.text, terms);
       return { type: record.type, slug: record.slug, id: record.id, title: record.title,
-        community:record.community, date: record.date, snippet: snippet, matched: matched, score: score };
+        community:record.community, featured:record.featured===true, date: record.date, snippet: snippet, matched: matched, score: score };
     }).filter(Boolean).sort(function (a, b) {
       return b.matched - a.matched || b.score - a.score || String(b.date).localeCompare(String(a.date));
     });

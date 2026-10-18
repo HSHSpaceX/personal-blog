@@ -3793,6 +3793,18 @@ a.tag-chip:hover {
   gap: 8px;
   margin-bottom: 20px;
 }
+.search-filters { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:12px 0 24px; color:var(--muted); }
+.search-filters .filter-chip,.search-tabs .filter-chip { min-height:44px; }
+.search-filters .filter-chip { border-color:color-mix(in srgb,var(--ink) 20%,var(--glass-border)); }
+.search-filters .filter-chip[aria-pressed=true] { color:var(--link); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--glass)); }
+.search-user-head { display:flex; align-items:center; gap:12px; min-width:0; }
+.search-user-head img { width:48px; height:48px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+.search-user-head div { min-width:0; overflow-wrap:anywhere; }
+.search-user-head h3 { margin:0; }
+.search-user-head span { color:var(--muted); }
+.search-user p { overflow-wrap:anywhere; }
+#searchUserSection { margin-top:28px; }
+#searchUserMore { min-height:44px; margin-top:20px; border-radius:999px; }
 
 .search-hit mark {
   color: inherit;

@@ -20,9 +20,9 @@
   }
   async function getRevision(id) {
     if (!schema.uuid(id)) throw Error('无效版本链接。');
-    var db = await client();
+    var actor=Community_CaptureActor(),db = await client();Community_CheckActor(actor);
     var row = value(await db.from('content_revisions').select(revisionFields).eq('id',id).maybeSingle());
-    if (!row) throw Error('此版本不存在或你没有访问权限。');
+    Community_CheckActor(actor);if (!row) throw Error('此版本不存在或你没有访问权限。');
     return row;
   }
   async function save(item, title, body) {
@@ -95,6 +95,9 @@
     policyUser:policyUser,policyStatus:function (id) {auth.requireAdmin();return rpc('community_review_cycle_status',{p_user_id:id});},
     setCycle:function (id,type,n) {auth.requireAdmin();return rpc('community_set_review_cycle',{p_user_id:id,p_content_type:type,p_every:n});},
     setFeatured:function(id,featured){auth.requireAdmin();return rpc('community_set_featured',{p_item_id:id,p_featured:featured});},
+    featuredPreference:async function(id){auth.requireAdmin();var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);var result=await db.from('community_article_preferences').select('featured,applied_at').eq('revision_id',id).maybeSingle();Community_CheckActor(actor);return value(result);},
+    saveFeaturedPreference:function(id,featured){auth.requireAdmin();return rpc('community_save_featured_preference',{p_revision_id:id,p_featured:featured});},
+    submitFeaturedArticle:function(id){auth.requireAdmin();return rpc('community_submit_featured_article',{p_revision_id:id});},
     restore:function(id){auth.requireAdmin();return rpc('community_restore_revision',{p_revision_id:id});},
     trash:async function(offset){var db=await client();return value(await db.from('content_revision_trash').select('*,content_revisions!content_revision_trash_revision_id_fkey(title)').is('restored_at',null).order('trashed_at',{ascending:false}).range(offset,offset+19));},
     publishedArticles:async function(offset){var db=await client();auth.requireAdmin();return value(await db.from('content_items').select(itemFields+',content_revisions!content_published_revision_same_item(title)').eq('content_type','article').not('published_revision_id','is',null).order('created_at',{ascending:false}).range(offset,offset+19));},

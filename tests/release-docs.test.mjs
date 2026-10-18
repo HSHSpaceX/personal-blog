@@ -2,11 +2,12 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 
-test('release guide lists all 26 migrations in execution order and requires real deployment acceptance',async()=>{
+test('release guide lists all 27 migrations in execution order and requires real deployment acceptance',async()=>{
  const guide=await readFile(new URL('../docs/COMMUNITY_V2_RELEASE.md',import.meta.url),'utf8');
  const sql=(await readdir(new URL('../supabase/migrations/',import.meta.url))).filter(name=>name.endsWith('.sql')).sort();
  const listed=[...guide.matchAll(/^\d+\. (\d+_[a-z0-9_]+\.sql)$/gm)].map(match=>match[1]);
- assert.equal(sql.length,26);assert.deepEqual(listed,sql);
+ assert.equal(sql.length,27);assert.deepEqual(listed,sql);
+ assert.equal(listed[26],'202610180001_article_settings_and_profile_search.sql');assert.match(guide,/第 27 项为第二轮新增，站长尚未在生产执行/);
  assert.equal(listed[16],'202610070004_category_raw_length.sql');assert.equal(listed[17],'202610100001_safe_content_document.sql');
  assert.match(guide,/生产库只执行尚未应用的 migration/);assert.match(guide,/不能重新运行已经执行过的历史 migration/);
  assert.match(guide,/body\.document = \{ version: 1, blocks: \[\.\.\.\] \}/);assert.match(guide,/未应用时.*保存可能失败/);

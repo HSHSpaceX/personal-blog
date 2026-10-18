@@ -29,7 +29,8 @@
   }).catch(function(e){if(active()&&block.isConnected)block.textContent=asset.original_name+' · '+e.message;});
  }
  function Resource_CreatePicker(options){
-  var el=options.elements,auth=window.BlogAuth,attempt=0,offset=0,identity=null,context=null,timers=[],uploading=false,uploadAttempt=0,previewSerial=0,returnFocus=null;
+  var el=options.elements,auth=window.BlogAuth,attempt=0,offset=0,identity=null,context=null,timers=[],uploading=false,uploadAttempt=0,previewSerial=0,returnFocus=null,request={},uploadAccept=el.upload.accept;
+  function Resource_Accept(mime){return (!options.accept||options.accept(mime))&&(!request.imageOnly||/^image\/(jpeg|png|webp)$/.test(mime));}
   function Resource_ClearTimers(){timers.forEach(clearTimeout);timers=[];}
   function Resource_Active(token){return token===attempt&&el.dialog.open&&auth.user()&&auth.user().id===identity&&(!options.active||options.active(context));}
   function Resource_Clear(){attempt++;uploadAttempt++;identity=null;uploading=false;offset=0;Resource_ClearTimers();el.list.replaceChildren();el.preview.replaceChildren();el.status.textContent='';el.upload.value='';el.search.value='';el.kind.value=options.defaultKind||'all';if(el.dialog.open)el.dialog.close();}
@@ -43,8 +44,8 @@
      while(rows.length<=offset+20){var source=await window.CommunityData.assetsPage(search,'all',sourceOffset);if(!Resource_Active(token))return;rows=rows.concat(source.filter(function(a){return /^(image\/(jpeg|png|webp)|video\/mp4)$/.test(a.mime_type);}));if(source.length<20)break;sourceOffset+=20;}
      hasNext=rows.length>offset+20;rows=rows.slice(offset,offset+20);
     }else{rows=await window.CommunityData.assetsPage(search,kind,offset);if(!Resource_Active(token))return;if(rows.length===20){var peek=await window.CommunityData.assetsPage(search,kind,offset+20);if(!Resource_Active(token))return;hasNext=peek.length>0;}}
-    rows.filter(function(a){return !options.accept||options.accept(a.mime_type);}).forEach(function(asset){
-     el.list.appendChild(Resource_CreateCard(asset,{active:function(){return Resource_Active(token);},timer:function(t){timers.push(t);},status:function(text){el.status.textContent=text;},select:async function(a){if(!Resource_Active(token))return;await options.select(a);if(Resource_Active(token))Resource_Close();},preview:function(a){var serial=++previewSerial;el.preview.replaceChildren();Resource_PreviewInline(el.preview,a,function(){return Resource_Active(token)&&serial===previewSerial;},function(t){timers.push(t);});}}));
+    rows.filter(function(a){return Resource_Accept(a.mime_type);}).forEach(function(asset){
+     el.list.appendChild(Resource_CreateCard(asset,{active:function(){return Resource_Active(token);},timer:function(t){timers.push(t);},status:function(text){el.status.textContent=text;},select:async function(a){if(!Resource_Active(token)||!Resource_Accept(a.mime_type))return;await (request.select||options.select)(a);if(Resource_Active(token))Resource_Close();},preview:function(a){var serial=++previewSerial;el.preview.replaceChildren();Resource_PreviewInline(el.preview,a,function(){return Resource_Active(token)&&serial===previewSerial;},function(t){timers.push(t);});}}));
     });
     el.prev.disabled=offset===0;el.next.disabled=!hasNext;if(el.page)el.page.textContent='第 '+(offset/20+1)+' 页';el.status.textContent=rows.length?'':'没有匹配的资源，可上传新文件。';
    }catch(error){if(Resource_Active(token))el.status.textContent=error.message;}
@@ -55,11 +56,11 @@
   el.close.addEventListener('click',Resource_Close);el.dialog.addEventListener('cancel',function(e){e.preventDefault();Resource_Close();});el.dialog.addEventListener('close',function(){if(!el.dialog.open&&identity)Resource_Clear();});
   el.upload.closest('label').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();el.upload.click();}});
   el.upload.addEventListener('change',async function(){var files=Array.from(this.files);this.value='';if(uploading||!files.length)return;var token=attempt,uploadToken=++uploadAttempt;uploading=true;el.upload.disabled=true;
-   try{for(var file of files){if(!Resource_Active(token))return;if(options.accept&&!options.accept(file.type))throw Error('此编辑器不支持该文件类型。');el.status.textContent='正在上传…';var id=await window.CommunityData.upload(file);if(!Resource_Active(token))return;if(options.uploaded)await options.uploaded({id:id,original_name:file.name,mime_type:file.type});if(!Resource_Active(token))return;}offset=0;await Resource_Load();}
+   try{for(var file of files){if(!Resource_Active(token))return;if(!Resource_Accept(file.type))throw Error('此编辑器不支持该文件类型。');el.status.textContent='正在上传…';var id=await window.CommunityData.upload(file);if(!Resource_Active(token))return;if(options.uploaded)await options.uploaded({id:id,original_name:file.name,mime_type:file.type});if(!Resource_Active(token))return;}offset=0;await Resource_Load();}
    catch(error){if(Resource_Active(token))el.status.textContent=error.message;}finally{if(uploadToken===uploadAttempt){uploading=false;el.upload.disabled=false;}}
   });
   document.addEventListener('blog-auth-change',Resource_Clear);
-  return {open:function(kind){auth.requireUser();Resource_Clear();identity=auth.user().id;context=options.context?options.context():null;returnFocus=document.activeElement;el.kind.value=typeof kind==='string'?kind:options.defaultKind||'all';if(!el.kind.value)el.kind.value=options.defaultKind||'all';el.upload.disabled=false;el.dialog.showModal();Resource_Load();},close:Resource_Close,clear:Resource_Clear};
+  return {open:function(kind,mode){auth.requireUser();Resource_Clear();request=mode||{};identity=auth.user().id;context=options.context?options.context():null;returnFocus=document.activeElement;el.kind.value=request.imageOnly?'image':typeof kind==='string'?kind:options.defaultKind||'all';if(!el.kind.value)el.kind.value=options.defaultKind||'all';el.kind.disabled=!!request.imageOnly;el.upload.accept=request.imageOnly?'image/jpeg,image/png,image/webp':uploadAccept;el.upload.disabled=false;el.dialog.showModal();Resource_Load();},close:Resource_Close,clear:Resource_Clear};
  }
  window.ResourceManager={card:Resource_CreateCard,previewInline:Resource_PreviewInline,picker:Resource_CreatePicker};
 })();

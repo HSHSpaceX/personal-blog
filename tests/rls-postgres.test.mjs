@@ -92,6 +92,7 @@ test('migrations enforce permissions in PostgreSQL (PGlite)', { skip: !modulePat
     await rows('authenticated', other, `delete from storage.objects where name='${other}/audit.png' returning id`, 1);
     const functions = await db.query("select proname,proconfig from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and prosecdef");
     assert.deepEqual(functions.rows.map(fn => fn.proname).sort(), [
+      'community_save_featured_preference','community_submit_featured_article','profile_search',
       'community_guard_comment_trash','community_create_album','community_public_target_before_deletion','community_review_count','community_capabilities','community_create_draft','community_delete_moment','community_deleted_export','community_guard_deleted_content','community_guard_new_category','community_release_preflight','community_restore_comment','community_review_entry','community_review_queue','private_object_can_insert','private_object_finish_deletes','private_object_guard_registration','private_object_prepare_delete',
       'is_admin', 'is_admin_id', 'on_auth_user_created', 'like_counts', 'follower_count', 'user_like_count',
       'notify_comment_approved', 'notify_comment_reply', 'notify_comment_like', 'notify_follow',

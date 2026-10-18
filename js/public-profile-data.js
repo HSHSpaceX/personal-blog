@@ -29,6 +29,7 @@
     return match?Object.assign({},match,{liked_at:card.liked_at}):null;
   }
   window.PublicProfileData={profile:profile,legacy:legacy,resolveLegacy:resolveLegacy,
+    search:function(query,offset){query=String(query||'').trim();if(Array.from(query).length<2||Array.from(query).length>80)throw Error('用户搜索请输入 2–80 个字符。');return rpc('profile_search',{p_query:query,p_limit:20,p_offset:offset||0}).catch(function(error){if(['PGRST202','42883'].includes(error.code))throw Error('用户搜索暂不可用，请站长完成第二轮数据库升级；其他内容搜索仍可使用。');throw error;});},
     counts:async function(id){return Promise.all([rpc('follower_count',{p_target_id:id}),rpc('following_count',{p_user_id:id})]);},
     followers:function(id,offset){return page('profile_followers',id,offset);},following:function(id,offset){return page('profile_following',id,offset);},
     content:function(id,type,offset){return page('profile_content',id,offset,type);},likes:function(id,offset){return page('profile_recent_likes',id,offset);},
