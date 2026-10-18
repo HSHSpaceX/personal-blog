@@ -6,7 +6,7 @@
 
 起始远端 `944ac7b21e72ee93fd8cc8464d69867d3333a69e`；本地起始 `f38df26334b0cf1c43d0c2b2a63a42d780b45a5e`，分支 main、工作区干净、领先远端 4 个提交，无 merge/rebase。第一轮 `bd1db112c79107de302d59716aa85eceea08537b`、`d03c2f3c945cdf8159f843eb6cc8ad6c0fbe781d`；第二轮 `993d42b69bc585c18664fa2df7adf4f0774deac5`、报告 `f38df26334b0cf1c43d0c2b2a63a42d780b45a5e` 完整保留。
 
-三轮发布后的精确 main SHA、推送时间、CI/Cloudflare 链接与 HTTP 结果，由最后提交后生成的 `work/release/final/release-manifest.json` 和同目录四份文档副本绑定，避免在自身提交内伪造自引用 SHA。当前仓库副本的推送后记录见本报告末尾；准备阶段不代表已经推送或部署。
+三轮发布后的精确 main SHA、推送时间、CI/Cloudflare 链接与 HTTP 结果，由最后提交后生成的 `work/release/final/release-manifest.json` 和同目录四份文档副本绑定，避免在自身提交内伪造自引用 SHA。实际已推送功能版及检查见本报告末尾，交付包补充最终文档提交的部署回执。
 
 ## 2. 三轮成果及本轮修复
 
@@ -67,13 +67,15 @@
 
 证据绝对目录：`D:\网站测试\personal-blog\work\evidence\round3`。包含 `round3-matrix.json`、`legacy-native-rehearsal.json`、`final-directory-角色-宽度-主题.png`、`final-backend-upgrade-required.png`、`final-backend-retry-approved.png`，以及完整回归重跑的第一/二轮各专项截图。截图和依赖均在忽略的 work 内，不推送。
 
+本轮共保存 282 张截图，完整绝对路径、尺寸与字节数见 `D:\网站测试\personal-blog\work\evidence\round3\evidence-index.json`。已人工查看移动浅色目录、桌面深色目录、共享图册资源窗口、用户搜索和缺 RPC 错误/正文保留截图。
+
 ## 7. 测试记录与发布门禁
 
 本轮新增：部署包/诊断/配置门禁 7/7、历史导入 3/3、最终 GUI 2/2，均 0 失败/0 跳过。首次沙箱运行 native initdb 被文件权限阻止（WAL 重命名），未计为通过；随后以本机隔离运行重新执行，上述数据库专项全部通过。没有连接外部数据库。
 
 完整回归结果：**152 项通过，0 失败，0 跳过，0 取消**，497234.8063 ms，退出码 0；包含第二轮全部 140 项及本轮新增 12 项，没有删除或放宽旧断言。日志位置 `work/evidence/round3/full-regression-final.log`。Node 24.19.0、本机 Edge Chromium、PGlite 0.3.14、原生 PostgreSQL 18.4.0-beta.17、pg 8.16.3、jsdom 26.1.0、playwright-core 1.56.1；远端 CI 另用 Node 22/Linux Chrome，结果推送后单独记录。
 
-生成器、SEO（8 个 canonical URL）、Secrets 检查、供应链字节/许可证 3 项、`git diff --check` 均通过。重复生成器的全部生成文件字节变化为 0；既有 27 项 SQL 与第二轮提交逐文件 LF 内容一致。未删除文章、媒体、旧测试或引入生产密钥。公开页缓存更新属于实际脚本修复；提交后会再次核对由真实页面提交日期产生的 sitemap 变化及生成幂等。
+生成器、SEO（8 个 canonical URL）、Secrets 检查、供应链字节/许可证 3 项、`git diff --check` 均通过。重复生成器的全部生成文件字节变化为 0；既有 27 项 SQL 与第二轮提交逐文件 LF 内容一致。未删除文章、媒体、旧测试或引入生产密钥。公开页缓存更新属于实际脚本修复；提交后也已核对由真实页面提交日期产生的 sitemap 变化及生成幂等。
 
 实现提交 `2e2968d84a7d573645973732e38fb9c3d1d24f68` 后再次生成，仅 gallery/moments 两个实际更新脚本缓存的页面 lastmod 变为 2026-10-19；旧文章 lastmod 仍为 2026-10-05，其他 URL 不变。这两处按真实页面提交日期生成并单独提交，不手工刷新旧文章日期。再次生成和 SEO/Secrets 校验保持通过。
 
@@ -95,4 +97,46 @@
 
 ## 10. 推送后核对
 
-待全部本地门禁通过、普通 fast-forward 推送以及远端实际检查后更新。当前准备版本不能作为已推送回执。
+2026-10-19 00:36:02 +08:00（本地 tracking ref 的 update by push 回执）已普通 fast-forward 推送 `944ac7b → 896c7e99bbc7eb948689a6cb728a882939b5e5a6`，无 force、无旧分支合并；本地与 origin/main 一致。该发布包含完整前两轮和第三轮实现 `2e2968d`，以及必要页面日期提交 `896c7e9`。
+
+- [静态生成 CI](https://github.com/HSHSpaceX/personal-blog/actions/runs/39145741509)：成功，无额外 bot 内容提交。
+- [Community permissions and regression](https://github.com/HSHSpaceX/personal-blog/actions/runs/39145741511)：成功，实际日志 152 tests / 152 pass / 0 fail / 0 skipped / 0 cancelled，235051.038779 ms，Linux/Node 22/Chrome/PGlite/原生 PostgreSQL 均实际运行。
+- [GitHub Pages build/deployment](https://github.com/HSHSpaceX/personal-blog/actions/runs/39145741017)：成功。
+- [Cloudflare Pages](https://dash.cloudflare.com/?to=/d08f6ad8ecdc91ad660af95377cbc8b2/pages/view/hsh-personal-blog/3a7e7c13-2a2d-42aa-b591-7e10e29c8fd5)：成功，检查明确指向 896c7e9；[该版本预览](https://3a7e7c13.hsh-personal-blog.pages.dev)。
+
+真实只读 HTTP：2026-10-19 00:37，首页、归档、精选、搜索、旧文章、动态、画廊、账号中心、sitemap、robots 共 10 项全部 200；48 个 JS/CSS 公开文件按规范化 LF 摘要与本地一致，所有页面缓存键匹配，canonical 保持正式 clean URL。见 `work/evidence/round3/production-http.json`；上线前基线另存 `production-http-before.json`。没有访问生产私有 API 或执行生产业务写入。
+
+最终交接记录提交会接在这次实际功能发布之后，仅补文档；其自身最终 SHA 和再次 CI/Cloudflare 核对由最后生成的交付包 manifest/四文档副本记录。最终源码变动如仅为文档，导入内容摘要仍必须重新计算，source_sha 必须填写当前实际 main，不能沿用旧 SHA。
+
+## 11. 本轮文件清单
+
+```text
+.github/workflows/community-checks.yml
+.github/workflows/import-legacy-community.yml
+account.html
+gallery.html
+moments.html
+js/community-data.js
+scripts/legacy-community-import.mjs
+scripts/build-final-operator-pack.mjs
+supabase/preflight.sql
+supabase/postflight.sql
+tests/round3-browser.test.mjs
+tests/round3-deployment.test.mjs
+tests/round3-legacy.test.mjs
+docs/AUTH_SETUP.md
+docs/COMMUNITY_V2.md
+docs/COMMUNITY_V2_GUI_FINAL.md
+docs/COMMUNITY_V2_RELEASE.md
+docs/COMMUNITY_V2_ROUND2.md
+docs/COMMUNITY_V2_ROUND5.md
+docs/SUPABASE_RELEASE_20261013.md
+docs/SUPABASE_SETUP.md
+docs/UI_ROUND3_ACCEPTANCE_20261018.md
+docs/FINAL_DEPLOYMENT_GUIDE_20261018.md
+docs/SUPABASE_OPERATOR_PACK_20261018.md
+docs/PRODUCTION_ACCEPTANCE_TEMPLATE_20261018.md
+sitemap.xml
+```
+
+最终状态须分开记录：**A 本地 152/152 通过；B 功能版已正常推送，代码 CI、Cloudflare 与 GitHub Pages 均成功；C 生产 Supabase、Secrets、历史导入、真实 Auth/Storage 和完整业务链未验收。** 站长不要跳过备份/只读诊断直接导入。最终文档提交与其检查回执见交付包；代码发布完成后停止，等待站长生产验收。
