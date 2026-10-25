@@ -2,6 +2,22 @@
 
 纯 HTML/CSS/JavaScript 的个人博客，正式站点及 canonical：<https://hsh-personal-blog.pages.dev/>。文章由 `js/posts.js` 维护，`node scripts/generate-site.mjs` 生成 `posts/<slug>.html`、sitemap、feed、robots 和浏览器公开配置 `js/config.js`。旧 `post.html?slug=...` 入口继续跳转到静态文章。搜索支持文章全文、动态与已审核公开评论。
 
+## 网站介绍
+
+你好，我是 HSH，一位初中生。欢迎来到拾光手记——一个由我与 [aleistercrowleybeast666](https://github.com/aleistercrowleybeast666) 共同搭建的博客/交流平台。
+
+我平时写代码，开发飞控，制作水火箭，也读书、拍照、去山里走走。这个博客不追求更新频率，只希望留下的每一篇，过一段时间回头看仍然觉得值得。
+
+### 我在写什么
+
+- **技术笔记**：记录开发过程，并发布开源内容。
+- **科技时局**：分享有趣的科技成果。
+- **琐碎杂谈**：旅行、散步、季节变化等文字。
+
+### 成为用户
+
+本站采用邀请制登录，无公开注册。想成为用户，请将申请邮件发送至 <HSH20130730@outlook.com>，经过审核后即会收到邀请邮件。
+
 本地预览：
 
 ```bash
