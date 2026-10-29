@@ -1,5 +1,6 @@
 import { readFile, readdir } from 'node:fs/promises';
 import {Install_Transform} from '../../scripts/build-compatible-install.mjs';
+import {versionedStorageSQL} from './storage-fixture.mjs';
 export const modulePath = process.env.PGLITE_MODULE;
 export const actors = {
   user: '00000001-0000-4000-8000-000000000001',
@@ -7,11 +8,11 @@ export const actors = {
   admin: '00000003-0000-4000-8000-000000000003',
   admin2: '00000004-0000-4000-8000-000000000004'
 };
-export async function createDatabase({ through,compatible=false } = {}) {
+export async function createDatabase({ through,compatible=false,storage='legacy' } = {}) {
   const { PGlite } = await import(modulePath);
   const db = new PGlite();
   try {
-    await prepareDatabase(db, {through,compatible});
+    await prepareDatabase(db, {through,compatible,storage});
     return db;
   } catch (error) { await db.close(); throw error; }
 }
@@ -32,7 +33,8 @@ export async function asActor(db, role, id, sql, params = []) {
   } catch (error) { await db.exec('rollback'); throw error; }
 }
 
-export async function prepareDatabase(db, {through,compatible=false} = {}) {
+export async function prepareDatabase(db, {through,compatible=false,storage='legacy'} = {}) {
+    if(!['legacy','versioned'].includes(storage))throw Error('Unknown Storage fixture');
     await db.exec(`
       create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
       create schema auth; create schema storage;
@@ -49,6 +51,7 @@ export async function prepareDatabase(db, {through,compatible=false} = {}) {
       create function storage.foldername(name text) returns text[] language sql immutable as
         $$ select string_to_array(name, '/') $$;
     `);
+    if(storage==='versioned')await db.exec(versionedStorageSQL);
     for (const name of (await readdir(new URL('../../supabase/migrations/', import.meta.url))).sort()) {
       if (through && name > through) continue;
       let sql = await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8');

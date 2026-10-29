@@ -48,10 +48,9 @@
     if (!Community_ActorActive(actor)) throw Error('账号已变化；未登记的上传留待资源清理。');
     try { var result=await db.rpc('community_register_asset',{p_object_path:path,p_original_name:file.name});Community_CheckActor(actor);return value(result); }
     catch (error) {
-      if (Community_ActorActive(actor)) {
-        var cleanup = await db.storage.from('community-assets').remove([path]);
-        if (cleanup.error) throw Error('资源登记失败，自动清理尚未完成。请在资源中心检查未登记上传后重试；本次未保存资源引用。');
-      }
+      // A lost RPC response may mean registration committed. Leave the object
+      // for owner-scoped prepare -> Storage remove -> finish, including tombstones.
+      if (Community_ActorActive(actor)) throw Error('资源登记结果未确认。请在资源中心检查资源或未登记上传后重试；本次未保存资源引用。');
       throw error;
     }
   }

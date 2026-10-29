@@ -2,6 +2,8 @@
 
 执行入口为 [正式部署操作手册](FINAL_DEPLOYMENT_GUIDE_20261018.md)。这里给出数据库分流、文件顺序、权限证据和停止条件。**生产 SQL、真实导入和 Secrets 尚未由本地开发执行。**
 
+2026-10-30 更新：[Storage 兼容修复操作单](STORAGE_COMPATIBILITY_20261030.md) 指定当前候选第 22 项的唯一升级路径：生成包只读诊断 → **生成的兼容第 23 项** → 历史原文第 24、25、26、27 项。下面列出的 27 份是不可改写的历史源文件清单，第 23 项执行时必须用生成副本。已经应用旧 23 的环境使用独立 `repair-applied-23.sql`，不能重跑第 23 项。
+
 ## 1. 完整迁移顺序：实际枚举 27 项
 
 下列文件均位于 `supabase/migrations/`。历史文件不改写；生产只执行确认尚未应用的完整事务。迁移不是可随意重跑的幂等安装脚本。
@@ -68,8 +70,8 @@ preflight 给完整目录证据：托管所有者/RLS、原生 Storage 唯一索
 | 状态 | 安装/恢复路径 |
 | --- | --- |
 | A 全新 | 离线运行 `node scripts/build-compatible-install.mjs --output work/release/compatible-install`，审阅 manifest，在空业务库运行生成的 `fresh-install.sql` 单事务一次。 |
-| B 原版完整 | 对照成功记录和实际对象，只运行缺少的 forward 文件。原历史触发器保留。 |
-| C 删减版私信 | 不重跑第 15 项建表 SQL。确认其余安装完整后，使用第 23 项及后续文件的业务侧修复。 |
+| B 原版完整 | 对照成功记录和实际对象；未应用旧 23 先运行候选 22 只读诊断，再用兼容 23；已应用旧 23 的已知边界先运行独立修复，再续接缺失文件。原历史触发器保留。 |
+| C 删减版私信 | 不重跑第 15 项建表 SQL。运行生成的 `diagnose-boundary-22.sql`，完整边界及 Storage 校验成功后，使用生成的兼容第 23 项和历史原文 24～27。 |
 | D 文件内部分安装 | 停止，备份并保存全部对象目录、错误、SQL 执行文本；在隔离副本逐语句找出缺口，由维护者审阅补偿事务。不能 fresh-install 覆盖。 |
 | E 第 23～27 项部分安装 | 完整事务之间的已知边界可继续后续文件；文件内残缺按 D。基础版本 20261013 不能证明第 27 项完成。 |
 
@@ -81,7 +83,7 @@ SQL Editor 不自动写 `supabase_migrations.schema_migrations`。CLI `migration
 
 删减版第 15 项缺少一个 `storage.dm_media_object_path` 局部唯一索引，以及 `dm_media_immutable`、`dm_media_orphan_guard`、`dm_media_delete_cleanup` 三个 storage.objects 触发器。其他 RLS、私有 bucket、参与者策略、业务外键仍需完整；不能将“删减版”理解为任意残缺库。
 
-第 23 项不修改托管表所有者、不新增托管 DDL。它将 `dm_assets`、`user_assets` 到 `storage.objects` 的 CASCADE 外键改为 RESTRICT；业务登记触发器、对象行锁、删除预约与 tombstones/显式完成清理保证原子保护。restrictive UPDATE 策略仍禁止改路径/覆盖元数据；已发送私信与历史 revision 引用不允许删除。原生全 bucket `(bucket_id,name)` 非局部唯一约束必须存在。
+兼容第 23 项不修改托管表所有者、不新增托管索引/触发器。它将 `dm_assets`、`user_assets` 到 `storage.objects` 的 CASCADE 外键改为 RESTRICT；业务登记触发器、对象行锁、删除预约与 tombstones/显式完成清理保证原子保护。restrictive UPDATE 策略仍禁止改路径/覆盖元数据；已发送私信与历史 revision 引用不允许删除。支持旧版原生全局 `(bucket_id,name)` 唯一约束，或新版精确 `WHERE archived_at IS NULL` 的原生当前行唯一索引；核对实际定义和状态，不能仅看索引名。新版两个私有 bucket 必须保持 `DISABLED`，有效文件还须排除删除标记。归档行和标记不参与登记、孤儿列表和完成清理检查。
 
 生成器只为全新安装移除三份历史 SQL 中受限的托管索引/触发器 DDL，源摘要锁定，不改变原文件。`manifest.json` 列出每项移除对象和替代保护。不要手工再删 RLS、业务外键、登记触发器或把 Storage 改公开。若托管平台拒绝 bucket/标准策略安装，停止并按 [官方 Storage schema](https://supabase.com/docs/guides/storage/schema/design) 核对权限。
 

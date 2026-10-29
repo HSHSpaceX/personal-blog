@@ -44,9 +44,9 @@ async function protection(db){
 for(const state of ['original','trimmed','fresh-compatible'])test('Storage upgrade '+state+': full chain, isolation, immutable references, tombstones and cleanup',{skip:!modulePath},async()=>{
  const db=await createDatabase(state==='fresh-compatible'?{compatible:true}:{through:'202610110004_idempotent_messages.sql'});try{
   if(state==='trimmed')await db.exec('drop index storage.dm_media_object_path;drop trigger dm_media_immutable on storage.objects;drop trigger dm_media_orphan_guard on storage.objects;drop trigger dm_media_delete_cleanup on storage.objects;');
-  if(state!=='fresh-compatible')for(const n of (await readdir(new URL('../supabase/migrations/',import.meta.url))).filter(n=>n.startsWith('20261013')).sort())await db.exec(await read(n));
+  if(state!=='fresh-compatible')for(const n of (await readdir(new URL('../supabase/migrations/',import.meta.url))).filter(n=>n.startsWith('20261013')).sort())await db.exec(Install_Transform(n,await read(n)));
   await protection(db);
-  await assert.rejects(db.exec(await read('202610130001_storage_compatibility.sql')),/Unexpected asset FK/);await db.exec('rollback');
+  await assert.rejects(db.exec(Install_Transform('202610130001_storage_compatibility.sql',await read('202610130001_storage_compatibility.sql'))),/Incomplete installation|boundary/);await db.exec('rollback');
  }finally{await db.close();}
 });
 test('Partial installation stops with no new tables; originals have locked checksums; restricted role cannot add managed DDL',{skip:!modulePath},async()=>{
@@ -79,22 +79,23 @@ test('Review comments: three outcomes, reasons, stale decisions, trash lock and 
   }
  }finally{await db.close();}
 });
-test('Forward Storage repair runs as business-object owner without managed-table ownership',{skip:!modulePath},async()=>{
- const db=await createDatabase({through:'202610110004_idempotent_messages.sql',compatible:true});try{
+test('Forward Storage repair runs as business-object owner without managed-table ownership',{skip:!nativeConfigured},async()=>{
+ // Native catalogs have PostgreSQL's real metadata ACLs; PGlite restricts pg_am.
+ const db=await createNativeDatabase({through:'202610110004_idempotent_messages.sql',compatible:true,storage:'versioned'});try{
   await db.exec(`create role migration_business bypassrls;
    grant usage,create on schema public to migration_business;
    grant usage on schema auth,storage to migration_business;
    grant select,insert,update,delete,references on storage.objects to migration_business;
    grant select on auth.users,storage.buckets to migration_business;
    do $$declare obj record;begin
-    for obj in select c.oid::regclass as name from pg_class c where c.relnamespace='public'::regnamespace and c.relkind in ('r','S') loop
-     execute format('alter %s %s owner to migration_business',case when (select relkind from pg_class where oid=obj.name)='S' then 'sequence' else 'table' end,obj.name);
+    for obj in select c.oid::regclass as name from pg_class c where c.relnamespace='public'::regnamespace and c.relkind='r' loop
+     execute format('alter table %s owner to migration_business',obj.name);
     end loop;
     for obj in select p.oid::regprocedure as name from pg_proc p where p.pronamespace='public'::regnamespace loop execute format('alter function %s owner to migration_business',obj.name);end loop;
    end$$;
    set role migration_business;`);
   await assert.rejects(db.exec('create index managed_forbidden on storage.objects(name)'),/owner|permission/);
-  await db.exec(await read('202610130001_storage_compatibility.sql'));
+  await db.exec(Install_Transform('202610130001_storage_compatibility.sql',await read('202610130001_storage_compatibility.sql')));
   await db.exec('reset role');
   assert.equal((await db.query("select pg_get_userbyid(relowner)='migration_business' owned from pg_class where oid='storage.objects'::regclass")).rows[0].owned,false);
   assert.equal((await db.query("select confdeltype from pg_constraint where conrelid='public.dm_assets'::regclass and conname='dm_assets_storage_object_id_fkey'")).rows[0].confdeltype,'r');

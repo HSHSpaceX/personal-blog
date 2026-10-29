@@ -1,4 +1,4 @@
-// Isolated native PostgreSQL, Unix socket only. No external database credentials.
+// Isolated native PostgreSQL: Unix socket, or Windows loopback only. No external credentials.
 import { mkdtemp, rm } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -14,11 +14,11 @@ export async function createNativeDatabase(options = {}) {
   const port=windows?await new Promise((resolve,reject)=>{const s=createServer();s.on('error',reject);s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});}):55440;
   const env={...process.env};
   if(process.env.PG_TEST_LIB)env.LD_LIBRARY_PATH=process.env.PG_TEST_LIB;
-  const init=spawn(path.join(bin,'initdb'),['-D',path.join(root,'data'),'-U','community_test','--auth=trust','--no-locale','--encoding=UTF8'],{env});
+  const init=spawn(path.join(bin,'initdb'),['-D',path.join(root,'data'),'-U','community_test','--auth=trust','--no-locale','--encoding=UTF8'],{env,windowsHide:true});
   let initLog=''; init.stdout.on('data',d=>{initLog+=d;});init.stderr.on('data',d=>{initLog+=d;});
   const [exit]=await once(init,'exit');
   if(exit!==0){await rm(root,{recursive:true,force:true});throw Error('Local initdb failed: '+initLog);}
-  const server=spawn(path.join(bin,'postgres'),['-D',path.join(root,'data'),'-k',windows?'':root,'-p',String(port),'-c','listen_addresses='+(windows?'127.0.0.1':'')],{env});
+  const server=spawn(path.join(bin,'postgres'),['-D',path.join(root,'data'),'-k',windows?'':root,'-p',String(port),'-c','listen_addresses='+(windows?'127.0.0.1':'')],{env,windowsHide:true});
   let log='';server.stdout.on('data',d=>{log+=d;});server.stderr.on('data',d=>{log+=d;});
   const clients=[];
   async function connect(){const c=new Client({host:windows?'127.0.0.1':root,port,user:'community_test',database:'postgres'});await c.connect();clients.push(c);return c;}

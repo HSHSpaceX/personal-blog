@@ -7,7 +7,7 @@ declare
  report jsonb; capabilities jsonb; release jsonb; errors jsonb:='{}'; counts jsonb:='{}';
  missing_tables text[]:='{}'; missing_functions text[]:='{}'; issues text[]:='{}';
  name text; signature text; fn oid; prefs oid; present integer:=0; amount bigint;
- base_ready boolean; round2_state text; source text;
+ base_ready boolean; round2_state text; source text; storage_report jsonb:='{}';
 begin
  foreach name in array array['profiles','user_roles','notifications','content_items','content_revisions',
   'content_reviews','content_review_cycles','content_first_publications','content_revision_trash',
@@ -72,7 +72,20 @@ begin
    exception when others then errors:=errors||jsonb_build_object(name||'_sqlstate',sqlstate);end;
   end if;
  end loop;
- report:=jsonb_build_object('base_state',case when base_ready then 'ready' when to_regclass('public.content_items') is null and to_regclass('public.dm_threads') is null then 'not_installed' else 'incomplete' end,
+ -- Keep partial installations diagnosable; this evidence is NOT an automatic
+ -- installation boundary or a substitute for the strict generated contract.
+ if to_regclass('storage.objects') is not null and to_regclass('storage.buckets') is not null then
+  begin
+   execute $q$select jsonb_build_object(
+    'current_object_helper',to_regprocedure('public.private_object_is_current(storage.objects)') is not null,
+    'buckets',(select jsonb_agg(jsonb_build_object('id',id,'public',public,'versioning_status',to_jsonb(b)->>'versioning_status') order by id)
+      from storage.buckets b where id in ('dm-media','community-assets')),
+    'archived_records',(select count(*) from storage.objects o where bucket_id in ('dm-media','community-assets') and to_jsonb(o)->>'archived_at' is not null),
+    'delete_markers',(select count(*) from storage.objects o where bucket_id in ('dm-media','community-assets') and to_jsonb(o)->>'is_delete_marker'='true'),
+    'action','For candidate boundary 22 run generated diagnose-boundary-22.sql; inspect indexes in preflight. DISABLED does not exclude history.')$q$ into storage_report;
+  exception when others then errors:=errors||jsonb_build_object('storage_sqlstate',sqlstate);end;
+ end if;
+ report:=jsonb_build_object('storage',storage_report,'base_state',case when base_ready then 'ready' when to_regclass('public.content_items') is null and to_regclass('public.dm_threads') is null then 'not_installed' else 'incomplete' end,
   'round2_state',round2_state,'missing_tables',missing_tables,'missing_functions',missing_functions,
   'round2_issues',issues,'capabilities',capabilities,'release',release,'counts',counts,'diagnostic_errors',errors,
   'operator_action',case when base_ready and round2_state='ready' then 'Compare full preflight and migration history, then run real Auth/Storage acceptance.'
