@@ -1,6 +1,6 @@
 # Storage 兼容修复与第 22 → 27 项操作单
 
-本修复只交付代码、离线安装包和测试，不执行生产 SQL、导入、Publisher 或 Secrets 修改。**当前生产仅为“候选第 22 项”；已有诊断不足以确认可以直接开始写入。** 站长完成备份、下述只读诊断且核对无误后，才可以执行兼容第 23 项及第 24～27 项。不要使用历史原版第 23 项代替生成副本。
+本修复交付代码、离线安装包和测试；经站长追加授权，验证通过后提交并推送 `main`，核对自动 CI/Cloudflare 状态。不执行生产 SQL、导入、正式 Publisher 或 Secrets 修改。**当前生产仅为“候选第 22 项”；已有诊断不足以确认可以直接开始写入。** 站长完成备份、下述只读诊断且核对无误后，才可以执行兼容第 23 项及第 24～27 项。不要使用历史原版第 23 项代替生成副本。本页操作路径对应兼容包 **revision 2**。
 
 ## 原因与官方依据
 
@@ -22,6 +22,8 @@
 
 历史版本/删除标记可以存在；它们不是可登记、可列为孤儿或可预约删除的当前文件。安全性所需的是每路径至多一个当前行，不依赖其他两个版本索引的名字或顺序。版本字段不完整、不同类型、bucket 非 DISABLED 或已有登记与对象不一致时完整回滚。
 
+[官方 Ownership 文档](https://supabase.com/docs/guides/storage/security/ownership) 说明 `owner_id` 来源于 JWT，旧 `owner` 已弃用，service key/控制台上传可能没有 owner。因此 revision 2 检查所有存在且非 NULL 的 `owner_id`/`owner` 必须与业务 owner 和路径首段一致；字段缺失或 NULL 可接受，但不会替代原有身份、路径和 RLS 授权。空字符串或矛盾的所有者一律拒绝。完成删除时故意不按 owner 过滤：所有者异常的当前文件仍必须阻止清理 intent。
+
 ## 生成与校验
 
 ```powershell
@@ -32,13 +34,13 @@ node scripts/build-final-operator-pack.mjs --output work/release/final
 
 已有环境的迁移编号与历史文件校验值不变；兼容副本校验值与历史原版不同，必须保存 manifest 和实际执行文本。不能将兼容副本当作原历史 SQL 的相同字节，也不能因 source hash 未变就漏掉兼容包升级。未来 CLI history 对齐需人工审阅成功记录，不能直接 `db push` 或伪造 applied。
 
-`boundaries.json` 来自隔离 PostgreSQL 顺序执行历史文件后的目录快照，22 为完整清单，23～27 为差量；不是生产数据。其更新脚本为 `scripts/refresh-storage-boundaries.mjs`，仅维护者在隔离引擎中复核后使用。正常站长无需运行它。目录比对涵盖函数体/签名/安全配置、客户端函数/表/列权限、表列和 RLS、外键/索引、策略、业务及 Auth 触发器；不依赖所有者名称、数据行数或 CLI history。PG18 的独立 NOT NULL 约束条目不作为跨版本键，仍逐列核对非空性。
+`boundaries.json` 来自隔离 PostgreSQL 顺序执行历史文件后的目录快照，22 为完整清单，23～27 为差量；另含旧兼容 v1 在 23～27 的已审阅目录差量，不是生产数据。v1 fixture 固定于 `98cf633`，校验 LF SHA256 后才能生成其基线，不能拿当前函数假装旧安装。更新脚本为 `scripts/refresh-storage-boundaries.mjs`，仅维护者在隔离引擎中复核后使用。正常站长无需运行它。目录比对涵盖函数体/签名/安全配置、客户端函数/表/列权限、表列和 RLS、外键/索引、策略、业务及 Auth 触发器；不依赖所有者名称、数据行数或 CLI history。PG18 的独立 NOT NULL 约束条目不作为跨版本键，仍逐列核对非空性。
 
 ## 候选第 22 项的唯一执行路径
 
 1. 保存可恢复数据库备份、Storage 文件备份与 bucket/策略配置。进入维护窗口，暂停网站写入与 Publisher/导入，确认 SQL Editor 指向正确项目。
 2. 运行仓库 `supabase/preflight.sql`、`supabase/postflight.sql`，保存全部结果。查看两个私有 bucket 的 `versioning_status=DISABLED`、真实索引定义、归档/删除标记计数。`base_state=incomplete` 在候选 22 阶段并不自动表示可补装。
-3. 在新 SQL Editor 查询运行生成的 **`work/release/final/compatible-install/diagnose-boundary-22.sql`** 全文。它是 `BEGIN READ ONLY ... ROLLBACK`，不创建对象、不修改数据。必须出现 `Verified historical application boundary: 22` 并且 Storage 合同也无异常。目录不一致、部分安装、bucket 状态异常或权限不足均停止，保存错误键列表、preflight/postflight、当前文件与摘要，由维护者在隔离备份核对。不要从相近函数名/空 mappings 表推断成功。
+3. 在新 SQL Editor 查询运行生成的 **`work/release/final/compatible-install/diagnose-boundary-22.sql`** 全文。它是 `BEGIN READ ONLY ... ROLLBACK`，不创建对象、不修改数据。必须出现 `Verified historical application boundary: 22` 并且后续 Storage 结构、既有登记/对象一致性及旧删除预约检查全部无异常；单独看到 NOTICE 不代表全部成功。目录不一致、部分安装、bucket 状态异常、待处理旧删除预约、登记漂移或权限不足均停止，保存错误键列表、preflight/postflight、当前文件与摘要，由维护者在隔离备份核对。不要从相近函数名/空 mappings 表推断成功。
 4. 只有上述检查无误，按下表逐份运行全文事务；每份提交成功才执行下一份：
 
 | 顺序 | 交付包中的 SQL |
@@ -52,9 +54,9 @@ node scripts/build-final-operator-pack.mjs --output work/release/final
 兼容 23 在事务内再次校验边界和 Storage，替换 FK 为 RESTRICT、安装 tombstones/业务登记保护及当前对象函数。旧删除预约非空或旧登记关联了错误对象时中止，不猜测清理已有数据。10 秒锁超时也属于停止条件，保留证据后选择新的维护窗口，不能删锁或删保护绕过。
 
 5. 每份失败均停止；若会话显示事务中止，先 `ROLLBACK;`。不要继续粘贴后续文件。记录“最近成功提交的完整文件”，不要重新执行第 15 项或已提交的第 23 项。恢复后仅续接确证尚未执行的事务。
-6. 全部完成后执行 `NOTIFY pgrst, 'reload schema';`，重跑 preflight/postflight，应为 `base_state=ready`、`round2_state=ready`，`storage.current_object_helper=true` 且两个 bucket 仍为 DISABLED。再次保存目录与摘要；这些还不是 HTTP 验收。
+6. 全部完成后执行 `NOTIFY pgrst, 'reload schema';`，重跑 preflight/postflight，应为 `base_state=ready`、`round2_state=ready`，`storage.current_object_helper=true`、`storage.owner_consistency_helper=true` 且两个 bucket 仍为 DISABLED。再次保存目录与摘要；这些还不是 HTTP 验收。
 
-完全新装只在确认空业务库时执行生成的 `fresh-install.sql` 一个事务，不能再逐项重跑。已经完整应用**旧原版** 23～27 中某个边界的其他环境，单独运行生成的 `repair-applied-23.sql`，它只接受该历史目录，安装同一套修复且不重建表、不再次改 FK。之后接续已确认缺少的 24～27。已经应用兼容第 23 项/本修复的环境禁止再跑该修复；目录检查会拒绝。未知或定制目录差异一律停下审阅，本包不自动“修正”生产目录。
+完全新装只在确认空业务库时执行生成的 `fresh-install.sql` 一个事务，不能再逐项重跑。已经完整应用**旧原版** 23～27 中某个边界的其他环境，单独运行生成的 `repair-applied-23.sql`，它只接受该历史目录，安装同一套修复且不重建表、不再次改 FK。已应用 `98cf633` 所交付兼容 v1 的环境只运行 `repair-compatible-23-v1.sql`，它检查 v1 目录和既有数据后一次事务升级到 v2。两条修复路径之后均仅接续已确认缺少的 24～27。已经应用 v2 的环境禁止重跑任何修复；目录检查会拒绝。未知或定制目录差异一律停下审阅，本包不自动“修正”生产目录。
 
 ## 业务保护及恢复
 
@@ -73,11 +75,11 @@ node scripts/build-final-operator-pack.mjs --output work/release/final
 - 引用：已发送图片不能删；文章换掉图片后，旧 revision 仍引用时不能删；本人未引用资源可删除，其他用户/管理员不能代删。
 - 恢复：预约后模拟网络失败，确认文件仍在、意图保留；重试 API 和完成 RPC；同一路径重传不能登记，新 UUID 路径可用。不要为验收在生产手工写入历史版本或删除标记。
 - Publisher：先核对 Repository/Environment 的配置作用域与相同项目 URL，完成数据库与 Auth/Storage 验收后由站长明确触发一条新测试内容发布；确认只导出已批准资源、无私有路径/密钥进入公开快照。禁止运行历史导入验证本修复。
-- GitHub/Cloudflare：核对被审阅提交的 CI 与 Pages SHA。修复分支推送、静态部署、SQL Editor 手工安装、Actions Publisher 是独立步骤，互不证明成功。
+- GitHub/Cloudflare：核对 `main` 提交的 CI 与 Pages SHA。代码推送、静态部署、SQL Editor 手工安装、Actions Publisher 是独立步骤，互不证明成功。
 
 离线测试使用 PGlite 与真实 PostgreSQL 两类引擎，旧版/新版 Storage、原版/删减版/新装、跨用户隔离、历史引用、删除恢复、并发、事务回滚及不兼容结构拒绝均有覆盖。新版 fixture 不创建生产缺失的全局两列唯一索引。无隔离 Supabase HTTP 凭据，HTTP 用例明确跳过；生产 Auth/Storage/TUS/Publisher 仍未验证。实际命令与统计见本次交付报告。
 
-## 本次交付报告（2026-10-30）
+## 首轮 v1 交付记录（2026-10-30，98cf633；下述统计仅为历史记录）
 
 修改文件与用途：
 
@@ -115,3 +117,32 @@ node scripts/build-final-operator-pack.mjs --output work/release/final
 本机完整日志在 `work/storage-full-suite.log`、`work/storage-final-validation.log`、`work/storage-preserve-data.log` 和 `work/storage-manifest.log`。它们属于本地交付证据，不进入网站公开目录。已修复测试开发过程中发现的问题，没有尚未处理的本地测试失败；仍未验证生产真实索引、Auth/Storage/TUS HTTP、远端 CI/Cloudflare 或正式 Publisher。
 
 结论：**修复与离线交付已完成，可以让站长开始备份和只读诊断。只有实际生产候选第 22 项边界、Storage 合同和执行记录全部核对成功，才达到开始执行兼容 23 → 24 → 25 → 26 → 27 的条件。** 若诊断有目录差异、残留删除意图或旧登记异常，必须停止，不能将本地测试替代生产证据。
+
+## 本轮 revision 2 交付记录（2026-10-30）
+
+开始时工作区干净，原修复已由 PR #6 合入远端 `main`（`37ebcf6`）；本轮安全快进接续该提交，没有覆盖已有工作。站长追加授权在全部关键验证通过后正常提交并推送 `main`，不强制推送；推送不会替代生产 SQL、Secrets 配置或正式 Publisher 操作。
+
+本轮补充的关键变化：
+
+- `current-object-helpers.sql` 与 `storage-compatibility.mjs`：增加原生 owner 与业务 owner/路径的一致性谓词；用于登记、引用、孤儿列表和预约删除；保留服务上传 NULL owner 的合法路径。finish 始终以当前文件是否仍存在为准。
+- 新增 `registration-contract.sql`：在只读诊断与迁移 DDL 之前发现既有登记漂移和候选 22 的残留删除预约；失败保持原数据。
+- 两个安装包生成脚本、`boundaries.json` 与刷新脚本：标记 revision 2，提供 `repair-compatible-23-v1.sql`，以冻结且校验过的 v1 目录实现前向升级；未知目录及重复执行拒绝。
+- `preflight.sql`、`postflight.sql` 与四份部署/验收文档：增加 owner 修复标志，区分唯一安装路径，明确 Publisher 缺失 Secrets、真实 HTTP 验收与停止恢复要求。
+- `tests/helpers/postgres.mjs`、冻结 v1 fixture、新增 `storage-deployment-readiness.test.mjs`：两类数据库引擎验证所有者矛盾、合法空 owner、只读诊断不写库、v1 升级保全、晚期失败回滚、23～27 各边界与重跑拒绝。
+
+本轮离线包位于 `work/release/storage-v2-final`，在提交后重新生成以绑定真实提交 SHA；推送、CI 与 Cloudflare 的实际回执另写入包内 `release-manifest.json`。全部 27 份历史 SQL 不变，没有修改无关前端、页面风格或生产配置。
+
+本轮实际验证（本机 Node.js 24.19.0，沿用上述隔离依赖和无头 Edge）：
+
+| 命令/检查 | 结果 |
+| --- | --- |
+| `node --test tests/storage-deployment-readiness.test.mjs` | 7 通过、0 失败、0 跳过；包含真实 PostgreSQL。 |
+| `node --test --test-name-pattern='PGlite versioned Storage: fresh\|Generated fresh' tests/storage-version-compatibility.test.mjs` | 2 通过、0 失败。 |
+| `node --test --test-concurrency=2 tests/*.test.cjs tests/*.test.mjs` | 最终完整一轮：**175 项，174 通过、0 失败、1 跳过**，552.6 秒；包含 `release-compatibility`、`rls-postgres`、`community-final-integration`、`community-publication`、其他数据库/权限、实际浏览器、发布契约和文档回归。 |
+| `node scripts/generate-site.mjs` → `node scripts/check-seo.mjs` | 在隔离站点副本执行成功，生成 1 篇文章及 8 个 sitemap URL；没有改写工作区页面。最初把副本目标设在源目录内，被 Node 安全检查拒绝；改用系统临时目录后成功。 |
+| `node scripts/build-final-operator-pack.mjs --output work/release/storage-v2-final` | 成功；核对 44 个交付文件、5 个兼容产物的摘要、27 份历史原文不变，以及生成 SQL 无托管表 DDL。 |
+| `node scripts/check-seo.mjs`、`node scripts/check-secrets.mjs`、`git diff --check` | 均通过；只暂存本任务的 16 个文件，生成包、依赖和日志均留在忽略目录。 |
+
+唯一 SKIP 是 `Real Storage HTTP acceptance requires an isolated provisioned project`：未配置隔离 Supabase Auth/Storage HTTP 凭据，不使用生产密钥代替。真实生产 Auth 邮件、Storage 下载/签名/TUS、正式 Publisher 和历史导入均未执行，不能记作通过。没有跳过关键本地 PostgreSQL、迁移、Storage 安全或锁测试；没有未解决的本地失败。
+
+完整日志：`work/storage-v2-full-suite.log`；新增用例：`work/storage-v2-readiness.log`；隔离静态生成：`work/storage-v2-site.log`。代码与确定的前向迁移方案具备提交条件；**生产写入条件仍待站长备份、准确第 22 项只读诊断及实际 Storage/既有数据核对**。确认后才可执行兼容 23 → 24 → 25 → 26 → 27，不重跑 1～22、原版 15 或任何已成功事务。

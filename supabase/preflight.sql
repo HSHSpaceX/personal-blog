@@ -38,7 +38,8 @@ select bucket_id,count(*) as total_records,
  count(*) filter(where to_jsonb(o)->>'is_delete_marker'='true') as delete_markers,
  count(*) filter(where to_jsonb(o)->>'archived_at' is null and coalesce(to_jsonb(o)->>'is_delete_marker','false')='false') as current_files
 from storage.objects o where bucket_id in ('dm-media','community-assets') group by bucket_id;
-select to_regprocedure('public.private_object_is_current(storage.objects)') as current_object_repair;
+select to_regprocedure('public.private_object_is_current(storage.objects)') as current_object_repair,
+ to_regprocedure('public.private_object_matches_owner(storage.objects,uuid)') as owner_consistency_repair;
 -- For a candidate boundary 22 also run generated diagnose-boundary-22.sql.
 -- Only that exact catalog/Storage check permits the compatible migration 23.
 -- Check maps/settings counts only if the tables exist: use the separate postflight after installation.

@@ -2,7 +2,7 @@
 
 这是第三轮后的正式操作入口。旧版说明保留作历史审计，执行顺序以本文件和 [Supabase 专项包](SUPABASE_OPERATOR_PACK_20261018.md) 为准。操作者为站长；本地开发没有执行生产 SQL、生产导入或 Secrets 修改。
 
-2026-10-30 Storage 兼容修复补充：[第 22 → 27 项操作单](STORAGE_COMPATIBILITY_20261030.md)。历史 SQL 原文不变，候选第 22 项必须先运行生成的只读边界诊断，再执行生成的兼容第 23 项，不能直接运行历史原版第 23 项。以下分流已按此更新。
+2026-10-30 Storage 兼容修复补充：[第 22 → 27 项操作单](STORAGE_COMPATIBILITY_20261030.md)，当前为 **revision 2**。历史 SQL 原文不变，候选第 22 项必须先运行生成的只读边界/登记数据诊断，再执行生成的兼容第 23 项，不能直接运行历史原版第 23 项。以下分流已按此更新。
 
 先区分三件事：A 为本地代码测试；B 为 GitHub/Cloudflare 代码部署；C 为生产数据库、Auth、Storage、历史导入和实际发布链。A、B 通过不能代替 C。实际 Git SHA、检查链接和推送回执见最终交付目录 `work/release/final/release-manifest.json`，其中每份文档副本也注明实际 SHA。仓库文档与自身提交 SHA 无法互相包含，交付包在最后一次提交后离线生成，避免写入虚构 SHA。
 
@@ -36,7 +36,8 @@ node scripts/build-final-operator-pack.mjs --output work/release/final
 | 完全没有本站业务表 | 审阅生成包 `compatible-install/manifest.json`，在 SQL Editor 一次运行 `compatible-install/fresh-install.sql`；只运行一次。该文件包含全部 27 项，不能再逐项重复安装。 |
 | 候选第 22 项（原版或删减版） | 先运行生成的 `compatible-install/diagnose-boundary-22.sql`，边界与 Storage 检查全部成功后，运行生成的 `compatible-install/202610130001_storage_compatibility.sql`，再按原文 24、25、26、27 顺序各运行一次。 |
 | 旧原版第 23～27 项某个边界已完整 | 按补充操作单运行一次生成的 `compatible-install/repair-applied-23.sql`，其目录校验必须成功；再续接尚未安装的后续文件。 |
-| 已应用本次兼容第 23 项或独立修复 | 保存成功记录，核对安装边界，仅续接缺失的 24～27；不得重跑兼容第 23 项或独立修复。 |
+| 已应用 98cf633 的兼容 v1（含当时独立修复） | 核对旧包摘要和成功记录，执行本包 `compatible-install/repair-compatible-23-v1.sql` 一次；它验证 v1 完整目录，再补充 owner 一致性，不重建表、不重跑第 23 项。 |
+| 已应用兼容 v2 或本次独立补丁 | 保存成功记录，核对安装边界，仅续接缺失的 24～27；不得重跑兼容第 23 项或独立补丁。 |
 | 分段执行过 SQL、文件内对象只装了一部分、或边界不明 | 停止。导出只读诊断，在隔离备份重现并审阅补偿事务；本包不自动覆盖未知残缺库。 |
 
 完整顺序、原版/删减版差异见专项包。每份 SQL 应从仓库 **Raw** 纯文本或本地编辑器复制，不能带网页 `<span>` 标记。看到 `Incomplete installation`、`Unexpected asset FK`、已有对象、权限错误、缺少依赖、唯一索引不符等任何错误，保存错误与当前 SQL 文件名后停止。不要删约束、关闭 RLS 或修改 `storage.objects` 所有者继续安装。
@@ -58,7 +59,7 @@ rollback;
 ```
 
 3. 若需要首次赋管理员或设置历史作者，先确认确切 UUID，再按专项包的显式事务操作；不能批量给用户加管理员。现有正确配置无需重写。
-4. 所有迁移成功后，在新查询运行 `NOTIFY pgrst, 'reload schema';`。重新运行 `postflight.sql`，应为 `base_state=ready` 且 `round2_state=ready`，没有异常权限。REST 仍提示缺函数时先核对项目、签名和缓存，不能默认当作成功。
+4. 所有迁移成功后，在新查询运行 `NOTIFY pgrst, 'reload schema';`。重新运行 `postflight.sql`，应为 `base_state=ready` 且 `round2_state=ready`，同时 `storage.current_object_helper=true`、`storage.owner_consistency_helper=true`，两个私有 bucket 均为 DISABLED，没有异常权限。标志存在仍须对照成功记录与完整目录，不证明 HTTP 验收。REST 仍提示缺函数时先核对项目、签名和缓存，不能默认当作成功。
 
 ## 5. 检查邀请制登录和 Storage
 

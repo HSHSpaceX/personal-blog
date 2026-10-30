@@ -2,6 +2,8 @@
 
 填写规则：每项只能填 **已通过 / 未通过 / 未测试 / 不适用**，附实际证据。准备好脚本、通过本地测试或拥有账号都不能填写为生产已通过。默认全部为未测试。操作入口：[正式部署手册](FINAL_DEPLOYMENT_GUIDE_20261018.md)。
 
+Storage 执行路径以 [2026-10-30 兼容修复操作单](STORAGE_COMPATIBILITY_20261030.md) 的 **revision 2** 为准。当前生产仅为候选第 22 项；先备份和只读诊断，不得将本地测试结果抄写为生产验收通过。
+
 ## 基本信息
 
 | 项目 | 填写 |
@@ -24,14 +26,21 @@
 | --- | --- | --- |
 | preflight 全部结果已保存 | 未测试 | |
 | 安装状态 A/B/C/D/E 与完整边界 | 未测试 | |
+| diagnose-boundary-22.sql：目录、数据种子、Storage 约束均通过 | 未测试 | |
+| 已有登记状态/owner/bucket/路径/MIME/大小一致；无旧删除预约阻塞 | 未测试 | |
+| 确认选择候选 22 / 旧原版 23 / 兼容 v1 / 兼容 v2 中唯一一条路径 | 未测试 | |
 | 实际已执行 migration 清单（逐项文件名/时间/成功记录） | 未测试 | |
-| 第 23～26 项基础后端 | 未测试 | |
+| 第 23 项使用生成的兼容副本（未重跑原版 15 或已执行 SQL） | 未测试 | |
+| 第 24 → 25 → 26 项逐文件事务成功 | 未测试 | |
 | 第 27 项完整事务 | 未测试 | |
 | SQL 文件 LF SHA256 与包一致 | 未测试 | |
 | SQL Editor/CLI history 与实际对象核对 | 未测试 | |
 | postflight base_state / round2_state | 未测试 | |
 | RLS / GRANT / REVOKE / search_path | 未测试 | |
 | Storage 托管所有者/原生唯一索引/业务 RESTRICT 外键 | 未测试 | |
+| 当前行索引实际键/谓词/有效性已保存；不按索引名称推断 | 未测试 | |
+| postflight：current_object_helper / owner_consistency_helper 均为 true | 未测试 | |
+| 执行错误、最近成功事务、ROLLBACK/停止记录（如无则不适用） | 未测试 | |
 | PostgREST cache 刷新/实际 RPC | 未测试 | |
 
 粘贴已执行的 migration 文件名及结果（不能只写“全部成功”）：
@@ -48,12 +57,20 @@
 | 普通 A/B 与管理员 A/B 角色核对 | 未测试 | |
 | community-assets 私有，90 MiB 与类型限制 | 未测试 | |
 | dm-media 私有，8 MiB，参与者隔离 | 未测试 | |
+| dm-media 与 community-assets versioning_status 均为 DISABLED | 未测试 | |
+| 归档/删除标记计数已保存；未在生产人为造历史版本作测试 | 未测试 | |
 | published-media 公开读、浏览器禁止写 | 未测试 | |
 | avatars 限制与所有权 | 未测试 | |
 | TUS 中断恢复/上传失败重试/超限拒绝 | 未测试 | |
 | 签名过期刷新/匿名及跨用户拒绝 | 未测试 | |
 | 账号 A→B→A 清除旧私有状态 | 未测试 | |
 | 历史 revision / 已发送私信媒体禁止删除 | 未测试 | |
+| 未引用资源：预约 → Storage HTTP → finish 成功 | 未测试 | |
+| 删除 HTTP 失败保留预约；本人孤儿列表重试成功 | 未测试 | |
+| HTTP 成功但 finish 失败：本人会话重试清理成功 | 未测试 | |
+| 同路径重传不能登记，新 UUID 路径可用 | 未测试 | |
+| 原生 owner 非空时与路径/登记一致；服务上传空 owner 保留路径授权 | 未测试 | |
+| 非参与管理员不能读私信图片，管理员不能代删他人私有资源 | 未测试 | |
 
 ## 业务链与界面
 
@@ -90,6 +107,8 @@
 | 作者编辑已迁移文章，审核后重新发布 | 未测试 | |
 
 实际旧文章 URL：________；旧动态 URL/锚点：________；实际图册 URL（无则不适用）：________。
+
+本次已知 Publisher 缺少 `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`，由站长配置并记录是否已补齐，**禁止在本表填入值**。当前 `sync-community-public.yml` 未绑定 Environment，使用 Repository/获准 Organization Secrets；历史导入绑定 `community-release` Environment。配置完成前不得将发布链标记为已通过。历史导入只在站长另行批准、owner/清单/源 SHA 全部复核后执行，不能用真实导入代替 Storage 修复测试。
 
 ## 问题与结论
 

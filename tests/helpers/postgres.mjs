@@ -45,7 +45,7 @@ export async function prepareDatabase(db, {through,compatible=false,storage='leg
         $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
       create table auth.users(id uuid primary key, raw_user_meta_data jsonb default '{}');
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-      create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text, metadata jsonb, unique(bucket_id,name));
+      create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid, owner_id text, metadata jsonb, unique(bucket_id,name));
       alter table storage.objects enable row level security;
       grant select, insert, update, delete on storage.objects to anon, authenticated;
       create function storage.foldername(name text) returns text[] language sql immutable as

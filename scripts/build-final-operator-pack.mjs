@@ -28,7 +28,7 @@ export async function Operator_Build(directory,receipt=null){
  await writeFile(path.join(directory,'legacy-plan.json'),JSON.stringify(plan,null,2)+'\n');
  const manifest={generated_at:new Date().toISOString(),main_sha:sha,worktree_clean:clean,remote_tracking_sha:git('rev-parse','origin/main'),
   receipt:receipt||{status:'not_checked',note:'A local build is not proof of push, CI, Pages or production database acceptance.'},
-  migration_count:names.length,migrations:compatible,files,storage_compatibility_version:20261030,
+  migration_count:names.length,migrations:compatible,files,storage_compatibility_version:20261030,storage_compatibility_revision:2,
   candidate_22_route:['compatible-install/diagnose-boundary-22.sql','compatible-install/202610130001_storage_compatibility.sql',...names.slice(23).map(n=>'supabase/migrations/'+n)],
   legacy_plan_digest:digest(JSON.stringify(plan)),
   legacy_counts:Object.fromEntries(['article','moment','album'].map(t=>[t,plan.entries.filter(e=>e.type===t).length])),

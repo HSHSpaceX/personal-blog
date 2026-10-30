@@ -78,6 +78,7 @@ begin
   begin
    execute $q$select jsonb_build_object(
     'current_object_helper',to_regprocedure('public.private_object_is_current(storage.objects)') is not null,
+    'owner_consistency_helper',to_regprocedure('public.private_object_matches_owner(storage.objects,uuid)') is not null,
     'buckets',(select jsonb_agg(jsonb_build_object('id',id,'public',public,'versioning_status',to_jsonb(b)->>'versioning_status') order by id)
       from storage.buckets b where id in ('dm-media','community-assets')),
     'archived_records',(select count(*) from storage.objects o where bucket_id in ('dm-media','community-assets') and to_jsonb(o)->>'archived_at' is not null),

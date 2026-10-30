@@ -1,5 +1,5 @@
 -- Application-owned helpers only. The installer validates the table shape first.
-create function public.private_object_is_current(p_object storage.objects) returns boolean
+create or replace function public.private_object_is_current(p_object storage.objects) returns boolean
 language sql immutable set search_path='' as $$
  select p_object.id is not null and case when to_jsonb(p_object) ? 'archived_at' then
   to_jsonb(p_object)->>'archived_at' is null and to_jsonb(p_object)->>'is_delete_marker'='false'
@@ -7,7 +7,7 @@ language sql immutable set search_path='' as $$
 $$;
 revoke all on function public.private_object_is_current(storage.objects) from public,anon,authenticated;
 
-create function public.private_object_require_disabled(p_bucket text) returns void
+create or replace function public.private_object_require_disabled(p_bucket text) returns void
 language plpgsql security definer set search_path='' as $$
 begin
  if p_bucket is null or p_bucket not in ('dm-media','community-assets') or not exists(
@@ -17,16 +17,15 @@ begin
 end $$;
 revoke all on function public.private_object_require_disabled(text) from public,anon,authenticated;
 
--- Fail without changing existing registrations/data if a historical install has
--- already attached an archived row, marker, different path or mismatched metadata.
-do $$
-begin
- if exists(select 1 from (
-  select 'dm-media' bucket_id,storage_object_id,object_path,owner_id,mime_type,size_bytes from public.dm_assets
-  union all select bucket_id,storage_object_id,object_path,owner_id,mime_type,size_bytes from public.user_assets
- ) a left join storage.objects o on o.id=a.storage_object_id
- where not coalesce(public.private_object_is_current(o),false) or o.bucket_id is distinct from a.bucket_id
- or o.name is distinct from a.object_path or split_part(a.object_path,'/',1) is distinct from a.owner_id::text
- or o.metadata->>'mimetype' is distinct from a.mime_type or o.metadata->>'size' is distinct from a.size_bytes::text) then
-  raise exception 'Storage contract: existing registry/object mismatch; preserve data and inspect read-only diagnostics';end if;
-end $$;
+-- Service-key/Dashboard uploads legitimately have no native owner (Supabase
+-- Ownership documentation). Path + existing RPC/RLS authorization remain
+-- mandatory in that case. A supplied owner must never contradict the registry.
+-- JSON access also supports legacy schemas without one of the owner columns.
+create function public.private_object_matches_owner(p_object storage.objects,p_owner uuid) returns boolean
+language sql immutable set search_path='' as $$
+ select p_owner is not null and p_object.id is not null
+  and split_part(p_object.name,'/',1)=p_owner::text
+  and (to_jsonb(p_object)->>'owner_id' is null or to_jsonb(p_object)->>'owner_id'=p_owner::text)
+  and (to_jsonb(p_object)->>'owner' is null or to_jsonb(p_object)->>'owner'=p_owner::text);
+$$;
+revoke all on function public.private_object_matches_owner(storage.objects,uuid) from public,anon,authenticated;
