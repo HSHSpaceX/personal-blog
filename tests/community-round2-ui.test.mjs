@@ -107,7 +107,7 @@ test('real DOM: ignores a private revision response arriving after logout',optio
  }finally{h.d.window.close();}
 });
 
-test('data API: fixes upload ownership, disallows upsert/HTML, cleans failed registration and uses 60-second signed URLs only',options,async()=>{
+test('data API: fixes upload ownership, disallows upsert/HTML, preserves uncertain registrations and uses 60-second signed URLs only',options,async()=>{
  const d=await dom(),w=d.window,calls=[];let actor={id:user},registrationError=null,url='https://test.supabase.co/storage/v1/object/sign/community-assets/private?token=short';
  const bucket={async upload(path,file,opts){calls.push(['upload',path,opts]);return {data:{path}};},async remove(paths){calls.push(['remove',paths]);return {data:[]};},async createSignedUrl(path,ttl){calls.push(['signed',path,ttl]);return {data:{signedUrl:url}};}};
  const db={storage:{from(name){assert.equal(name,'community-assets');return bucket;}},async rpc(name,args){calls.push(['rpc',name,args]);return registrationError?{error:registrationError}:{data:randomUUID()};},from(){return {select(){return this;},eq(){return this;},async maybeSingle(){return {data:{id:image,object_path:user+'/photo.png',mime_type:'image/png',original_name:'photo.png'}};}};}};
@@ -116,7 +116,9 @@ test('data API: fixes upload ownership, disallows upsert/HTML, cleans failed reg
  await assert.rejects(api.upload(new w.File(['<html>'],'attack.html',{type:'text/html'})),/支持/);assert.equal(calls.length,0);
  const file=new w.File(['data'],'image.png',{type:'image/png'});await api.upload(file);const upload=calls.find(c=>c[0]==='upload');assert.match(upload[1],new RegExp('^'+user+'/[0-9a-f-]+\\.png$'));assert.equal(upload[2].upsert,false);
  const args=calls.find(c=>c[0]==='rpc')[2];assert.deepEqual(Object.keys(args).sort(),['p_object_path','p_original_name']);
- registrationError=Error('registration failed');await assert.rejects(api.upload(file),/registration failed/);assert.equal(calls.filter(c=>c[0]==='remove').length,1);
+ registrationError=Error('registration failed');await assert.rejects(api.upload(file),/登记结果未确认/);assert.equal(calls.filter(c=>c[0]==='remove').length,0);
+ const rpc=db.rpc;db.rpc=async()=>{throw Error('response lost after commit');};
+ await assert.rejects(api.upload(file),/登记结果未确认/);assert.equal(calls.filter(c=>c[0]==='remove').length,0,'lost response must not delete a possibly committed registration');db.rpc=rpc;
  const signed=await api.signedAsset(image);assert.match(signed.url,/token=short/);assert.equal(calls.find(c=>c[0]==='signed')[2],60);assert.ok(signed.expiresAt-Date.now()<=60000);
  for(const bad of ['javascript:alert(1)','https://attacker.invalid/steal','http://test.supabase.co/unsafe']){url=bad;await assert.rejects(api.signedAsset(image),/无效资源地址/);}
  actor=null;await assert.rejects(api.upload(file),/Login required/);

@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {Install_Build} from './build-compatible-install.mjs';
 import {Legacy_Plan} from './legacy-community-import.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
-const documents=['UI_ROUND3_ACCEPTANCE_20261018.md','FINAL_DEPLOYMENT_GUIDE_20261018.md','SUPABASE_OPERATOR_PACK_20261018.md','PRODUCTION_ACCEPTANCE_TEMPLATE_20261018.md'];
+const documents=['UI_ROUND3_ACCEPTANCE_20261018.md','FINAL_DEPLOYMENT_GUIDE_20261018.md','SUPABASE_OPERATOR_PACK_20261018.md','PRODUCTION_ACCEPTANCE_TEMPLATE_20261018.md','STORAGE_COMPATIBILITY_20261030.md'];
 const digest=value=>createHash('sha256').update(value).digest('hex');
 export async function Operator_Build(directory,receipt=null){
  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
@@ -22,10 +22,15 @@ export async function Operator_Build(directory,receipt=null){
   files.push({path:file,sha256:digest(await readFile(target))});
  }
  const compatible=await Install_Build(path.join(directory,'compatible-install')),plan=await Legacy_Plan();
+ for(const name of (await readdir(path.join(directory,'compatible-install'))).sort()){
+  files.push({path:'compatible-install/'+name,sha256:digest(await readFile(path.join(directory,'compatible-install',name)))});
+ }
  await writeFile(path.join(directory,'legacy-plan.json'),JSON.stringify(plan,null,2)+'\n');
  const manifest={generated_at:new Date().toISOString(),main_sha:sha,worktree_clean:clean,remote_tracking_sha:git('rev-parse','origin/main'),
   receipt:receipt||{status:'not_checked',note:'A local build is not proof of push, CI, Pages or production database acceptance.'},
-  migration_count:names.length,migrations:compatible,files,legacy_plan_digest:digest(JSON.stringify(plan)),
+  migration_count:names.length,migrations:compatible,files,storage_compatibility_version:20261030,
+  candidate_22_route:['compatible-install/diagnose-boundary-22.sql','compatible-install/202610130001_storage_compatibility.sql',...names.slice(23).map(n=>'supabase/migrations/'+n)],
+  legacy_plan_digest:digest(JSON.stringify(plan)),
   legacy_counts:Object.fromEntries(['article','moment','album'].map(t=>[t,plan.entries.filter(e=>e.type===t).length])),
   legacy_unique_media:new Set(plan.entries.flatMap(e=>e.files.map(f=>f.path))).size,
   production_database_migrated:false,production_legacy_imported:false,production_auth_storage_accepted:false};
