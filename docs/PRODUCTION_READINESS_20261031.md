@@ -1,6 +1,8 @@
 # 2026-10-31 生产修复执行记录
 
-目标项目仅为 `hscqeswnscnvkdthhlfp`，站点为 <https://hsh-personal-blog.pages.dev/>。没有连接或使用旧测试项目。本文不包含用户数据、密钥或数据库备份。生产数据库仍未升级，不能宣称业务完整上线。
+> 22:25 更新：经过集中批准，第 18 项专用前向修复及兼容版第 23～27 项已在正式项目全部提交，完整第 22 项边界曾在修复后通过，升级后 postflight 为 ready/ready，原有数据和托管 Storage 结构保全检查通过。最新执行记录见 [PRODUCTION_MIGRATION_20261031.md](PRODUCTION_MIGRATION_20261031.md)。下文保留升级前的审计证据与当时状态；Publisher、真实账号验收及历史导入仍未完成。
+
+以下为升级前采集的审计记录。目标项目仅为 `hscqeswnscnvkdthhlfp`，站点为 <https://hsh-personal-blog.pages.dev/>。没有连接或使用旧测试项目。本文不包含密钥或数据库备份。采集当时生产数据库尚未升级；当前数据库执行结果以上方更新及最新迁移记录为准。
 
 ## 已核实的安装边界
 
