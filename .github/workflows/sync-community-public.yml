@@ -20,6 +20,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check read-only Publisher connection without exposing credentials
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/check-publisher-connection.mjs
       - name: Reconcile approved snapshot and validate media
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
