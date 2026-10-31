@@ -1,5 +1,7 @@
 # 2026-10-31 生产数据库迁移结果
 
+后续状态：两个 Secrets 已配置，真实 Auth/Storage 验收、获批准的历史导入和 Publisher/Cloudflare 发布已完成。本文下方“尚未完成”是迁移结束时的历史状态，当前结果见 [生产发布报告](PRODUCTION_RELEASE_20261031.md)。
+
 正式项目 `hscqeswnscnvkdthhlfp` 已完成第 18 项专用前向修复，以及兼容版第 23～27 项升级。用户在数据库归档恢复、Storage 全文件备份和最终执行清单完成后集中批准。实际执行时间为北京时间 22:21～22:22，后置验证于 22:25 完成。
 
 数据库安装状态为 `base_state=ready`、`round2_state=ready`。这只证明本次数据库升级通过，不能替代真实账号、Storage HTTP/TUS、邮件与 Publisher 发布闭环验收。
