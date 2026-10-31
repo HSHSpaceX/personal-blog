@@ -10,6 +10,11 @@ import {reconcile,desiredSnapshot,validateMedia,legacyCatalogue,serviceAdapter} 
 import {fixture,ids,attack} from './fixtures/community-publish/source.mjs';
 const require=createRequire(import.meta.url),publicData=require('../js/community-public.js'),search=require('../js/search-core.js');
 const root=new URL('../',import.meta.url),sha='a'.repeat(40);
+test('service adapter accepts successful void RPC responses without parsing an empty body',async()=>{
+ const calls=[],adapter=serviceAdapter({url:'https://fixture.supabase.invalid',key:'fixture-key',fetchImpl:async url=>{calls.push(new URL(url).pathname);return {ok:true,status:204,json:async()=>{throw Error('Empty 204 body must not be parsed');}};}});
+ assert.equal(await adapter.legacy([]),null);assert.equal(await adapter.siteResult('fixture-id',sha),null);
+ assert.deepEqual(calls,['/rest/v1/rpc/community_sync_legacy_targets','/rest/v1/rpc/community_site_settings_result']);
+});
 export async function fixtureSite(){const directory=await mkdtemp(path.join(tmpdir(),'community-publication-'));await Fixture_CopySite(root,directory);await writeFile(directory+'/data/community-public.json',JSON.stringify({version:1,items:[]},null,2)+'\n');return directory;}
 function generate(dir){execFileSync(process.execPath,['scripts/generate-site.mjs'],{cwd:dir,stdio:'pipe'});}
 test('publisher full desired state: current pointer only, referenced media only, stable identity, idempotence, replacement/deletion and cleanup',async()=>{
