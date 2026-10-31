@@ -1,5 +1,228 @@
 {
   "version": 1,
-  "items": [],
+  "items": [
+    {
+      "id": "2f73b7cb-d060-4b36-be88-b6ebfa46a216",
+      "revision_id": "c98124b2-e2cc-4ebc-b250-cd7474d79f11",
+      "content_type": "moment",
+      "slug": "legacy-m20260914-204633-fp3i",
+      "title": "动态",
+      "body": {
+        "text": "吴老师的去世实在是太突然了……我从三年级听吴老师的科学史评话到初二，度过了多少个夜晚，可是吴老师的生命被迫截止在53岁。心中还是五味杂陈，太短，太短。我只能说一句：“谢谢吴老师对我的启蒙，您的躯体虽然永远失去了，但是您的声音仍然在我们心中跳动！”，纪念吴老师，平哥，那个有趣的灵魂……．\n——— 2026.9.14",
+        "asset_ids": [
+          "11c6dc8a-1c65-4a0d-989c-8eb043ad000c",
+          "c924cc70-ec5a-412b-81d9-46144df6db1e"
+        ]
+      },
+      "published_at": "2026-09-14T12:46:00+00:00",
+      "author": {
+        "username": "hshspacex",
+        "display_name": "HSH(站长)",
+        "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
+      },
+      "assets": [
+        {
+          "id": "11c6dc8a-1c65-4a0d-989c-8eb043ad000c",
+          "mime_type": "image/jpeg",
+          "name": "m-20260926-184012-wvwf.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/2f73b7cb-d060-4b36-be88-b6ebfa46a216/c98124b2-e2cc-4ebc-b250-cd7474d79f11/11c6dc8a-1c65-4a0d-989c-8eb043ad000c.jpg"
+        },
+        {
+          "id": "c924cc70-ec5a-412b-81d9-46144df6db1e",
+          "mime_type": "image/png",
+          "name": "m-20260926-184012-5b8g.png",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/2f73b7cb-d060-4b36-be88-b6ebfa46a216/c98124b2-e2cc-4ebc-b250-cd7474d79f11/c924cc70-ec5a-412b-81d9-46144df6db1e.png"
+        }
+      ],
+      "featured": false,
+      "legacy": {
+        "target_id": "m20260914-204633-fp3i",
+        "target_type": "moment",
+        "published_at": "2026-09-14T12:46:00+00:00",
+        "source_sha256": "b48ac3e819b973f1a36e0036116659f8b9802b0a9d08c04282c5370ef21e9402"
+      }
+    },
+    {
+      "id": "870c7c97-6bd0-4515-b4fc-070034a34d38",
+      "revision_id": "c98b65d3-2622-4997-9bf4-f77431fe9630",
+      "content_type": "moment",
+      "slug": "legacy-m20260930-153407-jq9o",
+      "title": "动态",
+      "body": {
+        "text": "星舰14飞，还是比较成功的！",
+        "asset_ids": [
+          "7c464eac-cb97-4d11-b583-8f0c3eb12a3d",
+          "c8ef1bae-39a3-471b-a92b-2be7f61d69d6"
+        ]
+      },
+      "published_at": "2026-09-30T07:34:00+00:00",
+      "author": {
+        "username": "hshspacex",
+        "display_name": "HSH(站长)",
+        "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
+      },
+      "assets": [
+        {
+          "id": "7c464eac-cb97-4d11-b583-8f0c3eb12a3d",
+          "mime_type": "image/jpeg",
+          "name": "m-20260930-153358-thr1.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/870c7c97-6bd0-4515-b4fc-070034a34d38/c98b65d3-2622-4997-9bf4-f77431fe9630/7c464eac-cb97-4d11-b583-8f0c3eb12a3d.jpg"
+        },
+        {
+          "id": "c8ef1bae-39a3-471b-a92b-2be7f61d69d6",
+          "mime_type": "video/mp4",
+          "name": "m-20260930-153402-jo4q.mp4",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/870c7c97-6bd0-4515-b4fc-070034a34d38/c98b65d3-2622-4997-9bf4-f77431fe9630/c8ef1bae-39a3-471b-a92b-2be7f61d69d6.mp4"
+        }
+      ],
+      "featured": false,
+      "legacy": {
+        "target_id": "m20260930-153407-jq9o",
+        "target_type": "moment",
+        "published_at": "2026-09-30T07:34:00+00:00",
+        "source_sha256": "02a79295cd06862dacf29adda2c75451b7a2c802343deeaf9878b81fef630d4a"
+      }
+    },
+    {
+      "id": "fb9eee5e-9dae-461b-a179-6f8ead5349f7",
+      "revision_id": "293b6326-373f-4054-9d86-dc81240d19cf",
+      "content_type": "article",
+      "slug": "post-austria-history",
+      "title": "奥匈帝国的兴衰：一个多民族帝国的百年孤独",
+      "body": {
+        "tags": [
+          "历史",
+          "欧洲"
+        ],
+        "text": "1867年，奥地利帝国与匈牙利王国达成妥协，成立了二元君主制的奥匈帝国。这个帝国试图在民族主义兴起的时代，找到一种超越民族的共同体形式。\n\n二元体制的理想\n\n奥匈帝国的独特之处在于，它承认匈牙利作为一个平等政治实体的地位。两个议会、两个政府、两个首都，共同的皇帝、共同的外交和军事。这种结构在当时是一种政治实验。\n\n内部的裂痕\n\n然而，帝国境内还有捷克人、波兰人、乌克兰人、罗马尼亚人、塞尔维亚人、克罗地亚人、斯洛文尼亚人、斯洛伐克人、意大利人——超过十个主要民族。每一个民族都在争取自己的地位。\n\n1897年的《巴德尼法令》试图让捷克语在波希米亚与德语平等，结果引发了德意志人的强烈反弹。这个法令最终以失败告终，也预示了帝国在民族问题上的无解。\n\n萨拉热窝与终结\n\n1914年6月28日，塞尔维亚民族主义者普林西普在萨拉热窝刺杀了皇储弗朗茨·斐迪南。奥匈帝国向塞尔维亚发出最后通牒，引发了第一次世界大战。\n\n1918年10月，帝国解体。各民族的继承国家纷纷独立：奥地利、匈牙利、捷克斯洛伐克、波兰、南斯拉夫……还有部分领土划归意大利和罗马尼亚。\n\n奥匈帝国的问题在今天仍然有意义：多元文化如何共存？民族主义是自决的解放，还是分裂的种子？这个帝国的百年孤独，是一面镜子。",
+        "summary": "从1867年二元君主制建立，到1918年解体，奥匈帝国用半个世纪演绎了一个多民族国家的理想与困境。",
+        "category": "人文历史",
+        "document": {
+          "blocks": [
+            {
+              "runs": [
+                {
+                  "text": "1867年，奥地利帝国与匈牙利王国达成妥协，成立了二元君主制的奥匈帝国。这个帝国试图在民族主义兴起的时代，找到一种超越民族的共同体形式。"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "二元体制的理想"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "奥匈帝国的独特之处在于，它承认匈牙利作为一个平等政治实体的地位。两个议会、两个政府、两个首都，共同的皇帝、共同的外交和军事。这种结构在当时是一种政治实验。"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "内部的裂痕"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "然而，帝国境内还有捷克人、波兰人、乌克兰人、罗马尼亚人、塞尔维亚人、克罗地亚人、斯洛文尼亚人、斯洛伐克人、意大利人——超过十个主要民族。每一个民族都在争取自己的地位。"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "1897年的《巴德尼法令》试图让捷克语在波希米亚与德语平等，结果引发了德意志人的强烈反弹。这个法令最终以失败告终，也预示了帝国在民族问题上的无解。"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "萨拉热窝与终结"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "1914年6月28日，塞尔维亚民族主义者普林西普在萨拉热窝刺杀了皇储弗朗茨·斐迪南。奥匈帝国向塞尔维亚发出最后通牒，引发了第一次世界大战。"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "1918年10月，帝国解体。各民族的继承国家纷纷独立：奥地利、匈牙利、捷克斯洛伐克、波兰、南斯拉夫……还有部分领土划归意大利和罗马尼亚。"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "奥匈帝国的问题在今天仍然有意义：多元文化如何共存？民族主义是自决的解放，还是分裂的种子？这个帝国的百年孤独，是一面镜子。"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "type": "asset",
+              "asset_id": "4675a69f-f95c-4de2-a909-6c02d3c8857c"
+            }
+          ],
+          "version": 1
+        },
+        "asset_ids": [
+          "4675a69f-f95c-4de2-a909-6c02d3c8857c",
+          "7ba5c0ea-09a2-4e73-b40f-411fccc22a33"
+        ],
+        "cover_asset_id": "7ba5c0ea-09a2-4e73-b40f-411fccc22a33"
+      },
+      "published_at": "2026-09-20T00:00:00+00:00",
+      "author": {
+        "username": "hshspacex",
+        "display_name": "HSH(站长)",
+        "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
+      },
+      "assets": [
+        {
+          "id": "4675a69f-f95c-4de2-a909-6c02d3c8857c",
+          "mime_type": "image/jpeg",
+          "name": "file-1790512154295-o7gj.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/fb9eee5e-9dae-461b-a179-6f8ead5349f7/293b6326-373f-4054-9d86-dc81240d19cf/4675a69f-f95c-4de2-a909-6c02d3c8857c.jpg"
+        },
+        {
+          "id": "7ba5c0ea-09a2-4e73-b40f-411fccc22a33",
+          "mime_type": "image/jpeg",
+          "name": "cover-travel.jpg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/fb9eee5e-9dae-461b-a179-6f8ead5349f7/293b6326-373f-4054-9d86-dc81240d19cf/7ba5c0ea-09a2-4e73-b40f-411fccc22a33.jpg"
+        }
+      ],
+      "featured": true,
+      "legacy": {
+        "target_id": "post-austria-history",
+        "target_type": "post",
+        "published_at": "2026-09-20T00:00:00+00:00",
+        "source_sha256": "f47e6660886350283bd3b987e33bfab96eebd02c77ed611043335ee3eddcb2b7"
+      }
+    }
+  ],
   "deleted": []
 }
