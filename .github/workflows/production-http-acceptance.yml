@@ -1,0 +1,47 @@
+name: Authorized temporary Auth and Storage acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed main SHA
+        required: true
+      approval:
+        description: Explicit temporary accounts and file cleanup authorization
+        type: choice
+        options:
+          - temporary-accounts-storage-20261031
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: production-http-acceptance
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ACCEPTANCE_SOURCE_SHA: ${{ inputs.source_sha }}
+      ACCEPTANCE_APPROVAL: ${{ inputs.approval }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify read-only service access
+        run: node scripts/check-publisher-connection.mjs
+      - name: Exercise scoped real Auth and Storage requests
+        run: node scripts/production-http-acceptance.mjs
+      - name: Ensure cleanup of only this run's temporary accounts and files
+        if: always()
+        run: node scripts/production-http-acceptance.mjs --cleanup
+      - name: Save redacted evidence and exact cleanup scope
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-http-acceptance-${{ github.run_id }}
+          path: ${{ runner.temp }}/personal-blog-http-acceptance/
+          retention-days: 7
