@@ -7,6 +7,8 @@ const db=await createNativeDatabase({through:'202610110004_idempotent_messages.s
 try {
  const query=await readFile(new URL('supabase/compatibility/boundary-inventory.sql',root),'utf8');
  const result={sources:{},boundaries:{},compatible_v1:{}};
+ const beforeDocument=await createNativeDatabase({through:'202610070004_category_raw_length.sql'});
+ try{result.before_document_body=(await beforeDocument.query(query)).rows.find(r=>r.key==='function:community_validate_body(text,jsonb)').digest;}finally{await beforeDocument.close();}
  const names=(await readdir(new URL('supabase/migrations/',root))).filter(n=>n.endsWith('.sql')).sort();
  for(const name of names)result.sources[name]=createHash('sha256').update((await readFile(new URL('supabase/migrations/'+name,root),'utf8')).replace(/\r\n/g,'\n')).digest('hex');
  let previous={};

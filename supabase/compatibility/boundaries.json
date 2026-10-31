@@ -839,5 +839,6 @@
       "function_acl:private_object_require_disabled(text)": "e15c87b25c5737bd4c71673cc7e60640"
     }
   },
-  "compatible_v1_source_sha256": "154f1edeb0dc34c7d8b88dc7df496721ec997fc3f5f4d715881a1ee5c1c16958"
+  "compatible_v1_source_sha256": "154f1edeb0dc34c7d8b88dc7df496721ec997fc3f5f4d715881a1ee5c1c16958",
+  "before_document_body": "f2c93cab10136fef4b8a3891a82a4d6f"
 }

@@ -79,7 +79,7 @@
     userResults.replaceChildren();userRows.forEach(function(p){
       if(!/^[a-zA-Z0-9_]{3,30}$/.test(p.username||''))return;
       var card=document.createElement('a');card.className='search-hit search-user glass-card';card.href='profile.html?username='+encodeURIComponent(p.username);card.rel='nofollow';
-      var head=document.createElement('div');head.className='search-user-head';var img=document.createElement('img');img.src=window.PublicCards.avatar(p.avatar_url);img.alt=(p.display_name||p.username)+'的头像';img.loading='lazy';img.addEventListener('error',function(){if(img.getAttribute('src')!=='assets/avatar-default.jpg')img.src='assets/avatar-default.jpg';});head.appendChild(img);
+      var head=document.createElement('div');head.className='search-user-head';var img=document.createElement('img');img.dataset.avatarId=p.id;img.src=window.PublicCards.avatar(p.avatar_url);img.alt=(p.display_name||p.username)+'的头像';img.loading='lazy';img.addEventListener('error',function(){if(img.getAttribute('src')!=='assets/avatar-default.jpg')img.src='assets/avatar-default.jpg';});head.appendChild(img);
       var names=document.createElement('div'),name=document.createElement('h3'),username=document.createElement('span');name.textContent=p.display_name||p.username;username.textContent='@'+p.username;names.append(name,username);head.appendChild(names);card.appendChild(head);
       var bio=document.createElement('p');bio.textContent=String(p.bio||'暂无公开简介').slice(0,180);card.appendChild(bio);userResults.appendChild(card);
     });

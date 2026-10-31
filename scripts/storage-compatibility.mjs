@@ -95,6 +95,9 @@ export function Storage_BoundaryGuard(boundaries=[22],variant='historical'){
  const query=read('supabase/compatibility/boundary-inventory.sql').trim().replace(/;$/,'');
  const states=variant==='compatible-v1'?compatibleV1:reference.boundaries;
  const expected=Object.fromEntries(boundaries.map(n=>{if(!states[n])throw Error('Missing reviewed boundary '+variant+' '+n);return [n,states[n]];}));
+ return Storage_StateGuard(expected,variant,query);
+}
+function Storage_StateGuard(expected,variant,query=read('supabase/compatibility/boundary-inventory.sql').trim().replace(/;$/,'')){
  return `do $boundary$
 declare actual jsonb; expected jsonb:=$expected$${JSON.stringify(expected)}$expected$::jsonb; matched text; differences jsonb;
 begin
@@ -120,6 +123,38 @@ end $boundary$;\n`;
 export function Storage_Contract(){return read('supabase/compatibility/storage-contract.sql');}
 export function Storage_RegistrationContract(){return read('supabase/compatibility/registration-contract.sql');}
 export function Storage_Diagnose22(){return 'begin transaction read only;\n'+Storage_BoundaryGuard()+Storage_Contract()+Storage_RegistrationContract()+'\nrollback;\n';}
+// This is a repair precondition, NEVER an accepted installation boundary.
+// Derive the missing-18 state from immutable historical baselines, not production hashes.
+export function Storage_MissingDocumentGuard(){
+ for(const {file} of storageSources)Storage_ReadHistory(file);
+ const state={...reference.boundaries[22]};
+ for(const name of ['community_validate_inline(jsonb)','community_validate_document(jsonb,uuid[],integer,text)','community_check_document_cover()']){
+  delete state['function:'+name];delete state['function_acl:'+name];
+ }
+ delete state['trigger:content_revisions:community_document_cover'];
+ state['function:community_validate_body(text,jsonb)']=reference.before_document_body;
+ if(!state['function:community_validate_body(text,jsonb)'])throw Error('Missing locally reproduced pre-document validator baseline');
+ return Storage_StateGuard({'22-missing-document-18':state},'repair precondition only');
+}
+export function Storage_RepairMissingDocument(){
+ const source=Storage_ReadHistory('202610100001_safe_content_document.sql');
+ const names=['community_validate_inline','community_validate_document','community_validate_body','community_check_document_cover'];
+ const signatures=['jsonb','jsonb,uuid[],integer,text','text,jsonb',''];
+ let sql='-- Repair ONLY verified boundary 22 missing document objects. Requires approved backup and production authorization.\nbegin;\nset local lock_timeout=\'10s\';\n'+Storage_MissingDocumentGuard()+Storage_Contract()+Storage_RegistrationContract();
+ // Extract only the missing functions and the obsolete validator replacement.
+ // No tables, existing triggers, historical data, or managed Storage DDL replay.
+ names.forEach((name,i)=>{sql+='\n'+Storage_Function('202610100001_safe_content_document.sql',name)+'\nrevoke all on function public.'+name+'('+signatures[i]+') from public,anon,authenticated;\n';});
+ const trigger=source.match(/create trigger community_document_cover[\s\S]*?execute function public\.community_check_document_cover\(\);/);
+ if(!trigger)throw Error('Missing reviewed document trigger');
+ sql+=trigger[0]+`\ndo $validate_existing$ declare r record; begin
+ for r in select i.content_type,v.body,i.author_id from public.content_revisions v join public.content_items i on i.id=v.item_id loop
+  perform public.community_validate_body(r.content_type,r.body);
+  if r.body ? 'cover_asset_id' and not exists(select 1 from public.user_assets a where a.id=(r.body->>'cover_asset_id')::uuid and a.owner_id=r.author_id and a.mime_type in ('image/jpeg','image/png','image/webp')) then
+   raise exception 'Existing revision has invalid cover; STOP';end if;
+ end loop;
+end $validate_existing$;\n`;
+ return sql+Storage_BoundaryGuard()+Storage_RegistrationContract()+'\ncommit;\n';
+}
 export function Storage_Transform23(source){
  if(hash(source)!==reference.sources[migration23])throw Error('Historical SQL checksum changed: '+migration23);
  const start=source.indexOf(' if not exists(select 1 from pg_index x'),end=source.indexOf(" if not exists(select 1 from pg_constraint",start);

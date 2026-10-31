@@ -3,7 +3,7 @@ import {readFile,readdir,mkdir,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {Storage_Transform23,Storage_ForwardRepair,Storage_RepairCompatibleV1,Storage_Diagnose22,storageSources} from './storage-compatibility.mjs';
+import {Storage_Transform23,Storage_ForwardRepair,Storage_RepairCompatibleV1,Storage_Diagnose22,Storage_RepairMissingDocument,Storage_MissingDocumentGuard,Storage_Contract,Storage_RegistrationContract,storageSources} from './storage-compatibility.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const reviewed={
  '202610060004_private_assets.sql':['f7f447ef68f3def71fa3d6cc4d4a46b6dbb152e8cc084caf06741f44d5e5c161',['community_assets_immutable']],
@@ -30,7 +30,9 @@ export async function Install_Build(directory){
   bundle+='\n-- SOURCE '+name+' SHA256(LF) '+hash(original)+'\n'+sql.replace(/^\s*(?:begin|commit);\s*$/gmi,'');
  }
  bundle+='\ncommit;\n';await writeFile(path.join(directory,'fresh-install.sql'),bundle);await writeFile(path.join(directory,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
- const extra={'repair-applied-23.sql':Storage_ForwardRepair(),'repair-compatible-23-v1.sql':Storage_RepairCompatibleV1(),'diagnose-boundary-22.sql':Storage_Diagnose22()};
+ const extra={'repair-applied-23.sql':Storage_ForwardRepair(),'repair-compatible-23-v1.sql':Storage_RepairCompatibleV1(),'diagnose-boundary-22.sql':Storage_Diagnose22(),
+ 'diagnose-missing-document-18.sql':'begin read only;\n'+Storage_MissingDocumentGuard()+Storage_Contract()+Storage_RegistrationContract()+'\nrollback;\n',
+ 'repair-missing-document-18.sql':Storage_RepairMissingDocument()};
  for(const [name,sql] of Object.entries(extra))await writeFile(path.join(directory,name),sql);
  const artifacts=[];
  for(const name of ['fresh-install.sql','202610130001_storage_compatibility.sql',...Object.keys(extra)])artifacts.push({file:name,lf_sha256:hash((await readFile(path.join(directory,name),'utf8')).replace(/\r\n/g,'\n'))});

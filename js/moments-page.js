@@ -240,7 +240,7 @@
       var authorLink='profile.html?username='+encodeURIComponent(author.username||'');
       var authorAvatar=window.PublicCards?window.PublicCards.avatar(author.avatar_url):'assets/icon.jpg';
       return '<article class="moment-card" id="' + (item.community?'community-':'moment-') + escapeHtml(item.id) + '">' +
-        '<a class="moment-avatar" href="'+escapeHtml(authorLink)+'"><img src="'+escapeHtml(authorAvatar)+'" alt=""></a>' +
+        '<a class="moment-avatar" href="'+escapeHtml(authorLink)+'"><img data-avatar-user="'+escapeHtml(author.username||'')+'" src="'+escapeHtml(authorAvatar)+'" alt=""></a>' +
         '<div class="moment-body">' +
           '<div class="moment-head">' +
             '<a class="moment-name" href="'+escapeHtml(authorLink)+'">'+escapeHtml(displayName)+' / @'+escapeHtml(author.username||'')+'</a>' +
