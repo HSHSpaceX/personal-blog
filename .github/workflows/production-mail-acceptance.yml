@@ -1,0 +1,50 @@
+name: Authorized invitation and recovery email acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed main SHA
+        required: true
+      action:
+        type: choice
+        options: [invite, recover, inspect, cleanup]
+        required: true
+      test_tag:
+        description: Unique operator-recorded temporary account provenance tag
+        required: true
+      approval:
+        type: choice
+        options: [invite-recovery-cleanup-20261031]
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: production-mail-acceptance
+  cancel-in-progress: false
+jobs:
+  mail:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run only the authorized email action
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PRODUCTION_MAIL_TEST_EMAIL: ${{ secrets.PRODUCTION_MAIL_TEST_EMAIL }}
+          MAIL_SOURCE_SHA: ${{ inputs.source_sha }}
+          MAIL_APPROVAL: ${{ inputs.approval }}
+          MAIL_TEST_TAG: ${{ inputs.test_tag }}
+          MAIL_ACTION: ${{ inputs.action }}
+        run: node scripts/production-mail-acceptance.mjs
+      - name: Save redacted result only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-mail-acceptance-${{ github.run_id }}
+          path: ${{ runner.temp }}/personal-blog-mail-acceptance/report.json
+          retention-days: 7
