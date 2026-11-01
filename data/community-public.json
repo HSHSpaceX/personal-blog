@@ -165,8 +165,27 @@
       }
     },
     {
+      "id": "92b715c0-9286-4ea5-a380-0963db67ef7d",
+      "revision_id": "681fc456-1d0a-491a-b0b7-3c3649116c46",
+      "content_type": "moment",
+      "slug": "c-762d38b5-bb64-4506-be12-73822f730394",
+      "title": "2026年10月31日起，本站正式开始邀请注册。",
+      "body": {
+        "text": "2026年10月31日起，本站正式开始邀请注册。",
+        "asset_ids": []
+      },
+      "published_at": "2026-11-01T11:17:26.196175+00:00",
+      "author": {
+        "username": "hshspacex",
+        "display_name": "HSH(站长)",
+        "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
+      },
+      "assets": [],
+      "featured": false
+    },
+    {
       "id": "fb9eee5e-9dae-461b-a179-6f8ead5349f7",
-      "revision_id": "7ac4d573-9bc9-42f7-9e4f-226af13076b5",
+      "revision_id": "32d126b0-74a9-48dc-b32b-d40f71c3a454",
       "content_type": "article",
       "slug": "post-austria-history",
       "title": "奥匈帝国的兴衰：一个多民族帝国的百年孤独",
@@ -267,9 +286,9 @@
           "version": 1
         },
         "asset_ids": [
-          "7c464eac-cb97-4d11-b583-8f0c3eb12a3d"
+          "58b61517-4ac6-4680-ba6f-e1172925196d"
         ],
-        "cover_asset_id": "7c464eac-cb97-4d11-b583-8f0c3eb12a3d"
+        "cover_asset_id": "58b61517-4ac6-4680-ba6f-e1172925196d"
       },
       "published_at": "2026-09-20T00:00:00+00:00",
       "author": {
@@ -279,10 +298,10 @@
       },
       "assets": [
         {
-          "id": "7c464eac-cb97-4d11-b583-8f0c3eb12a3d",
+          "id": "58b61517-4ac6-4680-ba6f-e1172925196d",
           "mime_type": "image/jpeg",
-          "name": "m-20260930-153358-thr1.jpeg",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/fb9eee5e-9dae-461b-a179-6f8ead5349f7/7ac4d573-9bc9-42f7-9e4f-226af13076b5/7c464eac-cb97-4d11-b583-8f0c3eb12a3d.jpg"
+          "name": "IMG_2032.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/fb9eee5e-9dae-461b-a179-6f8ead5349f7/32d126b0-74a9-48dc-b32b-d40f71c3a454/58b61517-4ac6-4680-ba6f-e1172925196d.jpg"
         }
       ],
       "featured": true,
@@ -294,5 +313,11 @@
       }
     }
   ],
-  "deleted": []
+  "deleted": [
+    {
+      "id": "d5c63eb4-3d29-4b92-9df5-16953a141fe5",
+      "type": "moment",
+      "legacy_id": null
+    }
+  ]
 }
