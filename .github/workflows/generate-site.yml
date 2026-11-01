@@ -3,23 +3,6 @@ name: Generate static site SEO files
 on:
   push:
     branches: [main]
-    paths:
-      - js/posts.js
-      - js/moments.js
-      - js/albums.js
-      - js/community-public.js
-      - js/content.js
-      - data/community-public.json
-      - data/site-settings-public.json
-      - data/site-settings-initial.json
-      - post.html
-      - site.config.mjs
-      - scripts/generate-site.mjs
-      - index.html
-      - about.html
-      - featured.html
-      - archive.html
-      - timeline.html
   workflow_dispatch:
 
 permissions:
