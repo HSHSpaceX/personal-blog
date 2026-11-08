@@ -234,7 +234,8 @@
         "target_type": "post",
         "published_at": "2026-09-20T00:00:00+00:00",
         "source_sha256": "f47e6660886350283bd3b987e33bfab96eebd02c77ed611043335ee3eddcb2b7"
-      }
+      },
+      "updated_at": "2026-11-08T00:00:00+08:00"
     }
   ],
   "deleted": [
