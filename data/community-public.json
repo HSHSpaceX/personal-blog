@@ -236,6 +236,34 @@
         "source_sha256": "f47e6660886350283bd3b987e33bfab96eebd02c77ed611043335ee3eddcb2b7"
       },
       "updated_at": "2026-11-08T00:00:00+08:00"
+    },
+    {
+      "id": "fd762cbd-d77d-4d1d-9c3c-900701213c3b",
+      "revision_id": "925cd089-8868-473c-beb3-b72825eba10c",
+      "content_type": "moment",
+      "slug": "c-d7e22414-a9d0-4208-8acc-c3ce22c326ee",
+      "title": "Beautiful",
+      "body": {
+        "text": "Beautiful ",
+        "asset_ids": [
+          "801853a1-3568-426e-a7a9-bbd625300d94"
+        ]
+      },
+      "published_at": "2026-11-08T12:17:43.259666+00:00",
+      "author": {
+        "username": "hshspacex",
+        "display_name": "HSH(站长)",
+        "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
+      },
+      "assets": [
+        {
+          "id": "801853a1-3568-426e-a7a9-bbd625300d94",
+          "mime_type": "image/jpeg",
+          "name": "IMG_2073.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/fd762cbd-d77d-4d1d-9c3c-900701213c3b/925cd089-8868-473c-beb3-b72825eba10c/801853a1-3568-426e-a7a9-bbd625300d94.jpg"
+        }
+      ],
+      "featured": false
     }
   ],
   "deleted": [
