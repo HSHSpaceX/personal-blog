@@ -38,6 +38,7 @@ export async function desiredSnapshot(rows,adapter){
   if(!Array.isArray(row.assets)||row.assets.length!==refs.length||row.assets.some(a=>!refs.includes(a.id)))fail('INVALID_MEDIA');
   const item={id:row.id,revision_id:row.revision_id,content_type:row.content_type,slug:row.slug,title:row.title,body:row.body,published_at:row.published_at,
    author:{username:row.author?.username,display_name:row.author?.display_name||'',avatar_url:row.author?.avatar_url||''},assets:[]};
+  if(typeof row.updated_at==='string'&&row.updated_at)item.updated_at=row.updated_at;
   if('featured' in row)item.featured=row.featured;
   if(row.legacy)item.legacy=row.legacy;
   // Avatar URLs must be durable HTTPS/local profile values, never a signed URL.
