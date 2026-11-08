@@ -38,7 +38,6 @@ export async function desiredSnapshot(rows,adapter){
   if(!Array.isArray(row.assets)||row.assets.length!==refs.length||row.assets.some(a=>!refs.includes(a.id)))fail('INVALID_MEDIA');
   const item={id:row.id,revision_id:row.revision_id,content_type:row.content_type,slug:row.slug,title:row.title,body:row.body,published_at:row.published_at,
    author:{username:row.author?.username,display_name:row.author?.display_name||'',avatar_url:row.author?.avatar_url||''},assets:[]};
-  if(typeof row.updated_at==='string'&&row.updated_at)item.updated_at=row.updated_at;
   if('featured' in row)item.featured=row.featured;
   if(row.legacy)item.legacy=row.legacy;
   // Avatar URLs must be durable HTTPS/local profile values, never a signed URL.
@@ -98,11 +97,23 @@ export async function reconcile({adapter,directory=root,finalize=false,verify=fa
   for(const file of ['moments','albums'])vm.runInNewContext(await readFile(path.join(directory,'js/'+file+'.js'),'utf8'),context,{timeout:1000});
   for(const i of snapshot.items.filter(i=>i.legacy)){const original=(i.content_type==='article'?legacyPosts:i.content_type==='moment'?context.window.BLOG_MOMENTS:context.window.SITE_ALBUMS).find(p=>(i.content_type==='article'?p.slug:p.id)===i.legacy.target_id);
    if(!original||original.visibility==='private'||createHash('sha256').update(JSON.stringify(original)).digest('hex')!==i.legacy.source_sha256)fail('INVALID_SNAPSHOT');}
+  // Article edit tracking: when a published revision changes since the last sync,
+  // stamp updated_at = today (Asia/Shanghai) so the article/lastmod date reflects the edit day.
+  // Unchanged items carry their previous updated_at; brand-new items keep none (fall back to published_at).
+  const dest=path.join(directory,'data/community-public.json');
+  let previous='';try{previous=await readFile(dest,'utf8');}catch(e){if(e.code!=='ENOENT')throw e;}
+  const prevItems=new Map();try{for(const it of (JSON.parse(previous).items||[]))prevItems.set(it.id,it);}catch(error){if(error.code!=='ENOENT'&&!(error instanceof SyntaxError))throw error;}
+  const shanghaiToday=new Date(Date.now()+8*3600*1000).toISOString().slice(0,10)+'T00:00:00+08:00';
+  for(const item of snapshot.items){
+   const prev=prevItems.get(item.id);
+   if(prev&&prev.revision_id===item.revision_id){if(prev.updated_at)item.updated_at=prev.updated_at;}
+   else if(prev&&prev.revision_id!==item.revision_id){item.updated_at=shanghaiToday;}
+  }
+  if(snapshot.items.some(function(i){return 'updated_at' in i;}))publicData.validate(snapshot);
   await adapter.legacy(legacy);
   for(const i of snapshot.items)await adapter.result(i.id,i.revision_id,'pending',null,null);
   for(const m of media)await adapter.uploadPublic(m.name,m.bytes,m.mime);
-  const dest=path.join(directory,'data/community-public.json'),text=stableJSON(snapshot);
-  let previous='';try{previous=await readFile(dest,'utf8');}catch(e){if(e.code!=='ENOENT')throw e;}
+  const text=stableJSON(snapshot);
   if(previous!==text){await writeFile(dest+'.tmp',text);await rename(dest+'.tmp',dest);}
   if(site){
    await writeFile(path.join(directory,'data/site-settings-public.json'),stableJSON(site));
