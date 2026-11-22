@@ -1,1 +1,73 @@
-Y29uc3QgVVJMID0gcHJvY2Vzcy5lbnYuU1VQQUJBU0VfVVJMOwpjb25zdCBLRVkgPSBwcm9jZXNzLmVudi5TVVBBQkFTRV9TRVJWSUNFX1JPTEVfS0VZOwppZiAoIVVSTCB8fCAhS0VZKSB0aHJvdyBuZXcgRXJyb3IoJ+e8uuWwkSBTVVBBQkFTRV9VUkwgLyBTVVBBQkFTRV9TRVJWSUNFX1JPTEVfS0VZJyk7Cgphc3luYyBmdW5jdGlvbiByZXEobWV0aG9kLCBwYXRoLCBib2R5KSB7CiAgY29uc3QgcmVzID0gYXdhaXQgZmV0Y2goYCR7VVJMfS9yZXN0L3YxLyR7cGF0aH1gLCB7CiAgICBtZXRob2QsCiAgICBoZWFkZXJzOiB7CiAgICAgIGFwaWtleTogS0VZLAogICAgICBBdXRob3JpemF0aW9uOiBgQmVhcmVyICR7S0VZfWAsCiAgICAgICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbicsCiAgICAgIFByZWZlcjogJ3JldHVybj1yZXByZXNlbnRhdGlvbicsCiAgICB9LAogICAgYm9keTogYm9keSA9PT0gdW5kZWZpbmVkID8gdW5kZWZpbmVkIDogSlNPTi5zdHJpbmdpZnkoYm9keSksCiAgfSk7CiAgY29uc3QgdGV4dCA9IGF3YWl0IHJlcy50ZXh0KCk7CiAgbGV0IGRhdGEgPSBudWxsOwogIHRyeSB7IGRhdGEgPSB0ZXh0ID8gSlNPTi5wYXJzZSh0ZXh0KSA6IG51bGw7IH0gY2F0Y2ggeyBkYXRhID0gdGV4dDsgfQogIGlmICghcmVzLm9rKSB0aHJvdyBuZXcgRXJyb3IoYCR7bWV0aG9kfSAke3BhdGh9IC0+ICR7cmVzLnN0YXR1c30gJHt0ZXh0LnNsaWNlKDAsIDUwMCl9YCk7CiAgcmV0dXJuIGRhdGE7Cn0KCmNvbnN0IFNMVUcgPSAncG9zdC1hdXN0cmlhLWhpc3RvcnknOwpjb25zdCBDT1ZFUl9JRCA9ICc5ZWMzYzdlZS1iNmY0LTQzMDMtOGI1MC1lOGVkY2M3NDc0OTknOwoKLy8gMS4g5om+5Yiw5paH56ugCmNvbnN0IGl0ZW1zID0gYXdhaXQgcmVxKCdHRVQnLCBgY29udGVudF9pdGVtcz9jb250ZW50X3R5cGU9ZXEuYXJ0aWNsZSZzbHVnPWVxLiR7U0xVR30mc2VsZWN0PWlkLHB1Ymxpc2hlZF9yZXZpc2lvbl9pZGApOwppZiAoIWl0ZW1zIHx8IGl0ZW1zLmxlbmd0aCAhPT0gMSkgdGhyb3cgbmV3IEVycm9yKCfmlofnq6DmnKrmib7liLDmiJbkuI3llK/kuIAnKTsKY29uc3QgaXRlbSA9IGl0ZW1zWzBdOwpjb25zdCBwdWJSZXZzID0gYXdhaXQgcmVxKCdHRVQnLCBgY29udGVudF9yZXZpc2lvbnM/aWQ9ZXEuJHtpdGVtLnB1Ymxpc2hlZF9yZXZpc2lvbl9pZH0mc2VsZWN0PWlkLHJldmlzaW9uX25vLHRpdGxlLGJvZHlgKTsKY29uc3QgY3VyID0gcHViUmV2c1swXTsKY29uc29sZS5sb2coJ2l0ZW06JywgaXRlbS5pZCwgJ+W9k+WJjeS/ruiuoiByZXZfbm86JywgY3VyLnJldmlzaW9uX25vKTsKY29uc29sZS5sb2coJ+W9k+WJjSBhc3NldF9pZHM6JywgSlNPTi5zdHJpbmdpZnkoY3VyLmJvZHkuYXNzZXRfaWRzKSk7CgovLyAyLiDnoa7orqTlsIHpnaLotYTmupDlrZjlnKgKY29uc3QgY292ZXIgPSBhd2FpdCByZXEoJ0dFVCcsIGB1c2VyX2Fzc2V0cz9pZD1lcS4ke0NPVkVSX0lEfSZzZWxlY3Q9aWQsb3JpZ2luYWxfbmFtZSxtaW1lX3R5cGUsb2JqZWN0X3BhdGgsc2l6ZV9ieXRlc2ApOwppZiAoIWNvdmVyIHx8IGNvdmVyLmxlbmd0aCAhPT0gMSkgdGhyb3cgbmV3IEVycm9yKCflsIHpnaLotYTmupDkuI3lrZjlnKg6ICcgKyBDT1ZFUl9JRCk7CmNvbnNvbGUubG9nKCflsIHpnaLotYTmupA6JywgY292ZXJbMF0ub3JpZ2luYWxfbmFtZSwgY292ZXJbMF0ubWltZV90eXBlKTsKCi8vIDMuIOaehOmAoCBib2R577ya5Y+q5L+d55WZ5bCB6Z2iCmNvbnN0IG5ld0JvZHkgPSB7IC4uLmN1ci5ib2R5IH07Cm5ld0JvZHkuYXNzZXRfaWRzID0gW0NPVkVSX0lEXTsKbmV3Qm9keS5jb3Zlcl9hc3NldF9pZCA9IENPVkVSX0lEOwovLyBkb2N1bWVudCDkv53mjIHnuq/mrrXokL3vvIjlsIHpnaLkuI3lj4LkuI7mraPmloflnZfvvIkKbmV3Qm9keS5kb2N1bWVudCA9IHsgLi4ubmV3Qm9keS5kb2N1bWVudCwgYmxvY2tzOiAobmV3Qm9keS5kb2N1bWVudC5ibG9ja3MgfHwgW10pLmZpbHRlcihiID0+IGIudHlwZSAhPT0gJ2Fzc2V0JykgfTsKY29uc29sZS5sb2coJ+aWsCBhc3NldF9pZHM6JywgSlNPTi5zdHJpbmdpZnkobmV3Qm9keS5hc3NldF9pZHMpLCAnY292ZXI6JywgbmV3Qm9keS5jb3Zlcl9hc3NldF9pZCk7CgovLyA0LiDmlrDlu7rlt7Lmibnlh4bnmoTkv67orqIKY29uc3Qgbm93ID0gbmV3IERhdGUoKS50b0lTT1N0cmluZygpOwpjb25zdCBpbnNlcnRlZCA9IGF3YWl0IHJlcSgnUE9TVCcsICdjb250ZW50X3JldmlzaW9ucycsIHsKICBpdGVtX2lkOiBpdGVtLmlkLAogIHJldmlzaW9uX25vOiBjdXIucmV2aXNpb25fbm8gKyAxLAogIHRpdGxlOiBjdXIudGl0bGUsCiAgYm9keTogbmV3Qm9keSwKICBzdGF0dXM6ICdhcHByb3ZlZCcsCiAgc3VibWl0dGVkX2F0OiBub3csCiAgcmVzb2x2ZWRfYXQ6IG5vdywKfSk7CmNvbnN0IG5ld1JldiA9IGluc2VydGVkWzBdOwpjb25zb2xlLmxvZygn5paw5L+u6K6iOicsIG5ld1Jldi5pZCwgJ3Jldl9ubzonLCBuZXdSZXYucmV2aXNpb25fbm8pOwoKLy8gNS4g5YWz6IGU5bCB6Z2i6LWE5rqQ5Yiw5paw5L+u6K6iCmF3YWl0IHJlcSgnUE9TVCcsICdyZXZpc2lvbl9hc3NldHMnLCBbeyByZXZpc2lvbl9pZDogbmV3UmV2LmlkLCBhc3NldF9pZDogQ09WRVJfSUQgfV0pOwpjb25zb2xlLmxvZygn5bey5YWz6IGU5bCB6Z2i6LWE5rqQJyk7CgovLyA2LiDlj5HluIPmlrDkv67orqIKYXdhaXQgcmVxKCdQQVRDSCcsIGBjb250ZW50X2l0ZW1zP2lkPWVxLiR7aXRlbS5pZH1gLCB7IHB1Ymxpc2hlZF9yZXZpc2lvbl9pZDogbmV3UmV2LmlkIH0pOwpjb25zb2xlLmxvZygncHVibGlzaGVkX3JldmlzaW9uX2lkIC0+JywgbmV3UmV2LmlkKTsKCi8vIDcuIOagoemqjApjb25zdCBjaGVjayA9IGF3YWl0IHJlcSgnR0VUJywgYGNvbnRlbnRfaXRlbXM/aWQ9ZXEuJHtpdGVtLmlkfSZzZWxlY3Q9cHVibGlzaGVkX3JldmlzaW9uX2lkYCk7CmNvbnNvbGUubG9nKCfmnIDnu4ggcHVibGlzaGVkX3JldmlzaW9uX2lkOicsIGNoZWNrWzBdLnB1Ymxpc2hlZF9yZXZpc2lvbl9pZCk7CmNvbnNvbGUubG9nKCdcbj09PSDlrozmiJDvvIjku4Xkv53nlZnlsIHpnaLvvIk9PT0nKTsK
+const URL = process.env.SUPABASE_URL;
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!URL || !KEY) throw new Error('缺少 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
+
+async function req(method, path, body) {
+  const res = await fetch(`${URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      apikey: KEY,
+      Authorization: `Bearer ${KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!res.ok) throw new Error(`${method} ${path} -> ${res.status} ${text.slice(0, 500)}`);
+  return data;
+}
+
+const SLUG = 'post-austria-history';
+const COVER_ID = '9ec3c7ee-b6f4-4303-8b50-e8edcc747499';
+
+// 1. 找到文章
+const items = await req('GET', `content_items?content_type=eq.article&slug=eq.${SLUG}&select=id,published_revision_id`);
+if (!items || items.length !== 1) throw new Error('文章未找到或不唯一');
+const item = items[0];
+const pubRevs = await req('GET', `content_revisions?id=eq.${item.published_revision_id}&select=id,revision_no,title,body`);
+const cur = pubRevs[0];
+console.log('item:', item.id, '当前修订 rev_no:', cur.revision_no);
+console.log('当前 asset_ids:', JSON.stringify(cur.body.asset_ids));
+
+// 2. 确认封面资源存在
+const cover = await req('GET', `user_assets?id=eq.${COVER_ID}&select=id,original_name,mime_type,object_path,size_bytes`);
+if (!cover || cover.length !== 1) throw new Error('封面资源不存在: ' + COVER_ID);
+console.log('封面资源:', cover[0].original_name, cover[0].mime_type);
+
+// 3. 构造 body：只保留封面
+const newBody = { ...cur.body };
+newBody.asset_ids = [COVER_ID];
+newBody.cover_asset_id = COVER_ID;
+// document 保持纯段落（封面不参与正文块）
+newBody.document = { ...newBody.document, blocks: (newBody.document.blocks || []).filter(b => b.type !== 'asset') };
+console.log('新 asset_ids:', JSON.stringify(newBody.asset_ids), 'cover:', newBody.cover_asset_id);
+
+// 4. 新建已批准的修订
+const now = new Date().toISOString();
+const inserted = await req('POST', 'content_revisions', {
+  item_id: item.id,
+  revision_no: cur.revision_no + 1,
+  title: cur.title,
+  body: newBody,
+  status: 'approved',
+  submitted_at: now,
+  resolved_at: now,
+});
+const newRev = inserted[0];
+console.log('新修订:', newRev.id, 'rev_no:', newRev.revision_no);
+
+// 5. 关联封面资源到新修订
+await req('POST', 'revision_assets', [{ revision_id: newRev.id, asset_id: COVER_ID }]);
+console.log('已关联封面资源');
+
+// 6. 发布新修订
+await req('PATCH', `content_items?id=eq.${item.id}`, { published_revision_id: newRev.id });
+console.log('published_revision_id ->', newRev.id);
+
+// 7. 校验
+const check = await req('GET', `content_items?id=eq.${item.id}&select=published_revision_id`);
+console.log('最终 published_revision_id:', check[0].published_revision_id);
+console.log('\n=== 完成（仅保留封面）===');

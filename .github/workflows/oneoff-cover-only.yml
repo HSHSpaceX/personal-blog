@@ -1,1 +1,14 @@
-bmFtZTogT25lLW9mZiBrZWVwIGNvdmVyIG9ubHkKCm9uOgogIHdvcmtmbG93X2Rpc3BhdGNoOgoKam9iczoKICBrZWVwLWNvdmVyOgogICAgcnVucy1vbjogdWJ1bnR1LWxhdGVzdAogICAgc3RlcHM6CiAgICAgIC0gdXNlczogYWN0aW9ucy9jaGVja291dEB2NAogICAgICAtIHJ1bjogbm9kZSBzY3JpcHRzL29uZW9mZi1jb3Zlci1vbmx5Lm1qcwogICAgICAgIGVudjoKICAgICAgICAgIFNVUEFCQVNFX1VSTDogJHt7IHNlY3JldHMuU1VQQUJBU0VfVVJMIH19CiAgICAgICAgICBTVVBBQkFTRV9TRVJWSUNFX1JPTEVfS0VZOiAke3sgc2VjcmV0cy5TVVBBQkFTRV9TRVJWSUNFX1JPTEVfS0VZIH19Cg==
+name: One-off keep cover only
+
+on:
+  workflow_dispatch:
+
+jobs:
+  keep-cover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/oneoff-cover-only.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
