@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "04f9295c-4f9d-4e42-b573-22b5e4394612",
-      "revision_id": "2fdd33e4-25d6-4ab1-8edd-6e4f8e8935d4",
+      "revision_id": "ad971c41-ff19-44dd-a46c-642ecb4cc4e8",
       "content_type": "article",
       "slug": "post-austria-history",
       "title": "拾光手记 —— 建站记录纪实",
@@ -47,7 +47,10 @@
           ],
           "version": 1
         },
-        "asset_ids": []
+        "asset_ids": [
+          "9ec3c7ee-b6f4-4303-8b50-e8edcc747499"
+        ],
+        "cover_asset_id": "9ec3c7ee-b6f4-4303-8b50-e8edcc747499"
       },
       "published_at": "2026-09-20T00:00:00+00:00",
       "author": {
@@ -55,7 +58,14 @@
         "display_name": "HSH(站长)",
         "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
       },
-      "assets": [],
+      "assets": [
+        {
+          "id": "9ec3c7ee-b6f4-4303-8b50-e8edcc747499",
+          "mime_type": "image/jpeg",
+          "name": "IMG_0956.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/04f9295c-4f9d-4e42-b573-22b5e4394612/ad971c41-ff19-44dd-a46c-642ecb4cc4e8/9ec3c7ee-b6f4-4303-8b50-e8edcc747499.jpg"
+        }
+      ],
       "featured": false,
       "legacy": {
         "target_id": "post-austria-history",
