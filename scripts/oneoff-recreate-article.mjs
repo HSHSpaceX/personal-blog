@@ -114,6 +114,19 @@ await req('PATCH', `content_items?id=eq.${newItem.id}`, {
   published_revision_id: newRevision.id,
 });
 
+// 8. 恢复 legacy 映射（slug 与 js/posts.js 静态老文章同名时必须存在，否则 sync 校验失败）
+if (backup.legacy && backup.legacy.target_id) {
+  console.log('恢复 legacy 映射...');
+  await req('POST', 'community_legacy_mappings', {
+    item_id: newItem.id,
+    target_type: backup.legacy.target_type,
+    target_id: backup.legacy.target_id,
+    source_sha256: backup.legacy.source_sha256,
+    published_at: backup.legacy.published_at,
+  });
+  console.log('legacy 映射已恢复:', backup.legacy.target_id);
+}
+
 console.log('\\n=== 完成 ===');
 console.log(`新文章已创建: ${SLUG}`);
 console.log(`item_id: ${newItem.id}`);
