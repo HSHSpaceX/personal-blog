@@ -91,19 +91,21 @@ const newRevision = await req('POST', 'content_revisions', {
 }).then(r => r[0]);
 console.log('新 revision id:', newRevision.id);
 
-// 6. 关联附件（如果原附件仍存在）
-if (oldAssetIds.length > 0) {
+// 6. 关联附件：只关联正文实际引用的资产（asset_ids + cover_asset_id）
+const bodyRefs = [...new Set([...(backup.body.asset_ids || []), ...(backup.body.cover_asset_id ? [backup.body.cover_asset_id] : [])])];
+console.log('正文引用的附件:', bodyRefs);
+if (bodyRefs.length > 0) {
   console.log('关联附件到新 revision...');
-  const existingAssets = await req('GET', `user_assets?id=in.(${oldAssetIds.join(',')})&select=id`);
+  const existingAssets = await req('GET', `user_assets?id=in.(${bodyRefs.join(',')})&select=id`);
   const validAssetIds = existingAssets.map(a => a.id);
-  console.log(`原 ${oldAssetIds.length} 个附件中 ${validAssetIds.length} 个仍存在`);
-  if (validAssetIds.length > 0) {
-    await req('POST', 'revision_assets', validAssetIds.map(aid => ({
-      revision_id: newRevision.id,
-      asset_id: aid,
-    })));
-    console.log('已关联附件:', validAssetIds);
+  if (validAssetIds.length !== bodyRefs.length) {
+    throw new Error(`附件缺失：正文引用 ${bodyRefs.length} 个，但数据库只有 ${validAssetIds.length} 个`);
   }
+  await req('POST', 'revision_assets', validAssetIds.map(aid => ({
+    revision_id: newRevision.id,
+    asset_id: aid,
+  })));
+  console.log('已关联附件:', validAssetIds);
 }
 
 // 7. 将新 revision 设为已发布版本
