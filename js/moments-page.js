@@ -133,7 +133,9 @@
       '<div class="comment-head"><img class="comment-avatar" src="' + escapeHtml(item.avatar && /^https:\/\//.test(item.avatar) ? item.avatar : (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg')) + '" alt="">' +
       (item.username
         ? '<a class="comment-author" href="profile.html?username=' + encodeURIComponent(item.username) + '">' + escapeHtml(item.nick) + '</a>'
-        : '<strong>' + escapeHtml(item.nick) + '</strong>') + '<span>' + escapeHtml(item.time || '') + '</span>' +
+        : '<strong>' + escapeHtml(item.nick) + '</strong>') +
+      (item.profileId && !item.legacy ? '<span class="comment-level" data-level-user="' + escapeHtml(item.profileId) + '"></span>' : '') +
+      '<span>' + escapeHtml(item.time || '') + '</span>' +
       (item.status === 'pending' ? '<span>待审核</span>' : '') +
       '</div>' +
       (item.parentNick ? '<p class="comment-parent-hint">回复 @' + escapeHtml(item.parentNick) + '</p>' : '') +
@@ -161,6 +163,7 @@
       '<textarea name="content" rows="2" maxlength="2000" placeholder="登录后写下评论…"></textarea>' +
       '<div class="moment-comment-foot"><span class="status-line"></span><button class="comment-submit" type="submit">评论</button></div></form>';
     if (window.CommentLikes) window.CommentLikes.decorate(panel);
+    if (window.SiteLevels) window.SiteLevels.decorateComments(panel);
     updateCommentCount(id);
   }
 

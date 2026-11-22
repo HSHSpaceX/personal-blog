@@ -103,6 +103,19 @@
     return '<a class="post-category" href="' + categoryUrl(post.category) + '">' + escapeHtml(post.category) + '</a>';
   }
 
+  // 拾光等级：精选站标由 js/levels.js 提供；缺失时安静降级为无站标。
+  function postFeatured(post) {
+    return !!(window.SiteLevels && window.SiteLevels.isFeatured && window.SiteLevels.isFeatured(post));
+  }
+
+  function tierSeal(post) {
+    return postFeatured(post) && window.SiteLevels ? window.SiteLevels.sealHTML() : '';
+  }
+
+  function tierClass(post) {
+    return postFeatured(post) ? ' has-tier' : '';
+  }
+
   function postAuthor(post) {
     var p=post.author_profile||{username:'hshspacex',display_name:'HSH(站长)',avatar_url:'assets/icon.jpg'};
     if(window.PublicCards)return window.PublicCards.author(p).outerHTML;
@@ -112,7 +125,7 @@
 
   function renderPostCard(post) {
     return '' +
-      '<article class="post-card glass-card">' +
+      '<article class="post-card glass-card' + tierClass(post) + '">' +
         '<a class="post-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
           '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="eager" decoding="async" fetchpriority="high">' +
         '</a>' +
@@ -120,10 +133,13 @@
           categoryChip(post) +
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="post-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
-          '<div class="post-card-meta">' +
-            postAuthor(post) +
-            '<span class="post-date">' + formatDate(post.date) + '</span>' +
-            '<span>' + post.readingTime + ' 分钟</span>' +
+          '<div class="post-card-foot">' +
+            '<div class="post-card-meta">' +
+              postAuthor(post) +
+              '<span class="post-date">' + formatDate(post.date) + '</span>' +
+              '<span>' + post.readingTime + ' 分钟</span>' +
+            '</div>' +
+            tierSeal(post) +
           '</div>' +
         '</div>' +
       '</article>';
@@ -148,7 +164,7 @@
   }
   function renderRailCard(post, index) {
     return '' +
-      '<article class="rail-card reveal glass-card" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
+      '<article class="rail-card reveal glass-card' + tierClass(post) + '" style="transition-delay:' + ((index % 4) * 70) + 'ms">' +
         '<a class="rail-card-media" href="' + postUrl(post.slug) + '" aria-label="' + escapeHtml(post.title) + '">' +
           '<img src="' + escapeHtml(post.cover) + '" alt="' + escapeHtml(post.title) + '" loading="eager" decoding="async" fetchpriority="high">' +
         '</a>' +
@@ -156,10 +172,13 @@
           categoryChip(post) +
           '<h3><a href="' + postUrl(post.slug) + '">' + escapeHtml(post.title) + '</a></h3>' +
           (post.excerpt ? '<p class="rail-card-excerpt">' + escapeHtml(post.excerpt) + '</p>' : '') +
-          '<div class="rail-card-meta">' +
-            postAuthor(post) +
-            '<span>' + formatDate(post.date) + '</span>' +
-            '<span>' + post.readingTime + ' 分钟</span>' +
+          '<div class="rail-card-foot">' +
+            '<div class="rail-card-meta">' +
+              postAuthor(post) +
+              '<span>' + formatDate(post.date) + '</span>' +
+              '<span>' + post.readingTime + ' 分钟</span>' +
+            '</div>' +
+            tierSeal(post) +
           '</div>' +
         '</div>' +
       '</article>';
@@ -280,9 +299,12 @@
       }
       return '<a class="home-comment-card" href="' + escapeHtml(link) + '">' +
         '<p class="home-comment-text">' + escapeHtml(item.content) + '</p>' +
-        '<div class="home-comment-meta"><strong>' + escapeHtml(item.nick) + '</strong><span>' + escapeHtml(item.time || '') + ' · ' + escapeHtml(source) + '</span></div>' +
+        '<div class="home-comment-meta"><strong>' + escapeHtml(item.nick) + '</strong>' +
+        (item.profileId && !item.legacy && window.SiteLevels ? '<span class="comment-level" data-level-user="' + escapeHtml(item.profileId) + '"></span>' : '') +
+        '<span>' + escapeHtml(item.time || '') + ' · ' + escapeHtml(source) + '</span></div>' +
       '</a>';
     }).join('');
+    if (window.SiteLevels) window.SiteLevels.decorateComments(homeCommentsEl);
   }
 
   async function refreshHomeComments() {
@@ -482,6 +504,11 @@
 
     document.getElementById('postContent').innerHTML = post.community ? window.CommunityPublic.articleHTML(post.public_item) : post.content;
     var authorEl=document.getElementById('postAuthor');if(authorEl)authorEl.innerHTML=postAuthor(post);
+    var postHeader=document.querySelector('.post-header');
+    if(postHeader)postHeader.querySelectorAll('.post-tier-row').forEach(function(row){row.remove();});
+    if(authorEl&&authorEl.parentElement&&postFeatured(post)){
+      authorEl.insertAdjacentHTML('afterend','<div class="post-tier-row">'+tierSeal(post)+'</div>');
+    }
     document.getElementById('postContent').querySelectorAll('img').forEach(function (img) {
       img.setAttribute('decoding', 'async');
       img.setAttribute('loading', 'eager');
@@ -893,7 +920,9 @@
           '<img class="comment-avatar" src="' + escapeHtml(item.avatar && /^https:\/\//.test(item.avatar) ? item.avatar : (item.nick === 'HSH(站长)' ? 'assets/icon.jpg' : 'assets/avatar-default.jpg')) + '" alt="">' +
           (item.username
             ? '<a class="comment-author" href="profile.html?username=' + encodeURIComponent(item.username) + '">' + escapeHtml(item.nick) + '</a>'
-            : '<strong>' + escapeHtml(item.nick) + '</strong>') + '<span>' + escapeHtml(item.time || '') + '</span>' +
+            : '<strong>' + escapeHtml(item.nick) + '</strong>') +
+          (item.profileId && !item.legacy ? '<span class="comment-level" data-level-user="' + escapeHtml(item.profileId) + '"></span>' : '') +
+          '<span>' + escapeHtml(item.time || '') + '</span>' +
           (item.status === 'pending' ? '<span>待审核</span>' : '') +
         '</div>' +
         '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
@@ -946,6 +975,7 @@
           return renderCommentTree(item, all);
         }).join('') : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
         CommentLikes.decorate(listEl);
+        if (window.SiteLevels) window.SiteLevels.decorateComments(listEl);
       } catch (error) { if(attempt===commentGeneration)listEl.textContent = '评论加载失败：' + error.message; }
     }
     listEl.addEventListener('click', function (event) {

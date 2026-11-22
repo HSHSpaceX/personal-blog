@@ -8,7 +8,7 @@
   <meta name="description" content="查看和编辑拾光手记用户资料。">
   <link rel="icon" href="assets/icon-light.png" type="image/png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="assets/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="css/style.css?v=20261013">
+  <link rel="stylesheet" href="css/style.css?v=20261122">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <link rel="stylesheet" href="css/community.css?v=13">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
@@ -27,6 +27,7 @@
       <h1 id="profileHeading">用户资料</h1>
       <p id="profileStatus" class="status-line" aria-live="polite"></p>
       <div class="profile-summary"><img id="profileAvatar" src="assets/avatar-default.jpg" alt="用户头像" width="96" height="96"><div><h2 id="profileName"></h2><p id="profileUsername"></p><p id="profileBio"></p></div></div>
+      <div class="profile-level" id="profileLevel" hidden></div>
       <div class="admin-row"><button class="btn" id="profileFollowers" type="button">粉丝</button><button class="btn" id="profileFollowing" type="button">关注</button></div>
       <div class="admin-row"><button class="btn primary" id="followBtn" type="button" hidden>关注</button><a class="btn" id="profileMessage" rel="nofollow" hidden>私信</a><span id="profileOwnLinks" hidden><a class="btn" href="account.html" rel="nofollow">账号中心</a><button class="btn" id="profileEdit" type="button">编辑资料</button></span><button class="btn" id="profileLogout" type="button" hidden>退出</button></div>
     </section>
@@ -53,6 +54,7 @@
   <script src="js/posts.js?v=3"></script>
   <script src="js/moments.js?v=3"></script><script src="js/albums.js?v=3"></script>
   <script src="js/community-schema.js?v=9"></script><script src="js/public-profile-data.js?v=13"></script><script src="js/public-cards.js?v=20261031"></script>
+  <script src="js/levels.js?v=20261122"></script>
   <script src="js/profile-comments.js?v=1"></script>
   <script src="js/profile.js?v=13"></script>
   <script src="js/workspace-embed.js?v=1"></script>

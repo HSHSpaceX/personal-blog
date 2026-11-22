@@ -5,7 +5,7 @@
   var $=function(id){return document.getElementById(id);};
   var target=null,generation=0,pageGeneration=0,tab='moment',offset=0,legacyRows=[],legacyIndex=0,pageStartLegacy=0,cursors=[],hasNext=false,mappedSeen=new Set();
   function status(text,error){$('profileStatus').textContent=text;$('profileStatus').className='status-line '+(error?'err':'ok');}
-  function clear(){if(window.ProfileComments)window.ProfileComments.clear();generation++;pageGeneration++;target=null;$('profileCards').replaceChildren();$('profileDetail').replaceChildren();$('profileLogout').hidden=true;$('profileEditor').hidden=true;$('profileOwnLinks').hidden=true;$('followBtn').hidden=true;$('profileMessage').hidden=true;$('profileMessage').removeAttribute('href');
+  function clear(){if(window.ProfileComments)window.ProfileComments.clear();generation++;pageGeneration++;target=null;$('profileCards').replaceChildren();$('profileDetail').replaceChildren();$('profileLogout').hidden=true;$('profileEditor').hidden=true;$('profileOwnLinks').hidden=true;$('followBtn').hidden=true;$('profileMessage').hidden=true;$('profileMessage').removeAttribute('href');var levelEl=$('profileLevel');if(levelEl){levelEl.hidden=true;levelEl.replaceChildren();}
     ['profileUsernameInput','profileDisplayInput','profileBioInput','profileAvatarInput'].forEach(function(id){$(id).value='';});}
   async function load(){
     clear();var token=generation;
@@ -23,6 +23,12 @@
       if(own){$('profileUsernameInput').value=target.username;$('profileDisplayInput').value=target.display_name;$('profileBioInput').value=target.bio;}
       if(auth.user()&&!own){$('followBtn').hidden=false;var following=await window.BlogData.following(target.id);if(token!==generation)return;$('followBtn').textContent=following?'取消关注':'关注';}
       var counts=await data.counts(target.id);if(token!==generation)return;$('profileFollowers').textContent=counts[0]+' 粉丝';$('profileFollowing').textContent=counts[1]+' 关注';
+      if(window.SiteLevels){
+        window.SiteLevels.profileLevel(target,Number(counts[0])||0).then(function(info){
+          if(token!==generation)return;var host=$('profileLevel');if(!host||!window.SiteLevels)return;
+          host.innerHTML=window.SiteLevels.profileCardHTML(info);host.hidden=false;
+        }).catch(function(){/* 等级只是装饰，失败时保持隐藏 */});
+      }
       tab=params.get('tab')||'moment';if(!['moment','article','album','comment','likes','followers','following'].includes(tab))tab='moment';
       await changeTab(tab,true);
       if(token!==generation)return;
