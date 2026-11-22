@@ -506,8 +506,10 @@
     var authorEl=document.getElementById('postAuthor');if(authorEl)authorEl.innerHTML=postAuthor(post);
     var postHeader=document.querySelector('.post-header');
     if(postHeader)postHeader.querySelectorAll('.post-tier-row').forEach(function(row){row.remove();});
-    if(authorEl&&authorEl.parentElement&&postFeatured(post)){
-      authorEl.insertAdjacentHTML('afterend','<div class="post-tier-row">'+tierSeal(post)+'</div>');
+    // 精选站标放在正文右下角。
+    var contentEl=document.getElementById('postContent');
+    if(contentEl&&postFeatured(post)){
+      contentEl.insertAdjacentHTML('beforeend','<div class="post-tier-row">'+tierSeal(post)+'</div>');
     }
     document.getElementById('postContent').querySelectorAll('img').forEach(function (img) {
       img.setAttribute('decoding', 'async');

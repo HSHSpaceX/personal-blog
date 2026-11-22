@@ -4369,7 +4369,11 @@ a.tag-chip:hover {
 
 .post-tier-row {
   display: flex;
-  margin-top: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(120, 120, 128, 0.16);
 }
 
 .post-tier-row .tier-seal {
@@ -4481,7 +4485,13 @@ a.tag-chip:hover {
   height: 100%;
   border-radius: inherit;
   background: var(--accent);
-  transition: width 0.4s ease;
+  animation: level-bar-grow 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes level-bar-grow {
+  from {
+    width: 0;
+  }
 }
 
 .level-hint {
@@ -4525,7 +4535,7 @@ a.tag-chip:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .level-bar-fill {
-    transition: none;
+    animation: none;
   }
 }
 
