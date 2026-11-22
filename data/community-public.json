@@ -66,7 +66,7 @@
           "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/04f9295c-4f9d-4e42-b573-22b5e4394612/ad971c41-ff19-44dd-a46c-642ecb4cc4e8/9ec3c7ee-b6f4-4303-8b50-e8edcc747499.jpg"
         }
       ],
-      "featured": false,
+      "featured": true,
       "legacy": {
         "target_id": "post-austria-history",
         "target_type": "post",
