@@ -47,8 +47,16 @@ if (oldItemId) {
   }
 }
 
-// 3. 删除顺序：先删 item（会级联删除 revisions 和 revision_assets）
+// 3. 删除顺序：先清理 restrict 外键的表，再删 item（级联删除其余）
 if (oldItemId) {
+  // 3a. community_article_preferences 使用 on delete restrict，必须先删
+  if (oldRevIds.length > 0) {
+    const revIdsIn = `(${oldRevIds.join(',')})`;
+    console.log('清理 community_article_preferences...');
+    await req('DELETE', `community_article_preferences?revision_id=in.${revIdsIn}`);
+    console.log('已清理文章偏好设置');
+  }
+  // 3b. 删除 item 本体（级联删除 revisions、revision_assets、notifications 等）
   console.log('删除 content_item（级联删除 revisions 和 revision_assets）...');
   await req('DELETE', `content_items?id=eq.${oldItemId}`);
   console.log('已删除 item:', oldItemId);
