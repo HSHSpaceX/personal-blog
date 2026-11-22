@@ -1,4 +1,4 @@
-name: One-off: strip media from article
+name: One-off strip media from article
 
 on:
   workflow_dispatch:
