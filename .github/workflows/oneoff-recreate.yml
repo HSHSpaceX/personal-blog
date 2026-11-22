@@ -1,6 +1,6 @@
-name: One-off: Recreate Austria Article
-on:
-  workflow_dispatch:
+name: One-off Recreate Austria Article
+
+on: workflow_dispatch
 
 jobs:
   recreate:
