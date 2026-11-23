@@ -59,14 +59,14 @@ test('站标 HTML 保持单层结构，带固定可访问名称', () => {
 test('等级按数量判定：逐级要求递增，满级需要长期积累', () => {
   const L = levels();
   assert.equal(L.LEVELS.length, 11);
-  assert.deepEqual(L.LEVELS.map((row) => row.level), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.equal(L.LEVELS.map((row) => row.level).join(','), '0,1,2,3,4,5,6,7,8,9,10');
   for (const key of ['article', 'featured', 'album', 'moment', 'comment', 'follower']) {
     const values = L.LEVELS.map((row) => row.need[key]).filter((v) => v !== undefined);
     for (let i = 1; i < values.length; i++) assert.ok(values[i] >= values[i - 1], key);
   }
   assert.equal(L.levelOf({ article: 1 }).level, 1);
-  assert.equal(L.levelOf({ article: 1, moment: 2 }).level, 1);
-  assert.equal(L.levelOf({ article: 1, moment: 3 }).level, 2);
+  assert.equal(L.levelOf({ article: 1, moment: 3 }).level, 1);
+  assert.equal(L.levelOf({ article: 2, moment: 3 }).level, 2);
   assert.equal(L.levelOf({ article: 50, moment: 200, album: 16, comment: 400, follower: 200 }).level, 2);
   assert.equal(L.levelOf({ article: 50, moment: 200, album: 16, comment: 400, follower: 200, featured: 15 }).level, 10);
   assert.ok(L.LEVELS[10].need.article >= 50);
@@ -74,19 +74,19 @@ test('等级按数量判定：逐级要求递增，满级需要长期积累', ()
 
 test('等级卡结构：等级、分子分母、进度条与下一级要求一致', () => {
   const L = levels();
-  const info = L.levelOf({ article: 1, moment: 4, album: 1, comment: 0, follower: 2, source: 'server' });
+  const info = L.levelOf({ article: 3, moment: 4, album: 1, featured: 0, comment: 0, follower: 2, source: 'server' });
   assert.equal(info.level, 2);
   assert.equal(info.nextLevel, 3);
   assert.equal(info.totalRequired, 3);
-  assert.equal(info.metRequired, 1);
+  assert.equal(info.metRequired, 2);
   const card = L.profileCardHTML(info);
   assert.match(card, /class="level-card" data-level="2" data-source="server"/);
   assert.match(card, /class="level-eyebrow">拾光等级</);
   assert.match(card, /class="level-number">Lv\.2</);
   assert.match(card, /role="progressbar"/);
-  assert.match(card, /aria-valuemin="0" aria-valuemax="3" aria-valuenow="1"/);
-  assert.match(card, /style="width:33\.3%"/);
-  assert.match(card, /class="level-hint">距 Lv\.3 还差 2 项</);
+  assert.match(card, /aria-valuemin="0" aria-valuemax="3" aria-valuenow="2"/);
+  assert.match(card, /style="width:66\.7%"/);
+  assert.match(card, /class="level-hint">距 Lv\.3 还差 1 项</);
   assert.match(card, /class="level-req-label">文章</);
   assert.match(card, /<b>3<\/b>\/3/);
   assert.equal(card.includes('典藏'), false);
@@ -117,10 +117,10 @@ test('等级卡只描述公开数据，部分数据缺失时会提示补全', ()
 
 test('评论等级标识：有等级才渲染，带可读名称', () => {
   const L = levels();
-  const chip = L.chipHTML(L.levelOf({ article: 1, moment: 4, album: 1, follower: 2 }));
+  const chip = L.chipHTML(L.levelOf({ article: 3, moment: 4, album: 1, featured: 0, follower: 2 }));
   assert.match(chip, /class="level-chip" data-level="2"/);
   assert.match(chip, />Lv\.2</);
-  assert.match(chip, /aria-label="拾光等级 Lv\.2 · 距 Lv\.3 还差 2 项"/);
+  assert.match(chip, /aria-label="拾光等级 Lv\.2 · 距 Lv\.3 还差 1 项"/);
   assert.equal(L.chipHTML(null), '');
   assert.equal(L.chipHTML({}), '');
 });
@@ -147,7 +147,12 @@ test('公开计数只请求已发布/已审核数据，并且不发送任何凭�
   await context.window.SiteLevels.fetchStats('778ac0a8-0693-4eb1-8b6e-81f1b96f697d');
   assert.ok(calls.length >= 4);
   for (const call of calls) {
-    assert.match(call.url, /published_revision_id=not\.is\.null/);
+    // 内容表只统计已发布版本；评论表只统计已审核（公开）评论。
+    if (/\/rest\/v1\/comments/.test(call.url)) {
+      assert.match(call.url, /status=eq\.approved/);
+    } else {
+      assert.match(call.url, /published_revision_id=not\.is\.null/);
+    }
     assert.doesNotMatch(call.url, /service_role/);
     assert.equal(call.options.credentials, 'omit');
     assert.equal(call.options.headers.Authorization, undefined);
