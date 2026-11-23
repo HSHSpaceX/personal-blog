@@ -4412,71 +4412,123 @@ a.tag-chip:hover {
   display: none;
 }
 
-/* ---- 等级卡 ---- */
+/* ---- 等级卡：液态玻璃，浮在个人主页右下角 ---- */
 .profile-level {
-  margin: 20px 0 4px;
+  position: fixed;
+  right: 26px;
+  bottom: 26px;
+  z-index: 60;
+  width: 268px;
+  margin: 0;
 }
 
 .level-card {
-  display: grid;
-  gap: 0;
-  padding: 18px 20px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 18px;
-  background: var(--glass-strong);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+  padding: 16px 18px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: saturate(180%) blur(26px);
+  backdrop-filter: saturate(180%) blur(26px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  animation: level-float-in 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.level-card::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: -20%;
+  right: -20%;
+  height: 140px;
+  background: radial-gradient(58% 100% at 32% 0%, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0) 72%);
+  pointer-events: none;
+}
+
+@keyframes level-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
 }
 
 [data-theme="dark"] .level-card {
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(28, 28, 30, 0.56);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.level-eyebrow {
-  margin: 0;
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  line-height: 1.4;
+[data-theme="dark"] .level-card::before {
+  background: radial-gradient(58% 100% at 32% 0%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 72%);
 }
 
-.level-row {
+.level-head {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 4px;
+  gap: 8px;
 }
 
 .level-number {
   color: var(--ink);
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
-.level-exp {
+.level-eyebrow {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+.level-reqs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.level-req {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.level-req.is-met .level-req-count {
+  color: var(--ink);
+}
+
+.level-req-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.level-req-count {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.level-exp b {
-  color: var(--ink);
+.level-req-count b {
   font-weight: 600;
 }
 
 .level-bar {
   height: 3px;
-  margin-top: 12px;
+  margin-top: 11px;
   border-radius: 999px;
-  background: rgba(120, 120, 128, 0.18);
+  background: rgba(120, 120, 128, 0.2);
   overflow: hidden;
 }
 
@@ -4495,61 +4547,105 @@ a.tag-chip:hover {
 }
 
 .level-hint {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.45;
-}
-
-.level-stats {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(120, 120, 128, 0.16);
+  margin: 7px 0 0;
   color: var(--muted);
   font-size: 11px;
-  line-height: 1.6;
-}
-
-.level-stat b {
-  color: var(--ink);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.level-stat.is-zero {
-  opacity: 0.5;
-}
-
-.level-dot {
-  margin: 0 0.45em;
-  opacity: 0.5;
+  line-height: 1.4;
 }
 
 .level-note {
-  margin: 6px 0 0;
+  margin: 5px 0 0;
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 10px;
   line-height: 1.5;
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .level-bar-fill {
-    animation: none;
+/* 完整级别表，只在账号中心展开 */
+.level-ladder {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.level-ladder summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.level-ladder summary::-webkit-details-marker {
+  display: none;
+}
+
+.level-ladder summary::after {
+  content: " ›";
+}
+
+.level-ladder[open] summary::after {
+  content: " ⌄";
+}
+
+.level-ladder ol {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.level-ladder li {
+  display: flex;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.level-ladder li span:first-child {
+  flex: none;
+  width: 34px;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.level-ladder li.is-current {
+  color: var(--ink);
+}
+
+/* 账号中心里的同一张卡，跟着面板排版 */
+.account-level {
+  margin: 16px 0 0;
+}
+
+.account-level .level-card {
+  animation: none;
+}
+
+.account-level .level-number {
+  font-size: 26px;
+}
+
+@media (max-width: 720px) {
+  .profile-level {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
   }
-}
 
-@media (max-width: 560px) {
   .level-card {
-    padding: 16px 16px 14px;
-    border-radius: 16px;
+    padding: 14px 16px 12px;
+    border-radius: 20px;
   }
 
   .level-number {
-    font-size: 22px;
+    font-size: 26px;
   }
+}
 
-  .profile-level {
-    margin-top: 16px;
+@media (prefers-reduced-motion: reduce) {
+  .level-card,
+  .level-bar-fill {
+    animation: none;
   }
 }
