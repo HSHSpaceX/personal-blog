@@ -22,7 +22,11 @@ test('Chromium: current public avatars reach existing static pages on desktop an
    if(url.pathname==='/rest/v1/profiles')return r.fulfill({json:[{username:'hshspacex',avatar_url:base+'/assets/avatar-default.jpg?current=1'}],headers:{'Access-Control-Allow-Origin':'*'}});
    return r.abort();
   });
-  for(const url of ['/index.html','/posts/'+posts[0],'/moments.html','/timeline.html','/archive.html?category='+encodeURIComponent('人文历史'),'/gallery.html']){
+  // 分类名不再硬编码：从公开快照取第一篇已发布文章的真实分类，避免数据改动后筛选为空。
+  const snapshot=JSON.parse(await readFile(path.join(root,'data/community-public.json'),'utf8'));
+  const sample=snapshot.items.find(i=>i.content_type==='article'&&i.body&&i.body.category);
+  const archiveUrl='/archive.html?category='+encodeURIComponent(sample.body.category);
+  for(const url of ['/index.html','/posts/'+posts[0],'/moments.html','/timeline.html',archiveUrl,'/gallery.html']){
    await page.goto(base+url);try{await page.waitForFunction(()=>Array.from(document.querySelectorAll('img[data-avatar-user="hshspacex"]')).some(i=>i.src.includes('current=1')),{},{timeout:8000});}catch(e){throw Error(url+': '+await page.locator('img[data-avatar-user]').evaluateAll(images=>JSON.stringify(images.map(i=>({user:i.dataset.avatarUser,src:i.src}))))+' errors='+JSON.stringify(errors));}
    assert.equal(await page.locator('img[data-avatar-user="hshspacex"]').evaluateAll(images=>images.every(i=>i.src.includes('current=1'))),true,url);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),url+' overflow');
