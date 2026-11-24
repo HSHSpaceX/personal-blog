@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "04f9295c-4f9d-4e42-b573-22b5e4394612",
-      "revision_id": "ad971c41-ff19-44dd-a46c-642ecb4cc4e8",
+      "revision_id": "a4698e53-1048-46cd-bc77-24263ca5a1b5",
       "content_type": "article",
       "slug": "post-austria-history",
       "title": "拾光手记 —— 建站记录纪实",
@@ -48,9 +48,9 @@
           "version": 1
         },
         "asset_ids": [
-          "9ec3c7ee-b6f4-4303-8b50-e8edcc747499"
+          "58b61517-4ac6-4680-ba6f-e1172925196d"
         ],
-        "cover_asset_id": "9ec3c7ee-b6f4-4303-8b50-e8edcc747499"
+        "cover_asset_id": "58b61517-4ac6-4680-ba6f-e1172925196d"
       },
       "published_at": "2026-09-20T00:00:00+00:00",
       "author": {
@@ -60,10 +60,10 @@
       },
       "assets": [
         {
-          "id": "9ec3c7ee-b6f4-4303-8b50-e8edcc747499",
+          "id": "58b61517-4ac6-4680-ba6f-e1172925196d",
           "mime_type": "image/jpeg",
-          "name": "IMG_0956.jpeg",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/04f9295c-4f9d-4e42-b573-22b5e4394612/ad971c41-ff19-44dd-a46c-642ecb4cc4e8/9ec3c7ee-b6f4-4303-8b50-e8edcc747499.jpg"
+          "name": "IMG_2032.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/04f9295c-4f9d-4e42-b573-22b5e4394612/a4698e53-1048-46cd-bc77-24263ca5a1b5/58b61517-4ac6-4680-ba6f-e1172925196d.jpg"
         }
       ],
       "featured": true,
@@ -73,7 +73,7 @@
         "published_at": "2026-09-20T00:00:00+00:00",
         "source_sha256": "f47e6660886350283bd3b987e33bfab96eebd02c77ed611043335ee3eddcb2b7"
       },
-      "updated_at": "2026-11-22T00:00:00+08:00"
+      "updated_at": "2026-11-24T00:00:00+08:00"
     },
     {
       "id": "2f73b7cb-d060-4b36-be88-b6ebfa46a216",
@@ -255,6 +255,34 @@
         "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
       },
       "assets": [],
+      "featured": false
+    },
+    {
+      "id": "f98c5c58-4548-478f-a400-00aa3929ccb3",
+      "revision_id": "052b45c2-9429-46a4-bfdb-9bdd0a0ecf9d",
+      "content_type": "moment",
+      "slug": "c-6353ffc4-e205-468d-ad95-8543f9b4d624",
+      "title": "这个增光0元效果扛扛的！https://makerworld.com.cn/models/2651547?appShar",
+      "body": {
+        "text": "这个增光0元效果扛扛的！https://makerworld.com.cn/models/2651547?appSharePlatform=copy",
+        "asset_ids": [
+          "4d24bec4-ee0a-4a56-acf3-650ef4ffd85e"
+        ]
+      },
+      "published_at": "2026-11-24T02:28:13.724732+00:00",
+      "author": {
+        "username": "hshspacex",
+        "display_name": "HSH(站长)",
+        "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
+      },
+      "assets": [
+        {
+          "id": "4d24bec4-ee0a-4a56-acf3-650ef4ffd85e",
+          "mime_type": "image/jpeg",
+          "name": "IMG_2108.jpeg",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/f98c5c58-4548-478f-a400-00aa3929ccb3/052b45c2-9429-46a4-bfdb-9bdd0a0ecf9d/4d24bec4-ee0a-4a56-acf3-650ef4ffd85e.jpg"
+        }
+      ],
       "featured": false
     },
     {
