@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- SEO_META_START -->
-  <title>动态 - 拾光手记</title>
-  <meta name="description" content="阅读拾光手记的最新动态，看看长文之外的随手记录、即时想法与生活片段，分享日常遇见的小事和新发现。">
+  <title>动�?- 拾光手记</title>
+  <meta name="description" content="阅读拾光手记的最新动态，看看长文之外的随手记录、即时想法与生活片段，分享日常遇见的小事和新发现�?>
   <link rel="canonical" href="https://hsh-personal-blog.pages.dev/moments">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="动态 - 拾光手记">
-  <meta property="og:description" content="阅读拾光手记的最新动态，看看长文之外的随手记录、即时想法与生活片段，分享日常遇见的小事和新发现。">
+  <meta property="og:title" content="动�?- 拾光手记">
+  <meta property="og:description" content="阅读拾光手记的最新动态，看看长文之外的随手记录、即时想法与生活片段，分享日常遇见的小事和新发现�?>
   <meta property="og:url" content="https://hsh-personal-blog.pages.dev/moments">
   <meta property="og:image" content="https://hsh-personal-blog.pages.dev/assets/covers/cover-travel.jpg">
   <!-- SEO_META_END -->
@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/community.css?v=14">
   <link rel="stylesheet" href="css/admin.css?v=2">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+<link rel="stylesheet" href="css/liquid-glass.css?v=20261124">
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -29,12 +30,12 @@
         <span class="brand-mark" aria-hidden="true"><img src="assets/icon-big.jpg" alt=""></span>
         <span class="brand-name">拾光手记</span>
       </a>
-      <nav class="site-nav" id="siteNav" aria-label="主导航">
+      <nav class="site-nav" id="siteNav" aria-label="主导�?>
         <a class="nav-link" href="index.html">首页</a>
         <a class="nav-link" href="archive.html">归档</a>
-        <a class="nav-link" href="timeline.html">时间线</a>
+        <a class="nav-link" href="timeline.html">时间�?/a>
         <a class="nav-link" href="gallery.html">画廊</a>
-        <a class="nav-link active" href="moments.html">动态</a>
+        <a class="nav-link active" href="moments.html">动�?/a>
         <a class="nav-link" href="about.html">关于</a>
       </nav>
       <div class="header-actions">
@@ -57,7 +58,7 @@
             <a class="user-menu-item" href="messages.html" rel="nofollow">通知 <span class="menu-badge notification-badge" hidden></span></a>
             <a class="user-menu-item" href="account.html" rel="nofollow">账号中心</a>
             <a class="user-menu-item" href="profile.html" rel="nofollow">我的资料</a>
-            <button class="user-menu-item" type="button" data-logout>退出登录</button>
+            <button class="user-menu-item" type="button" data-logout>退出登�?/button>
           </div>
         </span>
       </div>
@@ -69,22 +70,22 @@
     <section class="page-head band">
       <div class="container">
         <p class="eyebrow">MOMENTS</p>
-        <h1>动态</h1>
-        <p class="intro-text">一些不成文章的即时想法。</p>
+        <h1>动�?/h1>
+        <p class="intro-text">一些不成文章的即时想法�?/p>
       </div>
     </section>
 
     <section class="band">
       <div class="container moment-container">
-        <div class="content-filter" id="composeFilter" role="group" aria-label="动态筛选"><button type="button" class="btn" data-content-view="public" aria-pressed="true">全部公开</button><button type="button" class="btn" data-content-view="mine" aria-pressed="false" hidden>我的创作</button></div>
+        <div class="content-filter" id="composeFilter" role="group" aria-label="动态筛�?><button type="button" class="btn" data-content-view="public" aria-pressed="true">全部公开</button><button type="button" class="btn" data-content-view="mine" aria-pressed="false" hidden>我的创作</button></div>
         <div id="composer" hidden><div id="pageComposer" data-type="moment" class="composer" hidden>
  <div class="composer-body">
 
- <label class="sr-only" for="composeText">动态正文</label><textarea id="composeText" rows="4" maxlength="2000" placeholder="有什么新鲜事？"></textarea>
+ <label class="sr-only" for="composeText">动态正�?/label><textarea id="composeText" rows="4" maxlength="2000" placeholder="有什么新鲜事�?></textarea>
  <div id="composeMedia" class="composer-preview"></div><div id="composePreview" class="prose" hidden></div>
  <div class="composer-bar"><button class="btn" id="composeChoose" type="button">选择资源</button><button class="btn" id="composePreviewButton" type="button">预览</button><button class="btn" id="composeSave" type="button">保存草稿</button><button class="btn primary" id="composeSubmit" type="button">发布 / 提交审核</button><button class="btn" id="composeCancel" type="button">取消</button></div>
  <p id="composeStatus" class="status-line" role="status" aria-live="polite"></p>
- <dialog class="resource-picker rm-modal" id="composePicker" aria-labelledby="composePickerTitle"><div class="rm-head"><h2 id="composePickerTitle">资源中心</h2><button class="btn" id="composePickerClose" type="button">返回编辑器</button></div><div class="rm-upload-bar"><label>搜索文件<input id="composeSearch" maxlength="120" type="search"></label><label>类型<select id="composeKind"><option value="all">图片和视频</option><option value="image">图片</option><option value="video">视频</option></select></label><button class="btn" id="composeSearchButton" type="button">搜索</button><label class="btn" role="button" tabindex="0">上传文件<input id="composeUpload" type="file" accept="image/jpeg,image/png,image/webp,video/mp4" hidden multiple></label></div><p class="status-line" id="composePickerStatus" role="status" aria-live="polite"></p><div id="composeResources" class="rm-body"></div><div id="composeViewer" class="resource-preview" aria-live="polite"></div><div class="rm-foot"><button class="btn" id="composePrev" type="button">上一页</button><span id="composePage" aria-live="polite"></span><button class="btn" id="composeNext" type="button">下一页</button></div></dialog>
+ <dialog class="resource-picker rm-modal" id="composePicker" aria-labelledby="composePickerTitle"><div class="rm-head"><h2 id="composePickerTitle">资源中心</h2><button class="btn" id="composePickerClose" type="button">返回编辑�?/button></div><div class="rm-upload-bar"><label>搜索文件<input id="composeSearch" maxlength="120" type="search"></label><label>类型<select id="composeKind"><option value="all">图片和视�?/option><option value="image">图片</option><option value="video">视频</option></select></label><button class="btn" id="composeSearchButton" type="button">搜索</button><label class="btn" role="button" tabindex="0">上传文件<input id="composeUpload" type="file" accept="image/jpeg,image/png,image/webp,video/mp4" hidden multiple></label></div><p class="status-line" id="composePickerStatus" role="status" aria-live="polite"></p><div id="composeResources" class="rm-body"></div><div id="composeViewer" class="resource-preview" aria-live="polite"></div><div class="rm-foot"><button class="btn" id="composePrev" type="button">上一�?/button><span id="composePage" aria-live="polite"></span><button class="btn" id="composeNext" type="button">下一�?/button></div></dialog>
  </div></div></div><div id="composeMine" class="content-mine" hidden></div><p id="composeMineStatus" class="status-line" role="status" hidden></p>
         <div id="composePublic"><div class="moment-list" id="momentList"></div>
         <p class="status-line" id="momentStatus"></p></div>
@@ -97,8 +98,8 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <p>© <span id="year"></span> 拾光手记</p>
-      <p>保留所有权利</p>
-      <div class="footer-links">友情链接：<a href="https://www.kechuang.org/" target="_blank" rel="noopener">科创</a><span class="footer-sep"> | </span><a href="https://vanyu0710.github.io/Varen-AI-CAD/" target="_blank" rel="noopener">Varen-AI-CAD</a><span class="footer-sep"> | </span><a href="https://www.stardust-lab.org/" target="_blank" rel="noopener noreferrer">星尘实验室</a></div>
+      <p>保留所有权�?/p>
+      <div class="footer-links">友情链接�?a href="https://www.kechuang.org/" target="_blank" rel="noopener">科创</a><span class="footer-sep"> | </span><a href="https://vanyu0710.github.io/Varen-AI-CAD/" target="_blank" rel="noopener">Varen-AI-CAD</a><span class="footer-sep"> | </span><a href="https://www.stardust-lab.org/" target="_blank" rel="noopener noreferrer">星尘实验�?/a></div>
       <div class="footer-right"><a class="footer-link footer-gh" href="https://github.com/HSHSpaceX/personal-blog" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12.02c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.61-3.37-1.19-3.37-1.19-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.49A10.01 10.01 0 0 0 22 12.02C22 6.48 17.52 2 12 2z"/></svg><strong>personal-blog</strong></a></div>
     </div>
   </footer>
@@ -117,5 +118,7 @@
   <script src="js/site.js?v=20261122"></script>
   <script src="js/moments-page.js?v=20261031"></script>
   <script src="js/resumable-upload.js?v=13"></script><script src="js/backend-capabilities.js?v=13"></script><script src="js/community-data.js?v=16"></script><script src="js/resource-manager.js?v=3"></script><script src="js/content-cards.js?v=1"></script><script src="js/page-composer.js?v=14"></script>
+<script src="js/liquid-glass.js?v=20261124"></script>
+<script src="js/liquid-glass-mount.js?v=20261124"></script>
 </body>
 </html>
