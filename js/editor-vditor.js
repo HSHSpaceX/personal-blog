@@ -98,7 +98,7 @@
     host.hidden = true;
     if (toolbar) toolbar.hidden = true;
 
-    var vditor = null, ready = false, failed = false, queued = null;
+    var vditor = null, ready = false, failed = false, queued = null, warned = false;
     var lastDocument = { version: 1, blocks: [] };
 
     /* Markdown/HTML → 结构化 JSON；独占一段的资源标记升级为资源块。 */
@@ -106,6 +106,11 @@
       if (!ready || !vditor) return lastDocument;
       var html;
       try { html = vditor.getHTML(); } catch (error) { return lastDocument; }
+      /* 正文只接受资源库里的资源；外链/粘贴的图片无法保存，提示用户改用「＋ 插入资源」。 */
+      if (!warned && /<img/i.test(html)) {
+        warned = true;
+        if (options.onError) options.onError('正文不支持外链图片，请用「＋ 插入资源」从资源中心选图。');
+      }
       try {
         host.innerHTML = sanitize(html);
         var document = converter.getDocument();
