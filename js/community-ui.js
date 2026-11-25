@@ -255,8 +255,8 @@
   async function loadPolicy(token){auth.requireAdmin();var target=await data.policyUser($('communityPolicyUser').value.trim());var rows=await data.policyStatus(target.id);if(!active(token)||!auth.isAdmin())return;policyTarget=target;$('communityPolicyIdentity').textContent=target.username+' · '+target.id;$('communityPolicyRows').textContent=rows.map(function(r){return names[r.content_type]+'：每 '+r.review_every+' 次审核一次，首次发表总数 '+r.first_publish_count+'，距下次人工审核 '+r.until_review+' 次'+(r.review_due?'；审核关口阻塞 '+(r.gate_item_id||'等待下一次人工审批'):'');}).join('\n');}
   function openNewDraft(type,control){operation(function(){openEditor({content_type:type,author_id:auth.requireUser().id},null);},control);}
   window.CommunityEditorUI={openNew:function(type){openNewDraft(type,null);}};
-  /* 新建内容默认在新标签页的专注编辑页打开；弹窗被拦截或测试环境（jsdom）时退回本页内嵌。 */
-  document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){var type=b.dataset.newContent,focused=new URLSearchParams(location.search).get('editor'),jsdom=/jsdom/i.test(navigator.userAgent||'');if(type==='article'&&!focused&&!jsdom){location.assign('account.html?editor=article');return;}openNewDraft(type,b);});});
+  /* 新建内容在本页打开；需要干净页面时点「专注编辑」在新标签页打开 account.html?editor=article。 */
+  document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){openNewDraft(b.dataset.newContent,b);});});
   [['communitySave',function(t){return saveEditor(t,false);}],['communitySubmit',function(t){return saveEditor(t,true);}],['communityRefresh',refreshLists],['communityRefreshReviews',refreshLists],
     ['communityTextPreview',function(t){if(!draft)throw Error('请先打开草稿。');return previewRow({title:$('communityTitle').value,body:editorBody(),content_items:draft.item},t);}],
     ['communityApprove',function(t){return decision(t,'approved');}],['communityReturn',function(t){return decision(t,'returned');}],['communityReject',function(t){return decision(t,'trashed');}],['communityLoadPolicy',loadPolicy],
