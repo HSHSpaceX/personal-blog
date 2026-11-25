@@ -15,7 +15,17 @@
     return {title:$('communityTitle')?$('communityTitle').value:'',category:$('communityCategory')?$('communityCategory').value:'',summary:$('communitySummary')?$('communitySummary').value:'',tags:$('communityTags')?$('communityTags').value:'',document:documentValue,assets:selection.map(function(a){return {asset_id:a.asset_id,caption:a.caption||''};})};
   }
   function Community_DraftSave(){if(!window.DraftStore||!draft||!draftScope)return;window.DraftStore.save(draftScope,Community_DraftPayload());}
-  function Community_DraftTick(){if(draftSaveSoon)draftSaveSoon();}
+  function Community_DraftTick(){if(draftSaveSoon)draftSaveSoon();Community_AutoSaveSoon();}
+  /* 自动保存：停止输入 10 秒后写入服务器（仍会生成草稿版本），不用手动点「保存草稿」。 */
+  var autoSaveTimer=null,lastAutoSave=0;
+  function Community_AutoSave(){
+    if(!draft||busy)return;
+    if(location.search.indexOf('revision=')<0&&!draft.source&&!savedRevisionId){} /* 新建也保存 */
+    if(!Community_IsDirty())return;
+    var now=Date.now();if(now-lastAutoSave<12000)return;lastAutoSave=now;
+    operation(function(token){return saveEditor(token,false);},null);
+  }
+  function Community_AutoSaveSoon(){if(autoSaveTimer)clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(function(){autoSaveTimer=null;Community_AutoSave();},10000);}
   function Community_DraftRestore(){
     if(!window.DraftStore||!draft||!draftScope)return;
     var record=window.DraftStore.load(draftScope);if(!record||!record.payload)return;
@@ -155,7 +165,7 @@
       if(auth.isAdmin()&&row&&row.status==='draft'&&data.featuredPreference){featureReady=false;var featureToken=++featureSerial,featureSession=editSession,featureGeneration=generation;$('communityFeatured').disabled=true;$('communitySave').disabled=$('communitySubmit').disabled=true;data.featuredPreference(row.id).then(function(p){if(featureToken!==featureSerial||featureSession!==editSession||!active(featureGeneration))return;featureReady=true;var savedState=JSON.parse(baseline);$('communityFeatured').checked=p?p.featured:!!item.featured;savedState.featured=$('communityFeatured').checked;baseline=JSON.stringify(savedState);}).catch(function(error){if(featureToken===featureSerial&&featureSession===editSession&&active(featureGeneration))message('精选草稿设置读取失败，请重新打开后保存：'+error.message,true);}).finally(function(){if(featureToken===featureSerial&&featureSession===editSession&&active(featureGeneration)){$('communityFeatured').disabled=false;$('communitySave').disabled=$('communitySubmit').disabled=!featureReady;Community_UpdateDirty();}});}
     }
     if(data.assetInfo){var currentSession=editSession,currentToken=generation;Promise.all((body.asset_ids||[]).map(function(id){return{asset_id:id};}).filter(function(p){return !assets.some(function(a){return a.id===p.asset_id;});}).map(function(p){return data.assetInfo(p.asset_id);})).then(function(rows){if(currentSession!==editSession||!active(currentToken))return;rows.filter(Boolean).forEach(function(a){if(!assets.some(function(v){return v.id===a.id;}))assets.push(a);});captureChoices();choices();}).catch(function(error){if(currentSession===editSession&&active(currentToken))message('附件名称读取失败：'+error.message,true);});}
-    draftScope=window.DraftStore?window.DraftStore.scope('community',(auth.user()?auth.user().id:'anon'),item.content_type,item.id||('new-'+item.content_type)):'';choices();Community_RenderCover();baseline=Community_Snapshot();bodyBaseline=Community_Snapshot(true);Community_UpdateDirty();Community_DraftRestore();Community_UpdateDirty();$('communityTitle').focus();if(window.EditorFocus&&window.EditorFocus.enter)window.EditorFocus.enter(item.content_type);
+    draftScope=window.DraftStore?window.DraftStore.scope('community',(auth.user()?auth.user().id:'anon'),item.content_type,item.id||('new-'+item.content_type)):'';choices();Community_RenderCover();baseline=Community_Snapshot();bodyBaseline=Community_Snapshot(true);Community_UpdateDirty();Community_DraftRestore();Community_UpdateDirty();$('communityTitle').focus();
   }
   function editorBody(){
     var type=draft.item.content_type, selected=Array.from($('communityAssetChoices').querySelectorAll('[data-asset-choice]:checked')).map(function(el){return el.value;});
@@ -204,7 +214,7 @@
     }
     if(active(token)&&session===editSession)await refreshLists(token);
   }
-  function setRevisionUrl(id,type){var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
+  function setRevisionUrl(id,type){if(new URLSearchParams(location.search).get('editor'))return;var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
   async function showAsset(id,container,token,caption){
     var result=await data.signedAsset(id);if(!active(token))return;
     var block=node('div',undefined,'community-asset-preview');
@@ -254,9 +264,14 @@
   async function decision(token,choice){auth.requireAdmin();if(!preview||preview.status!=='pending')throw Error('请先选择待审版本。');var reason=choice!=='approved'?$('communityRejectReason').value.trim():null;if(choice!=='approved'&&!reason)throw Error('退回或拒绝必须填写原因。');var id=preview.id;await data.review(id,choice,reason);if(active(token)){await openRevision(id,token);await refreshLists(token);message('审核决策已保存。');}}
   async function loadPolicy(token){auth.requireAdmin();var target=await data.policyUser($('communityPolicyUser').value.trim());var rows=await data.policyStatus(target.id);if(!active(token)||!auth.isAdmin())return;policyTarget=target;$('communityPolicyIdentity').textContent=target.username+' · '+target.id;$('communityPolicyRows').textContent=rows.map(function(r){return names[r.content_type]+'：每 '+r.review_every+' 次审核一次，首次发表总数 '+r.first_publish_count+'，距下次人工审核 '+r.until_review+' 次'+(r.review_due?'；审核关口阻塞 '+(r.gate_item_id||'等待下一次人工审批'):'');}).join('\n');}
   function openNewDraft(type,control){operation(function(){openEditor({content_type:type,author_id:auth.requireUser().id},null);},control);}
-  window.CommunityEditorUI={openNew:function(type){openNewDraft(type,null);}};
+  window.CommunityEditorUI={openNew:function(type){openNewDraft(type,null);},openPicker:function(kind){Community_OpenPicker(kind||'all');}};
+  if($('communityInsertAsset'))$('communityInsertAsset').addEventListener('click',function(){if(!draft){message('请先打开或新建一篇内容。',true);return;}Community_OpenPicker('all');});
   /* 新建内容在本页打开；需要干净页面时点「专注编辑」在新标签页打开 account.html?editor=article。 */
-  document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){openNewDraft(b.dataset.newContent,b);});});
+  document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){
+    var type=b.dataset.newContent,focused=new URLSearchParams(location.search).get('editor');
+    /* 文章走极简专注页；动态/图册保持原有跳转流程。 */
+    if(type==='article'&&!focused){location.assign('account.html?editor=article');return;}
+    openNewDraft(type,b);});});
   [['communitySave',function(t){return saveEditor(t,false);}],['communitySubmit',function(t){return saveEditor(t,true);}],['communityRefresh',refreshLists],['communityRefreshReviews',refreshLists],
     ['communityTextPreview',function(t){if(!draft)throw Error('请先打开草稿。');return previewRow({title:$('communityTitle').value,body:editorBody(),content_items:draft.item},t);}],
     ['communityApprove',function(t){return decision(t,'approved');}],['communityReturn',function(t){return decision(t,'returned');}],['communityReject',function(t){return decision(t,'trashed');}],['communityLoadPolicy',loadPolicy],

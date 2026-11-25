@@ -116,3 +116,30 @@ html.editor-vditor #communityTextLabel {
     padding: 2px 0 10px;
   }
 }
+
+/* 专注页只保留：站点栏、返回、标题、插入资源、保存并提交、编辑器
+   注意：旧工具栏/旧输入区只在 Vditor 生效时由 html.editor-vditor 规则隐藏。 */
+html.editor-focus #communitySettingsToggle,
+html.editor-focus #communitySourceToggle,
+html.editor-focus #communityTextPreview,
+html.editor-focus #communitySave,
+html.editor-focus #communitySourceWrap,
+html.editor-focus #communityEditorHeading,
+html.editor-focus #communityEditorState,
+html.editor-focus #communityAssetChoices,
+html.editor-focus #communityTextLabel {
+  display: none !important;
+}
+
+/* 专注页里 Vditor 必须显示（它被上面按旧编辑器规则隐藏了） */
+html.editor-focus .vditor-mount,
+html.editor-focus .editor-quickbar {
+  display: block !important;
+}
+
+html.editor-focus .editor-quickbar {
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
