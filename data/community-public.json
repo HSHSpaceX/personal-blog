@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "04f9295c-4f9d-4e42-b573-22b5e4394612",
-      "revision_id": "a4698e53-1048-46cd-bc77-24263ca5a1b5",
+      "revision_id": "f912a1b7-50f0-4a2b-a8fb-2d03f59a8657",
       "content_type": "article",
       "slug": "post-austria-history",
       "title": "拾光手记 —— 建站记录纪实",
@@ -11,7 +11,7 @@
         "tags": [
           "记录"
         ],
-        "text": "本人近期考试，暂时停置一下，两天后更新。感谢大家的支持与等待，考完试我会尽快恢复更新，请耐心等候～Wait \n\n\n\n\n\n\n\n",
+        "text": "前言\n\n\n\n\n本人前段时间考试，暂时停置一下，终于是有点时间写点文字。\n\n\n\n\n何因\n\n\n\n\n其实大家可能说来不信,当初只是因为我在codex上等代码,随手一打为我做一个个人博客网站,具体我找了找,大概就是这张图中的对话吧\n\n\n\n\n📎 屏幕截图 2026-11-25 185453.png\n\n\n\n\n我不记得了,谁又记着呢?这样一个连名字都是AI起的网站诞生了,最早网址是[](https://拾光手记 - 记录思考，也记录生活),当时只是一个GitHub托管,过了段时间,我又发现了cloudflare page(现在网站就是小黄云托管的)\n\n\n\n\n当时的网站,慢,很慢,因为他的图片什么的都在GitHub,GitHub访问慢而此慢.即使Cloudflare全球CDN加速也无济于事.\n\n\n\n\n然后\n\n\n\n\n接着我去找aleistercrowleybeast666,也就是网站的另一位搭建人.在此特别感谢他,在他的建议下和帮助下,网站加入了邀请注册,数据库迁移至了supabase(感兴趣的可以看看).从此网站正式进入2.0时代.\n\n\n\n\n📎 屏幕截图 2026-11-25 185453.png\n\n\n\n\n他两夜在电脑前忙碌,凌晨才回的我,他真的很忙.....\n\n\n\n\n如今\n\n\n\n\n今天,2026.11.25日,我还在改,moya(本站用户)说手机编辑器很难用,于是我将编辑器变成了Vditor.我只是一个初\n\n\n\n\n二的学生,表达浅显,但我想证明,我在尽力的修改.\n\n\n\n\n未来\n\n\n\n\n我无法预见未来,但我只希望能办好这个网站,或许还需要更多人的帮助和加入.\n\n\n\n\n我只可以浅显于此,剩下的留白,还是浓墨,就是你所决定的\n\n\n\n\n有你,有我\n\n\n\n\n📎 IMG_2032.jpeg\n\n\n\n\n联系或加入,成为用户:HSH20130730@outlook.com\n\n\n",
         "summary": "建站心路",
         "category": "杂谈",
         "document": {
@@ -19,19 +19,323 @@
             {
               "runs": [
                 {
-                  "text": "本人近期考试，暂时停置一下，两天后更新。感谢大家的支持与等待，考完试我会尽快恢复更新，请耐心等候～Wait "
+                  "text": "前言"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
                 }
               ],
               "type": "paragraph"
             },
             {
-              "runs": [],
+              "runs": [
+                {
+                  "text": "本人前段时间考试，暂时停置一下，终于是有点时间写点文字。"
+                }
+              ],
               "type": "paragraph"
             },
             {
               "runs": [
                 {
                   "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "何因"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "其实大家可能说来不信,当初只是因为我在codex上等代码,随手一打为我做一个个人博客网站,具体我找了找,大概就是这张图中的对话吧"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "📎 屏幕截图 2026-11-25 185453.png"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "我不记得了,谁又记着呢?这样一个连名字都是AI起的网站诞生了,最早网址是[](https://"
+                },
+                {
+                  "href": "https://hshspacex.github.io/personal-blog/",
+                  "text": "拾光手记 - 记录思考，也记录生活"
+                },
+                {
+                  "text": "),当时只是一个GitHub托管,过了段时间,我又发现了cloudflare page(现在网站就是小黄云托管的)"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "当时的网站,慢,很慢,因为他的图片什么的都在GitHub,GitHub访问慢而此慢.即使Cloudflare全球CDN加速也无济于事."
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "然后"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "接着我去找aleistercrowleybeast666,也就是网站的另一位搭建人.在此特别感谢他,在他的建议下和帮助下,网站加入了邀请注册,数据库迁移至了supabase(感兴趣的可以看看).从此网站正式进入2.0时代."
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "📎 屏幕截图 2026-11-25 185453.png"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "他两夜在电脑前忙碌,凌晨才回的我,他真的很忙....."
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "如今"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "今天,2026.11.25日,我还在改,moya(本站用户)说手机编辑器很难用,于是我将编辑器变成了Vditor.我只是一个初"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "二的学生,表达浅显,但我想证明,我在尽力的修改."
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "未来"
+                }
+              ],
+              "type": "heading",
+              "level": 2
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "我无法预见未来,但我只希望能办好这个网站,或许还需要更多人的帮助和加入."
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "我只可以浅显于此,剩下的留白,还是浓墨,就是你所决定的"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "有你,有我"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "📎 IMG_2032.jpeg"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "\n"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "runs": [
+                {
+                  "text": "联系或加入,成为用户:HSH20130730@outlook.com"
                 }
               ],
               "type": "paragraph"
@@ -48,6 +352,7 @@
           "version": 1
         },
         "asset_ids": [
+          "6fa10f4e-13cd-4248-9f85-585af324f7d3",
           "58b61517-4ac6-4680-ba6f-e1172925196d"
         ],
         "cover_asset_id": "58b61517-4ac6-4680-ba6f-e1172925196d"
@@ -63,7 +368,13 @@
           "id": "58b61517-4ac6-4680-ba6f-e1172925196d",
           "mime_type": "image/jpeg",
           "name": "IMG_2032.jpeg",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/04f9295c-4f9d-4e42-b573-22b5e4394612/a4698e53-1048-46cd-bc77-24263ca5a1b5/58b61517-4ac6-4680-ba6f-e1172925196d.jpg"
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/04f9295c-4f9d-4e42-b573-22b5e4394612/f912a1b7-50f0-4a2b-a8fb-2d03f59a8657/58b61517-4ac6-4680-ba6f-e1172925196d.jpg"
+        },
+        {
+          "id": "6fa10f4e-13cd-4248-9f85-585af324f7d3",
+          "mime_type": "image/png",
+          "name": "屏幕截图 2026-11-25 185453.png",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/04f9295c-4f9d-4e42-b573-22b5e4394612/f912a1b7-50f0-4a2b-a8fb-2d03f59a8657/6fa10f4e-13cd-4248-9f85-585af324f7d3.png"
         }
       ],
       "featured": true,
@@ -73,7 +384,7 @@
         "published_at": "2026-09-20T00:00:00+00:00",
         "source_sha256": "f47e6660886350283bd3b987e33bfab96eebd02c77ed611043335ee3eddcb2b7"
       },
-      "updated_at": "2026-11-24T00:00:00+08:00"
+      "updated_at": "2026-11-25T00:00:00+08:00"
     },
     {
       "id": "2f73b7cb-d060-4b36-be88-b6ebfa46a216",
