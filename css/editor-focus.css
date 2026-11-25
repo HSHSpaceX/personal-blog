@@ -13,8 +13,7 @@ html.editor-focus #communityListHeading,
 html.editor-focus #communityRefresh,
 html.editor-focus #communityLoadPolicy,
 html.editor-focus .content-type-tabs,
-html.editor-focus [data-content-view],
-html.editor-focus .community-focus-link {
+html.editor-focus [data-content-view] {
   display: none !important;
 }
 

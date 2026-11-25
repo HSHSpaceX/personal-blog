@@ -41,6 +41,7 @@
         <div id="accountAdminNav" data-admin-group></div>
       </nav></aside><div class="workspace-body">
       <section class="admin-card wide" id="overview" data-workspace-panel hidden>
+        <div class="field"><label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="editorEngineToggle"> 使用 Vditor 编辑器（新版即时渲染，切换后自动刷新）</label><p class="hint">开启后写文章使用 Vditor；关闭则回到原来的编辑器。</p></div>
         <h2>概览</h2>
         <p id="accountIdentity"></p>
         <p id="accountSummary"></p>
@@ -68,7 +69,7 @@
           <div class="editor-topbar"><div class="tb-row">
             <button class="btn" id="communityCloseEditor" type="button">返回</button>
             <input id="communityTitle" class="title-input" aria-label="标题" placeholder="文章标题" maxlength="160" required>
-            <div class="topbar-actions"><a class="btn community-focus-link" id="communityFocusLink" href="account.html?editor=article" target="_blank" rel="nofollow" title="在新标签页打开只含网站栏与编辑器的专注页面">专注编辑 ↗</a><button class="btn" id="communitySettingsToggle" aria-expanded="false" aria-controls="communityMeta" type="button">设置</button>
+            <div class="topbar-actions"><button class="btn" id="communitySettingsToggle" aria-expanded="false" aria-controls="communityMeta" type="button">设置</button>
               <button class="btn" id="communityTextPreview" type="button">预览</button><button class="btn" id="communitySourceToggle" type="button">源码</button>
               <button class="btn" id="communitySave" type="button">保存草稿</button><button class="btn primary" id="communitySubmit" type="button">保存并提交</button></div>
           </div><div class="tb-row"><span id="communityToolbar" class="tb-group"></span><span class="sr-only" id="communityTextLabel">正文</span></div></div>
@@ -79,7 +80,7 @@
             <div class="field" id="communityFeaturedSetting" hidden><label class="article-featured-toggle"><input id="communityFeatured" type="checkbox">设为精选文章</label><p class="hint">草稿保存此选择；保存并提交时，在管理员直接批准后应用。随后等待静态同步与 Pages 部署。</p></div>
             <div class="field"><label for="communityTags">标签（英文逗号分隔，最多 10 个）</label><input id="communityTags"></div>
           </div><div class="meta-full"><button class="btn" id="communityChooseAssets" type="button">资源管理</button><fieldset><legend id="communityAssetLegend">选择我的资源</legend><div id="communityAssetChoices"></div></fieldset></div></div>
-          <label class="editor-engine-toggle" style="display:flex;gap:8px;align-items:center;margin:8px 0;font-size:13px;color:inherit"><input type="checkbox" id="editorEngineToggle"> 使用 Vditor 编辑器（新版即时渲染，切换后自动刷新；勾掉即回到原来的编辑器）</label><div id="communityRichEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea>
+          <div id="communityRichEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea>
           <div id="communitySourceWrap" hidden><p class="hint">受控 HTML 源码：支持段落、标题、列表、链接和已选资源；保存时转为安全正文，不接受脚本、事件或任意媒体地址。</p><textarea id="communitySource" class="source-textarea" aria-label="安全正文源码" spellcheck="false"></textarea></div>
         </section>
         <section id="communityPreview" hidden>

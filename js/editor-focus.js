@@ -1,72 +1,89 @@
-/* 专注编辑页：account.html?editor=article|moment|album
- * 只保留站点栏、返回账号中心和编辑器，其余面板全部隐藏并自动新建草稿。 */
-(function () {
+/* 专注编辑布局：打开编辑器时只留站点栏 + 返回 + 编辑器，不再另开页面。
+ * 由 community-ui 在打开/关闭编辑器时调用 enter()/exit()。
+ * 也支持直接访问 account.html?editor=article 时自动进入。 */
+(function (root) {
   'use strict';
 
-  var params = new URLSearchParams(location.search);
-  var type = params.get('editor');
-  if (!type) return;
-  if (['article', 'moment', 'album'].indexOf(type) < 0) return;
-
   var LABELS = { article: '新建文章', moment: '新建动态', album: '新建图册' };
+  var current = null;
 
-  document.documentElement.classList.add('editor-focus');
+  function bar() {
+    return document.querySelector('.editor-focus-bar');
+  }
 
-  function buildBar() {
+  function buildBar(type) {
     var editor = document.getElementById('communityEditor');
     if (!editor || !editor.parentNode) return null;
-    if (document.querySelector('.editor-focus-bar')) return document.querySelector('.editor-focus-bar');
+    var existing = bar();
+    if (existing) return existing;
 
-    var bar = document.createElement('div');
-    bar.className = 'editor-focus-bar';
+    var wrap = document.createElement('div');
+    wrap.className = 'editor-focus-bar';
 
-    var back = document.createElement('a');
+    var back = document.createElement('button');
+    back.type = 'button';
     back.className = 'editor-focus-back';
-    back.href = 'account.html';
-    back.rel = 'nofollow';
     back.textContent = '← 返回账号中心';
+    back.addEventListener('click', function () {
+      /* 直接在当前页退出专注模式，避免整页重新加载。 */
+      var close = document.getElementById('communityCloseEditor') || document.getElementById('communityReturn');
+      if (close) close.click();
+      exit();
+    });
 
     var label = document.createElement('span');
     label.className = 'editor-focus-label';
-    label.textContent = LABELS[type] || '编辑器';
+    label.textContent = LABELS[type] || '编辑';
 
-    bar.appendChild(back);
-    bar.appendChild(label);
-    editor.parentNode.insertBefore(bar, editor);
-    return bar;
+    wrap.appendChild(back);
+    wrap.appendChild(label);
+    editor.parentNode.insertBefore(wrap, editor);
+    return wrap;
   }
 
-  var revision = params.get('revision');
+  function enter(type) {
+    if (!type) return;
+    current = type;
+    document.documentElement.classList.add('editor-focus');
+    buildBar(type);
+    var label = bar() && bar().querySelector('.editor-focus-label');
+    if (label) label.textContent = LABELS[type] || '编辑';
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
 
-  function boot() {
-    var bar = buildBar();
-    /* 带 revision 时由 community-ui 的深链逻辑打开该版本，这里只补返回条。 */
-    if (revision) {
-      if (!bar) return false;
-      var link = document.createElement('a');
-      link.className = 'editor-focus-popout';
-      link.href = 'account.html?editor=' + encodeURIComponent(type) + '&revision=' + encodeURIComponent(revision);
-      link.target = '_blank';
-      link.rel = 'nofollow';
-      link.textContent = '在新标签页打开';
-      if (!bar.querySelector('.editor-focus-popout')) bar.appendChild(link);
-      return true;
+  function exit() {
+    current = null;
+    document.documentElement.classList.remove('editor-focus');
+    var wrap = bar();
+    if (wrap) wrap.remove();
+    /* 去掉 URL 上的 editor 参数，避免下次回来又被直接拉进编辑页。 */
+    try {
+      var url = new URL(location.href);
+      if (url.searchParams.has('editor')) {
+        url.searchParams.delete('editor');
+        url.hash = '#articles';
+        history.replaceState(history.state, '', url.href);
+      }
+    } catch (error) { /* 忽略 */ }
+  }
+
+  root.EditorFocus = { enter: enter, exit: exit, active: function () { return !!current; } };
+
+  /* 直接访问 ?editor=<type>：进入专注布局并自动新建。 */
+  var params = new URLSearchParams(location.search);
+  var type = params.get('editor');
+  if (type && LABELS[type]) {
+    document.documentElement.classList.add('editor-focus');
+    document.title = (LABELS[type] || '编辑') + ' - 拾光手记';
+    var revision = params.get('revision');
+    if (!revision) {
+      var tries = 0;
+      var timer = setInterval(function () {
+        if (root.CommunityEditorUI && typeof root.CommunityEditorUI.openNew === 'function') {
+          clearInterval(timer);
+          root.CommunityEditorUI.openNew(type);
+        } else if (++tries > 40) clearInterval(timer);
+      }, 250);
     }
-    if (window.CommunityEditorUI && typeof window.CommunityEditorUI.openNew === 'function') {
-      window.CommunityEditorUI.openNew(type);
-      return true;
-    }
-    return false;
   }
-
-  /* community-ui 依赖登录态，可能晚于本脚本就绪，最多等 10 秒。 */
-  if (!boot()) {
-    var tries = 0;
-    var timer = setInterval(function () {
-      if (boot() || ++tries > 40) clearInterval(timer);
-    }, 250);
-  }
-
-  /* 专注页里标题栏改为返回按钮的标题。 */
-  document.title = (LABELS[type] || '编辑') + ' - 拾光手记';
-})();
+})(typeof window === 'object' ? window : globalThis);
