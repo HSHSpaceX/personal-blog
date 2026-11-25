@@ -1005,10 +1005,31 @@
         setStatus(status, '正在提交…');
         await window.BlogData.addComment(slug, content, replyTarget && replyTarget.id);
         document.getElementById('commentContent').value = '';
+        if (window.DraftStore) window.DraftStore.clear(window.DraftStore.scope('comment', slug));
         clearReply(); await refresh();
         setStatus(status, '评论已提交，审核通过后公开可见。', 'ok');
       } catch (error) { setStatus(status, '提交失败：' + error.message, 'err'); }
     });
+    /* 评论草稿：离开页面后回来还在 */
+    if (window.DraftStore) {
+      var commentBox = document.getElementById('commentContent');
+      var commentKey = window.DraftStore.scope('comment', slug);
+      if (commentBox) {
+        var savedComment = window.DraftStore.load(commentKey);
+        if (savedComment && savedComment.payload && savedComment.payload.text && !commentBox.value) {
+          commentBox.value = savedComment.payload.text;
+          var commentStatusEl = document.getElementById('commentStatus');
+          if (commentStatusEl) setStatus(commentStatusEl, '已恢复 ' + window.DraftStore.describe(savedComment) + ' 未发送的评论。');
+        }
+        var saveCommentDraft = window.DraftStore.debounce(function () {
+          if (commentBox.value.trim()) window.DraftStore.save(commentKey, { text: commentBox.value });
+          else window.DraftStore.clear(commentKey);
+        }, 500);
+        commentBox.addEventListener('input', saveCommentDraft);
+        window.addEventListener('pagehide', saveCommentDraft);
+        window.addEventListener('beforeunload', saveCommentDraft);
+      }
+    }
     refresh();
     document.addEventListener('blog-auth-change', refresh);
   }

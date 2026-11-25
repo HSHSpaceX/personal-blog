@@ -78,7 +78,7 @@
             <div class="field" id="communityFeaturedSetting" hidden><label class="article-featured-toggle"><input id="communityFeatured" type="checkbox">设为精选文章</label><p class="hint">草稿保存此选择；保存并提交时，在管理员直接批准后应用。随后等待静态同步与 Pages 部署。</p></div>
             <div class="field"><label for="communityTags">标签（英文逗号分隔，最多 10 个）</label><input id="communityTags"></div>
           </div><div class="meta-full"><button class="btn" id="communityChooseAssets" type="button">资源管理</button><fieldset><legend id="communityAssetLegend">选择我的资源</legend><div id="communityAssetChoices"></div></fieldset></div></div>
-          <div id="communityRichEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea>
+          <label class="editor-engine-toggle" style="display:flex;gap:8px;align-items:center;margin:8px 0;font-size:13px;color:inherit"><input type="checkbox" id="editorEngineToggle"> 使用 Vditor 编辑器（新版即时渲染，切换后自动刷新；勾掉即回到原来的编辑器）</label><div id="communityRichEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea>
           <div id="communitySourceWrap" hidden><p class="hint">受控 HTML 源码：支持段落、标题、列表、链接和已选资源；保存时转为安全正文，不接受脚本、事件或任意媒体地址。</p><textarea id="communitySource" class="source-textarea" aria-label="安全正文源码" spellcheck="false"></textarea></div>
         </section>
         <section id="communityPreview" hidden>
@@ -168,7 +168,7 @@
   <script src="js/categories.js"></script>
   <script src="js/community-schema.js?v=10"></script>
   <script src="js/resumable-upload.js?v=12"></script><script src="js/backend-capabilities.js?v=13"></script><script src="js/community-data.js?v=16"></script>
-  <script src="js/public-cards.js?v=20261031"></script><script src="js/content-editor.js?v=14"></script><script src="js/workspace.js?v=14"></script><script src="js/content-cards.js?v=1"></script>
+  <script src="js/public-cards.js?v=20261031"></script><script src="js/content-editor.js?v=14"></script><script src="js/content-editor.js?v=14"></script><script src="js/draft-store.js?v=1"></script><script src="js/editor-engine.js?v=1"></script><script src="js/editor-vditor.js?v=1"></script><script src="js/workspace.js?v=14"></script><script src="js/content-cards.js?v=1"></script>
   <script src="js/resource-manager.js?v=3"></script><script src="js/community-published.js"></script><script src="js/community-ui.js?v=15"></script>
   <script src="js/asset-center.js?v=12"></script><script src="js/comment-edit-data.js?v=10"></script><script src="js/account-comments.js?v=2"></script>
   <script src="js/posts.js?v=9"></script><script src="js/moments.js?v=9"></script><script src="js/albums.js?v=9"></script><script src="js/content.js?v=10"></script><script src="js/legacy-content.js?v=12"></script><script src="js/management.js?v=14"></script><script src="js/review-center.js?v=13"></script><script src="js/account.js?v=14"></script>
