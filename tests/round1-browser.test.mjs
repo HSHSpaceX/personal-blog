@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {serve,fixtures,sizes,uid,options,root} from './helpers/release-browser.mjs';
+
+async function openNewTab(page,type){
+  const [popup]=await Promise.all([page.context().waitForEvent('page'),page.locator('[data-new-content="'+type+'"]').click()]);
+  await popup.waitForLoadState();
+  await popup.waitForFunction(()=>{const e=document.getElementById('communityEditor');return e&&!e.hidden;},{},{timeout:20000});
+  return popup;
+}
 const evidence=process.env.GUI_EVIDENCE_DIR?path.resolve(process.env.GUI_EVIDENCE_DIR,'..'):null;
 async function capture(page,name){if(evidence){await mkdir(evidence,{recursive:true});await page.screenshot({path:path.join(evidence,name+'.png'),fullPage:true});}}
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');}
@@ -16,7 +23,7 @@ async function seed(page,type){await page.evaluate(async({type,uid})=>{
 
 test('Round 1 Chromium: semantic SVG directory, actual colors/hit targets/glass, themes/scroll/reopen/history and four sizes',options,async()=>{
  const {server,base}=await serve(),browser=await openBrowser();const metrics=[];
- try{for(const role of ['user','admin'])for(const [width,height]of sizes){const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));await fixtures(page,role);await page.goto(base+'/account.html#articles');await page.waitForSelector('#accountSections');await seed(page,'article');await page.waitForSelector('#communityItems .content-card');
+ try{for(const role of ['user','admin'])for(const [width,height]of sizes){let page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));await fixtures(page,role);await page.goto(base+'/account.html#articles');await page.waitForSelector('#accountSections');await seed(page,'article');await page.waitForSelector('#communityItems .content-card');
   for(const theme of ['light','dark']){
    await page.evaluate(theme=>{document.documentElement.dataset.theme=theme;window.scrollTo(0,0);},theme);
    const toggle=page.locator('#directoryToggle');if(await toggle.getAttribute('aria-expanded')==='true')await page.keyboard.press('Escape');await toggle.focus();await page.keyboard.press('Enter');
@@ -44,8 +51,8 @@ async function resourceFixture(page){await page.evaluate(()=>{
 test('Round 1 Chromium: shared resource cards, preview/search/filter/page/upload/return and saved media order/captions; anonymous and account isolation',options,async()=>{
  const {server,base}=await serve(),browser=await openBrowser();
  try{for(const [width,height]of sizes)for(const type of ['moment','album','article']){
-  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));await fixtures(page);await page.goto(base+(type==='article'?'/account.html#articles':type==='moment'?'/moments.html':'/gallery.html'));await page.waitForFunction(()=>!!window.CommunityData);await resourceFixture(page);
-  if(type==='article'){await page.locator('[data-new-content=article]').click();await page.locator('#communityTitle').fill('文章资源对比');await page.locator('#communityRichEditor').fill('前半段内容后半段内容');await page.locator('#communityRichEditor').evaluate(e=>{const range=document.createRange(),text=e.firstChild;range.setStart(text,5);range.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(range);e.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});await page.locator('#communitySettingsToggle').click();}
+  let page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));await fixtures(page);await page.goto(base+(type==='article'?'/account.html#articles':type==='moment'?'/moments.html':'/gallery.html'));await page.waitForFunction(()=>!!window.CommunityData);await resourceFixture(page);
+  if(type==='article'){page=await openNewTab(page,'article');await page.locator('#communityTitle').fill('文章资源对比');await page.locator('#communityRichEditor').fill('前半段内容后半段内容');await page.locator('#communityRichEditor').evaluate(e=>{const range=document.createRange(),text=e.firstChild;range.setStart(text,5);range.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(range);e.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});await page.locator('#communitySettingsToggle').click();}
   else{if(type==='album'){await page.locator('#galleryPlus').click();await page.locator('#albumNewTitle').fill('第一轮图册');await page.locator('#albumCreateConfirm').click();}await page.locator('#composeText').fill('资源中心专项，未保存文字保留。');}
   const ids=type==='article'?{choose:'communityChooseAssets',dialog:'communityResourcePicker',list:'resourcePickerList',kind:'resourcePickerKind',search:'resourcePickerSearch',refresh:'resourcePickerRefresh',next:'resourcePickerNext',prev:'resourcePickerPrev',preview:'resourcePickerViewer',close:'resourcePickerClose',upload:'resourcePickerUpload'}:{choose:'composeChoose',dialog:'composePicker',list:'composeResources',kind:'composeKind',search:'composeSearch',refresh:'composeSearchButton',next:'composeNext',prev:'composePrev',preview:'composeViewer',close:'composePickerClose',upload:'composeUpload'};
   const $=id=>page.locator('#'+id);await $(ids.choose).click();await page.waitForSelector('#'+ids.list+' .rm-item');assert.equal(await $(ids.list).locator('.rm-item').count(),20);assert.equal(await $(ids.list).locator('.community-row').count(),0);
@@ -66,7 +73,7 @@ test('Round 1 Chromium: shared resource cards, preview/search/filter/page/upload
 
 test('Round 1 Chromium: home/archive/featured capsule pagination preserves filters and has card spacing',options,async()=>{
  const {server,base}=await serve(),browser=await openBrowser();
- try{for(const [width,height]of sizes){const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});await fixtures(page);const posts=Array.from({length:26},(_,i)=>({slug:'round1-'+i,title:'分页文章 '+i,date:'2026-10-'+String(i+1).padStart(2,'0'),category:'杂谈',tags:['专项'],excerpt:'文章列表分页间距与筛选保持专项。',cover:'assets/icon-dark.png',featured:i<25,readingTime:1}));await page.route('**/js/posts.js*',r=>r.fulfill({contentType:'text/javascript',body:'window.BLOG_POSTS='+JSON.stringify(posts)}));
+ try{for(const [width,height]of sizes){let page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});await fixtures(page);const posts=Array.from({length:26},(_,i)=>({slug:'round1-'+i,title:'分页文章 '+i,date:'2026-10-'+String(i+1).padStart(2,'0'),category:'杂谈',tags:['专项'],excerpt:'文章列表分页间距与筛选保持专项。',cover:'assets/icon-dark.png',featured:i<25,readingTime:1}));await page.route('**/js/posts.js*',r=>r.fulfill({contentType:'text/javascript',body:'window.BLOG_POSTS='+JSON.stringify(posts)}));
   for(const url of ['/index.html','/archive.html?category='+encodeURIComponent('杂谈')+'&tag='+encodeURIComponent('专项')+'&featured=1','/featured.html']){await page.goto(base+url);await page.waitForSelector('.post-pagination');const pager=page.locator('.post-pagination');const geometry=await pager.evaluate(n=>{const b=n.querySelector('button'),s=getComputedStyle(b),cards=[...document.querySelectorAll('#postGrid .post-card,#archiveList .archive-row,#featuredGrid .post-card')],last=cards.at(-1);return {radius:s.borderRadius,height:b.getBoundingClientRect().height,gap:n.getBoundingClientRect().top-last.getBoundingClientRect().bottom};});assert.equal(geometry.radius,'999px');assert.ok(geometry.height>=44);assert.ok(geometry.gap>=32,JSON.stringify({url,width,...geometry}));assert.equal(await pager.getByRole('button',{name:'上一页'}).isDisabled(),true);await capture(page,'pagination-'+(url.includes('archive')?'archive':url.includes('featured')?'featured':'home')+'-'+width);await pager.getByRole('button',{name:'下一页'}).click();await page.waitForURL(/page=2/);if(url.includes('archive')){const u=new URL(page.url());assert.equal(u.searchParams.get('category'),'杂谈');assert.equal(u.searchParams.get('tag'),'专项');assert.equal(u.searchParams.get('featured'),'1');}await noOverflow(page);}
   await page.close();
  }}finally{await browser.close();await new Promise(r=>server.close(r));}
@@ -74,7 +81,7 @@ test('Round 1 Chromium: home/archive/featured capsule pagination preserves filte
 
 test('Round 1 Chromium: admin featured UI persists across reopen, cancels/reselects, reports failure and author notification links correctly',options,async()=>{
  const {server,base}=await serve(),browser=await openBrowser();
- try{const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await fixtures(page,'admin');
+ try{let page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await fixtures(page,'admin');
   await page.addInitScript(({uid})=>{
    const item='60000000-0000-4000-8000-000000000001',revision='60000000-0000-4000-8000-000000000002';let community,blog;
    Object.defineProperty(window,'CommunityData',{configurable:true,get:()=>community,set:value=>{
@@ -95,7 +102,7 @@ test('Round 1 Chromium: admin featured UI persists across reopen, cancels/resele
 test('Round 1 Chromium: public featured topic excludes non-featured and cancelled items for visitors and members',options,async()=>{
  const {server,base}=await serve(),browser=await openBrowser();
  try{for(const guest of [false,true]){
-  const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});await fixtures(page);
+  let page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});await fixtures(page);
   if(guest)await page.route('**/js/auth.js*',r=>r.fulfill({contentType:'text/javascript',body:'window.BlogAuth={ready:async()=>{},user:()=>null,configured:()=>false,isAdmin:()=>false};'}));
   const posts=Array.from({length:15},(_,i)=>({slug:'featured-public-'+i,title:'公开精选文章 '+i,date:'2026-10-'+String(i+1).padStart(2,'0'),category:'杂谈',tags:[],excerpt:'精选专题公开访问专项测试。',cover:'assets/icon-dark.png',featured:i<14,readingTime:1}));await page.route('**/js/posts.js*',r=>r.fulfill({contentType:'text/javascript',body:'window.BLOG_POSTS='+JSON.stringify(posts)}));
   await page.goto(base+'/featured.html');await page.waitForFunction(()=>document.querySelectorAll('#featuredGrid .post-card').length===12);assert.match(await page.locator('#featuredGrid .post-card').first().textContent(),/公开精选文章 13/);assert.equal(await page.locator('#featuredGrid a[href="posts/featured-public-14.html"]').count(),0);await page.locator('#featuredNext').click();await page.waitForURL(/page=2/);await page.waitForFunction(()=>document.querySelectorAll('#featuredGrid .post-card').length===2);assert.equal(await page.locator('#featuredNext').isDisabled(),true);await capture(page,'featured-topic-'+(guest?'guest':'member'));

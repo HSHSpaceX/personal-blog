@@ -1,0 +1,119 @@
+/* 专注编辑页布局：只留站点栏 + 返回 + 编辑器 */
+
+html.editor-focus body {
+  padding-bottom: 40px;
+}
+
+/* 隐藏账号中心的其余部分 */
+html.editor-focus .workspace-intro,
+html.editor-focus #accountAdminNav,
+html.editor-focus .workspace-layout > .workspace-body > .admin-card:not(#content),
+html.editor-focus #communityItems,
+html.editor-focus #communityListHeading,
+html.editor-focus #communityRefresh,
+html.editor-focus #communityLoadPolicy,
+html.editor-focus .content-type-tabs,
+html.editor-focus [data-content-view] {
+  display: none !important;
+}
+
+/* 编辑器区域占满宽度 */
+html.editor-focus #accountSections {
+  display: block !important;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+html.editor-focus #content {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+html.editor-focus #communityEditor {
+  border: 1px solid rgba(120, 120, 128, 0.18);
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] html.editor-focus #communityEditor {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 返回条 */
+.editor-focus-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 2px 14px;
+}
+
+.editor-focus-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--accent, #3b5bdb);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(120, 120, 128, 0.1);
+}
+
+.editor-focus-back:hover {
+  background: rgba(120, 120, 128, 0.18);
+}
+
+.editor-focus-label {
+  font-size: 13.5px;
+  color: var(--muted, #6e6e73);
+}
+
+/* ===== 使用 Vditor 时隐藏旧编辑器的全部遗留界面 ===== */
+html.editor-vditor #communityToolbar,
+html.editor-vditor #communityRichEditor,
+html.editor-vditor #communitySourceToggle,
+html.editor-vditor #communitySourceWrap,
+html.editor-vditor #communityTextLabel {
+  display: none !important;
+}
+
+/* Vditor 容器外观 */
+.vditor-mount {
+  margin-top: 6px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(120, 120, 128, 0.18);
+}
+
+.vditor-mount .vditor {
+  border: 0;
+}
+
+.editor-engine-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  html.editor-focus #accountSections {
+    padding: 0 10px;
+  }
+
+  html.editor-focus #communityEditor {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .editor-focus-bar {
+    padding: 2px 0 10px;
+  }
+}
