@@ -38,7 +38,10 @@
         var attrs = '';
         if (mapped === 'A') {
           var href = child.getAttribute('href') || '';
-          if (!/^(https?:|mailto:)/i.test(href)) { out += walk(child); return; }
+          var label = (child.textContent || '').trim();
+          /* 只保留文字正常、地址是 ASCII 的链接；粘贴产生的 [](中文句子) 一律丢弃。 */
+          var okHref = /^(https?:\/\/|mailto:)[A-Za-z0-9._~:\/?#\[\]@!$&'()*+,;=%-]+$/i.test(href);
+          if (!label || !okHref) { out += walk(child); return; }
           attrs = ' href="' + href.replace(/"/g, '&quot;') + '" rel="noopener noreferrer nofollow"';
         }
         out += '<' + mapped + attrs + '>' + walk(child) + '</' + mapped + '>';
@@ -199,9 +202,8 @@
         if (!schema || !schema.uuid(id)) throw Error('无效资源 UUID。');
         if (failed) { converter.insertAsset(id, asset); return null; }
         if (ready && vditor) {
-          /* 正文里放一个可读的附件标记；真正的引用走 asset_ids，发布后归入附件区。 */
-          var name = asset && asset.original_name ? asset.original_name : '附件';
-          vditor.insertValue('\n\n📎 ' + name + '\n\n');
+          /* 独占一段的资源标记会被转换成 asset 块，文章页据此渲染成图片/附件。 */
+          vditor.insertValue('\n\n[[asset:' + id + ']]\n\n');
         }
         return null;
       },
