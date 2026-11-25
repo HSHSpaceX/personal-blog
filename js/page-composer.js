@@ -12,7 +12,7 @@
  function Composer_IsDirty(){var dialog=document.getElementById('albumCreateDialog');return !!(dialog&&dialog.open&&document.getElementById('albumNewTitle').value.trim())||!root.hidden&&Composer_Snapshot()!==baseline;}
  function Composer_Confirm(){return !busy&&(!Composer_IsDirty()||window.confirm('有未保存的修改，确定取消？'));}
  /* ---- 草稿暂存：离开页面后回来还在 ---- */
- function Composer_DraftScope(){return window.DraftStore?window.DraftStore.scope('composer',type):'';}
+ function Composer_DraftScope(){if(!window.DraftStore)return '';var who=actorId||(auth.user()?auth.user().id:'anon');return window.DraftStore.scope('composer',type,who);}
  function Composer_DraftSave(){if(!window.DraftStore)return;var scope=Composer_DraftScope();if(!scope)return;var title=$('Title')?$('Title').value:'';var text=$('Text')?$('Text').value:'';if(!text.trim()&&!String(title).trim()){window.DraftStore.clear(scope);return;}window.DraftStore.save(scope,{title:title,text:text});}
  var Composer_DraftSoon=window.DraftStore?window.DraftStore.debounce(function(){Composer_DraftSave();},800):null;
  function Composer_DraftRestore(){if(!window.DraftStore)return;var scope=Composer_DraftScope();if(!scope)return;var record=window.DraftStore.load(scope);if(!record||!record.payload)return;var payload=record.payload;if(!payload.text&&!String(payload.title||'').trim())return;if($('Text')&&!$('Text').value.trim())$('Text').value=payload.text||'';if($('Title')&&!$('Title').value.trim())$('Title').value=payload.title||'';Composer_Status('已恢复 '+window.DraftStore.describe(record)+' 未保存的内容。');}

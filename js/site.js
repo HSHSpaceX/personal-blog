@@ -1005,7 +1005,7 @@
         setStatus(status, '正在提交…');
         await window.BlogData.addComment(slug, content, replyTarget && replyTarget.id);
         document.getElementById('commentContent').value = '';
-        if (window.DraftStore) window.DraftStore.clear(window.DraftStore.scope('comment', slug));
+        if (window.DraftStore) window.DraftStore.clear(window.DraftStore.scope('comment', slug, (window.BlogAuth && window.BlogAuth.user() && window.BlogAuth.user().id) || 'anon'));
         clearReply(); await refresh();
         setStatus(status, '评论已提交，审核通过后公开可见。', 'ok');
       } catch (error) { setStatus(status, '提交失败：' + error.message, 'err'); }
@@ -1013,7 +1013,8 @@
     /* 评论草稿：离开页面后回来还在 */
     if (window.DraftStore) {
       var commentBox = document.getElementById('commentContent');
-      var commentKey = window.DraftStore.scope('comment', slug);
+      var commentWho = (window.BlogAuth && window.BlogAuth.user() && window.BlogAuth.user().id) || 'anon';
+      var commentKey = window.DraftStore.scope('comment', slug, commentWho);
       if (commentBox) {
         var savedComment = window.DraftStore.load(commentKey);
         if (savedComment && savedComment.payload && savedComment.payload.text && !commentBox.value) {
