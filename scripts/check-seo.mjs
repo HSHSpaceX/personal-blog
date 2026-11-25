@@ -132,6 +132,9 @@ for (const file of ['sitemap.xml', 'feed.xml', 'robots.txt', ...expected.map((ad
   return route.includes('.') ? route : `${route}.html`;
 })]) {
   const contents = await read(file);
-  assert.ok(!contents.includes('hshspacex.github.io'), `Old canonical host in ${file}`);
+  /* HTML 只校验 head 里的规范链接（canonical / og:url）；
+     正文允许出现历史地址 —— 建站记录类文章会如实提到旧域名。 */
+  const scope = file.endsWith('.html') ? ((contents.match(/<head[\s\S]*?<\/head>/i) || [''])[0]) : contents;
+  assert.ok(!scope.includes('hshspacex.github.io'), `Old canonical host in ${file}`);
 }
 console.log(`SEO checks passed: ${urls.length} canonical URLs, descriptions (25–160 Unicode characters), image alts, ${posts.length} static post(s), feed, robots and noindex`);
