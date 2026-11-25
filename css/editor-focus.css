@@ -7,7 +7,6 @@ html.editor-focus body {
 /* 隐藏账号中心的其余部分 */
 html.editor-focus .workspace-intro,
 html.editor-focus #accountAdminNav,
-html.editor-focus .workspace-layout > .workspace-body > .admin-card:not(#content),
 html.editor-focus #communityItems,
 html.editor-focus #communityListHeading,
 html.editor-focus #communityRefresh,
