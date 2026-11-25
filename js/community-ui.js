@@ -264,7 +264,7 @@
       /* 刷新/切回标签页时，文章版本号直接回到编辑器，而不是停在预览面板。 */
       var backToEdit=false;
       try{var reopen=await data.getRevision(id);var reopenItem=revisionItem(reopen);
-        if(active(token)&&reopenItem.content_type==='article'&&reopenItem.author_id===auth.requireUser().id){openEditor(reopenItem,reopen);backToEdit=true;}
+        if(active(token)&&reopen.status==='draft'&&reopenItem.content_type==='article'&&reopenItem.author_id===auth.requireUser().id){openEditor(reopenItem,reopen);backToEdit=true;}
       }catch(error){backToEdit=false;}
       if(!backToEdit)await openRevision(id,token);
     }}catch(e){if(active(token))message(e.message,true);}}
