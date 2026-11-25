@@ -36,8 +36,22 @@
     return bar;
   }
 
+  var revision = params.get('revision');
+
   function boot() {
-    buildBar();
+    var bar = buildBar();
+    /* 带 revision 时由 community-ui 的深链逻辑打开该版本，这里只补返回条。 */
+    if (revision) {
+      if (!bar) return false;
+      var link = document.createElement('a');
+      link.className = 'editor-focus-popout';
+      link.href = 'account.html?editor=' + encodeURIComponent(type) + '&revision=' + encodeURIComponent(revision);
+      link.target = '_blank';
+      link.rel = 'nofollow';
+      link.textContent = '在新标签页打开';
+      if (!bar.querySelector('.editor-focus-popout')) bar.appendChild(link);
+      return true;
+    }
     if (window.CommunityEditorUI && typeof window.CommunityEditorUI.openNew === 'function') {
       window.CommunityEditorUI.openNew(type);
       return true;

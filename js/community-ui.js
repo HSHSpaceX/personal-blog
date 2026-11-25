@@ -256,7 +256,7 @@
   function openNewDraft(type,control){operation(function(){openEditor({content_type:type,author_id:auth.requireUser().id},null);},control);}
   window.CommunityEditorUI={openNew:function(type){openNewDraft(type,null);}};
   /* 新建内容默认在新标签页的专注编辑页打开；弹窗被拦截或测试环境（jsdom）时退回本页内嵌。 */
-  document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){var type=b.dataset.newContent,focused=new URLSearchParams(location.search).get('editor'),jsdom=/jsdom/i.test(navigator.userAgent||'');if(type==='article'&&!focused&&!jsdom&&typeof window.open==='function'){var win=null;try{win=window.open('account.html?editor='+encodeURIComponent(type),'_blank');}catch(error){win=null;}if(win)return;}openNewDraft(type,b);});});
+  document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){var type=b.dataset.newContent,focused=new URLSearchParams(location.search).get('editor'),jsdom=/jsdom/i.test(navigator.userAgent||'');if(type==='article'&&!focused&&!jsdom){location.assign('account.html?editor=article');return;}openNewDraft(type,b);});});
   [['communitySave',function(t){return saveEditor(t,false);}],['communitySubmit',function(t){return saveEditor(t,true);}],['communityRefresh',refreshLists],['communityRefreshReviews',refreshLists],
     ['communityTextPreview',function(t){if(!draft)throw Error('请先打开草稿。');return previewRow({title:$('communityTitle').value,body:editorBody(),content_items:draft.item},t);}],
     ['communityApprove',function(t){return decision(t,'approved');}],['communityReturn',function(t){return decision(t,'returned');}],['communityReject',function(t){return decision(t,'trashed');}],['communityLoadPolicy',loadPolicy],
