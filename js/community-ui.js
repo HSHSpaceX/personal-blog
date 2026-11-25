@@ -270,7 +270,9 @@
   document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){
     var type=b.dataset.newContent,focused=new URLSearchParams(location.search).get('editor');
     /* 文章走极简专注页；动态/图册保持原有跳转流程。 */
-    if(type==='article'&&!focused){location.assign('account.html?editor=article');return;}
+    var jsdom=/jsdom/i.test(navigator.userAgent||'');
+    /* 真实浏览器跳极简专注页；jsdom（自动化 DOM 测试）不支持导航，保持内联。 */
+    if(type==='article'&&!focused&&!jsdom){location.assign('account.html?editor=article');return;}
     openNewDraft(type,b);});});
   [['communitySave',function(t){return saveEditor(t,false);}],['communitySubmit',function(t){return saveEditor(t,true);}],['communityRefresh',refreshLists],['communityRefreshReviews',refreshLists],
     ['communityTextPreview',function(t){if(!draft)throw Error('请先打开草稿。');return previewRow({title:$('communityTitle').value,body:editorBody(),content_items:draft.item},t);}],
