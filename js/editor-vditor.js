@@ -204,13 +204,14 @@
       },
       insertHTML: function () { throw Error('Community 不接受 HTML。'); },
       insertAsset: function (id, asset) {
-        if (!schema || !schema.uuid(id)) throw Error('无效资源 UUID。');
+        if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(String(id || ''))) throw Error('无效资源 UUID。');
         if (failed) { converter.insertAsset(id, asset); return null; }
         if (ready && vditor) {
           /* 独占一段的资源标记会被转换成 asset 块，文章页据此渲染成图片/附件。 */
           vditor.insertValue('\n\n[[asset:' + id + ']]\n\n');
         }
-        return null;
+        /* 返回一个游离节点：调用方会拿它做内联预览，游离节点会被安全跳过。 */
+        return document.createElement('span');
       },
       removeAsset: function (id) {
         if (failed) { converter.removeAsset(id); return; }

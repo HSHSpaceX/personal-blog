@@ -55,7 +55,7 @@
   }
   function Community_IsDirty() { return !!draft && Community_Snapshot()!==baseline; }
   function Community_UpdateDirty() { $('communityEditor').dataset.dirty=String(Community_IsDirty()); Community_DraftTick(); }
-  function Community_DiscardEditor() { Community_DraftClear(); if(window.EditorFocus&&window.EditorFocus.exit)window.EditorFocus.exit();
+  function Community_DiscardEditor() { Community_DraftClear();
     editSession++;coverSerial++;featureSerial++;draft=null;preview=null;selection=[];baseline='';bodyBaseline='';savedRevisionId=null;viewMode='list';pickerGeneration++;
     if(editor)editor.clear();Community_ResetViews();if($('communityCoverPreview'))$('communityCoverPreview').replaceChildren();if($('communityPreviewCover'))$('communityPreviewCover').replaceChildren();
     ['communityTitle','communityText','communityCategory','communitySummary','communityTags','communityCover'].forEach(function(id){if($(id))$(id).value='';});
@@ -285,7 +285,7 @@
   function Community_ResetViews(){if(!$('communitySourceWrap'))return;$('communitySourceWrap').hidden=true;$('communitySource').value='';$('communityRichEditor').hidden=false;$('communityMeta').hidden=true;$('communitySettingsToggle').setAttribute('aria-expanded','false');}
   if($('communitySettingsToggle'))$('communitySettingsToggle').addEventListener('click',function(){var show=$('communityMeta').hidden;$('communityMeta').hidden=!show;$('communitySettingsToggle').setAttribute('aria-expanded',String(show));});
   if($('communitySourceToggle'))$('communitySourceToggle').addEventListener('click',function(){try{if(!$('communitySourceWrap').hidden){var body=editorBody();editor.setBody(body);$('communitySourceWrap').hidden=true;$('communityRichEditor').hidden=false;}else{$('communitySource').value=editor.getSource();$('communitySourceWrap').hidden=false;$('communityRichEditor').hidden=true;}Community_UpdateDirty();}catch(error){message(error.message,true);}});
-  $('communityCloseEditor').addEventListener('click',function(){if(Community_ConfirmLeave())Community_DiscardEditor();});
+  $('communityCloseEditor').addEventListener('click',function(){if(Community_ConfirmLeave()){Community_DiscardEditor();if(window.EditorFocus&&window.EditorFocus.exit)window.EditorFocus.exit();}});
   $('communityEditor').addEventListener('input',Community_UpdateDirty);
   $('communityEditor').addEventListener('change',function(event){if(event.target.matches('[data-asset-choice]')){if(!event.target.checked&&editor){var id=event.target.value;if($('communitySourceWrap')&&!$('communitySourceWrap').hidden){var doc=Community_ReadDocument();doc.blocks=doc.blocks.filter(function(b){return b.type!=='asset'||b.asset_id!==id;});$('communitySource').value=schema.renderDocument(doc,selection.map(function(p){return p.asset_id;}),100000);}editor.removeAsset(id);}captureChoices();choices();}Community_UpdateDirty();});
   window.addEventListener('beforeunload',function(event){if(Community_IsDirty()||(window.CommunityManagement&&window.CommunityManagement.isDirty())){event.preventDefault();event.returnValue='';}});
