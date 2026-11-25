@@ -260,7 +260,14 @@
     if(!assets.length)$('communityAssets').appendChild(node('p','暂无私有资源。'));
     if(auth.isAdmin()){var queue=await data.listReviews();if(!active(token)||!auth.isAdmin())return;$('communityReviewQueue').replaceChildren();queue.forEach(function(row){var entry=node('div',undefined,'community-row');entry.appendChild(node('p',row.title+' · '+names[revisionItem(row).content_type]+' · 作者 '+revisionItem(row).author_id));button(entry,'预览与审核',function(t){return openRevision(row.id,t);});$('communityReviewQueue').appendChild(entry);});if(!queue.length)$('communityReviewQueue').appendChild(node('p','暂无待审内容。'));}
   }
-  async function refresh(){var token=++generation;try{auth.requireUser();await refreshLists(token);if(!active(token))return;var params=new URLSearchParams(location.search),id=params.get('revision')||(schema.uuid(params.get('edit'))?params.get('edit'):null);if(id&&!draft&&(!window.AccountRoute||!location.hash||['#content','#articles','#moments','#albums'].includes(location.hash)))await openRevision(id,token);}catch(e){if(active(token))message(e.message,true);}}
+  async function refresh(){var token=++generation;try{auth.requireUser();await refreshLists(token);if(!active(token))return;var params=new URLSearchParams(location.search),id=params.get('revision')||(schema.uuid(params.get('edit'))?params.get('edit'):null);if(id&&!draft&&(!window.AccountRoute||!location.hash||['#content','#articles','#moments','#albums'].includes(location.hash))){
+      /* 刷新/切回标签页时，文章版本号直接回到编辑器，而不是停在预览面板。 */
+      var backToEdit=false;
+      try{var reopen=await data.getRevision(id);var reopenItem=revisionItem(reopen);
+        if(active(token)&&reopenItem.content_type==='article'&&reopenItem.author_id===auth.requireUser().id){openEditor(reopenItem,reopen);backToEdit=true;}
+      }catch(error){backToEdit=false;}
+      if(!backToEdit)await openRevision(id,token);
+    }}catch(e){if(active(token))message(e.message,true);}}
   async function decision(token,choice){auth.requireAdmin();if(!preview||preview.status!=='pending')throw Error('请先选择待审版本。');var reason=choice!=='approved'?$('communityRejectReason').value.trim():null;if(choice!=='approved'&&!reason)throw Error('退回或拒绝必须填写原因。');var id=preview.id;await data.review(id,choice,reason);if(active(token)){await openRevision(id,token);await refreshLists(token);message('审核决策已保存。');}}
   async function loadPolicy(token){auth.requireAdmin();var target=await data.policyUser($('communityPolicyUser').value.trim());var rows=await data.policyStatus(target.id);if(!active(token)||!auth.isAdmin())return;policyTarget=target;$('communityPolicyIdentity').textContent=target.username+' · '+target.id;$('communityPolicyRows').textContent=rows.map(function(r){return names[r.content_type]+'：每 '+r.review_every+' 次审核一次，首次发表总数 '+r.first_publish_count+'，距下次人工审核 '+r.until_review+' 次'+(r.review_due?'；审核关口阻塞 '+(r.gate_item_id||'等待下一次人工审批'):'');}).join('\n');}
   function openNewDraft(type,control){operation(function(){openEditor({content_type:type,author_id:auth.requireUser().id},null);},control);}
