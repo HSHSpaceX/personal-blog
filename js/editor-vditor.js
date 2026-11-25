@@ -199,8 +199,9 @@
         if (!schema || !schema.uuid(id)) throw Error('无效资源 UUID。');
         if (failed) { converter.insertAsset(id, asset); return null; }
         if (ready && vditor) {
-          var name = asset && asset.original_name ? asset.original_name : '';
-          vditor.insertValue('\n\n[[asset:' + id + ']]' + (name ? '（' + name + '）' : '') + '\n\n');
+          /* 正文里放一个可读的附件标记；真正的引用走 asset_ids，发布后归入附件区。 */
+          var name = asset && asset.original_name ? asset.original_name : '附件';
+          vditor.insertValue('\n\n📎 ' + name + '\n\n');
         }
         return null;
       },
