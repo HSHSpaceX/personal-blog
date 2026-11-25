@@ -11,7 +11,7 @@
   var ALLOWED = ['P', 'H2', 'H3', 'BLOCKQUOTE', 'PRE', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'A', 'BR', 'SPAN'];
 
   /* Vditor 输出的 HTML 里有很多 schema 不认识的标签/属性，先净化成受控子集。 */
-  function sanitize(html) {
+  function sanitize(html, resolveAsset) {
     var parsed = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
     function walk(node) {
       var out = '';
@@ -19,8 +19,15 @@
         if (child.nodeType === 3) { out += String(child.nodeValue); return; }
         if (child.nodeType !== 1) return;
         var tag = child.tagName;
-        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'IMG' || tag === 'TABLE' || tag === 'HR' || tag === 'IFRAME') {
-          if (tag === 'IMG') out += '<span></span>';
+        if (tag === 'IMG') {
+          var src = child.getAttribute('src') || '';
+          var resolved = resolveAsset ? resolveAsset(src) : null;
+          /* 资源中心插入的图片：按签名地址找回资源 id，原位还原成资源块。 */
+          if (resolved) { out += '<p>[[' + 'asset:' + resolved + ']]</p>'; return; }
+          out += '<span></span>';
+          return;
+        }
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TABLE' || tag === 'HR' || tag === 'IFRAME') {
           return;
         }
         var mapped = tag;
@@ -99,6 +106,8 @@
     if (toolbar) toolbar.hidden = true;
 
     var vditor = null, ready = false, failed = false, queued = null, warned = false;
+    /* 签名图片地址 → 资源 id，保存时据此把图片还原成资源块。 */
+    var assetUrls = {};
     var lastDocument = { version: 1, blocks: [] };
 
     /* Markdown/HTML → 结构化 JSON；独占一段的资源标记升级为资源块。 */
@@ -112,7 +121,7 @@
         if (options.onError) options.onError('正文不支持外链图片，请用「＋ 插入资源」从资源中心选图。');
       }
       try {
-        host.innerHTML = sanitize(html);
+        host.innerHTML = sanitize(html, function (src) { return assetUrls[src] || null; });
         var document = converter.getDocument();
         var blocks = [];
         (document.blocks || []).forEach(function (block) {
@@ -122,6 +131,12 @@
             if (match) { blocks.push({ type: 'asset', asset_id: match[1].toLowerCase() }); return; }
           }
           blocks.push(block);
+        });
+        /* 去掉 Markdown 空行转出来的空段落，避免文档里堆无用块。 */
+        blocks = blocks.filter(function (block) {
+          if (block.type !== 'paragraph') return true;
+          var text = (block.runs || []).map(function (run) { return run.text; }).join('');
+          return text.trim() !== '';
         });
         lastDocument = { version: 1, blocks: blocks };
         return lastDocument;
@@ -206,9 +221,17 @@
       insertAsset: function (id, asset) {
         if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(String(id || ''))) throw Error('无效资源 UUID。');
         if (failed) { converter.insertAsset(id, asset); return null; }
-        if (ready && vditor) {
-          /* 独占一段的资源标记会被转换成 asset 块，文章页据此渲染成图片/附件。 */
-          vditor.insertValue('\n\n[[asset:' + id + ']]\n\n');
+        var name = asset && asset.original_name ? asset.original_name : '附件';
+        var putToken = function () { if (ready && vditor) vditor.insertValue('\n\n[[asset:' + id + ']]\n\n'); };
+        if (ready && vditor && root.CommunityData && typeof root.CommunityData.signedAsset === 'function') {
+          root.CommunityData.signedAsset(id).then(function (signed) {
+            if (!signed || !signed.url) { putToken(); return; }
+            /* 编辑器里直接显示图片；保存时按这条地址还原成资源块，位置不变。 */
+            assetUrls[signed.url] = id;
+            vditor.insertValue('\n\n![' + name + '](' + signed.url + ')\n\n');
+          }).catch(putToken);
+        } else {
+          putToken();
         }
         /* 返回一个游离节点：调用方会拿它做内联预览，游离节点会被安全跳过。 */
         return document.createElement('span');

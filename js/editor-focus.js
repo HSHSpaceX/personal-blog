@@ -77,13 +77,26 @@
     document.title = (LABELS[type] || '编辑') + ' - 拾光手记';
     var revision = params.get('revision');
     if (!revision) {
-      var tries = 0;
-      var timer = setInterval(function () {
-        if (root.CommunityEditorUI && typeof root.CommunityEditorUI.openNew === 'function') {
-          clearInterval(timer);
-          root.CommunityEditorUI.openNew(type);
-        } else if (++tries > 40) clearInterval(timer);
-      }, 250);
+      /* 打开草稿必须等页面自身刷新完毕，否则 refresh() 会把编辑器重新隐藏。
+         做法：多次尝试，且只在编辑器确实被隐藏时才重试，避免覆盖正在输入的内容。 */
+      var attempts = 0;
+      function openDraft() {
+        var api = root.CommunityEditorUI;
+        var editorEl = document.getElementById('communityEditor');
+        if (editorEl && !editorEl.hidden) return;              // 已经在编辑器里
+        if (!api || typeof api.openNew !== 'function') {
+          if (++attempts < 60) setTimeout(openDraft, 250);
+          return;
+        }
+        api.openNew(type);
+        setTimeout(function () {
+          var again = document.getElementById('communityEditor');
+          if (again && again.hidden && attempts < 8) { attempts++; openDraft(); }
+        }, 800);
+      }
+      openDraft();
+      document.addEventListener('blog-auth-change', function () { setTimeout(openDraft, 400); });
+      document.addEventListener('posts-ready', function () { setTimeout(openDraft, 400); });
     }
   }
 })(typeof window === 'object' ? window : globalThis);
