@@ -80,7 +80,8 @@
             <div class="field" id="communityFeaturedSetting" hidden><label class="article-featured-toggle"><input id="communityFeatured" type="checkbox">设为精选文章</label><p class="hint">草稿保存此选择；保存并提交时，在管理员直接批准后应用。随后等待静态同步与 Pages 部署。</p></div>
             <div class="field"><label for="communityTags">标签（英文逗号分隔，最多 10 个）</label><input id="communityTags"></div>
           </div><div class="meta-full"><button class="btn" id="communityChooseAssets" type="button">资源管理</button><fieldset><legend id="communityAssetLegend">选择我的资源</legend><div id="communityAssetChoices"></div></fieldset></div></div>
-          <div class="editor-quickbar" id="editorQuickbar"><button class="btn" type="button" id="communityInsertAsset">＋ 插入资源（走资源中心）</button></div><div id="communityRichEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea>
+          <p class="editor-engine-status" id="editorEngineStatus" role="status" hidden></p>
+      <div class="editor-quickbar" id="editorQuickbar"><button class="btn" type="button" id="communityInsertAsset">＋ 插入资源（走资源中心）</button></div><div id="communityRichEditor" class="rich-editor" contenteditable="true" spellcheck="false"></div><textarea id="communityText" rows="10" maxlength="100000" hidden aria-hidden="true"></textarea>
           <div id="communitySourceWrap" hidden><p class="hint">受控 HTML 源码：支持段落、标题、列表、链接和已选资源；保存时转为安全正文，不接受脚本、事件或任意媒体地址。</p><textarea id="communitySource" class="source-textarea" aria-label="安全正文源码" spellcheck="false"></textarea></div>
         </section>
         <section id="communityPreview" hidden>

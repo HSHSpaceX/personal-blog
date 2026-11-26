@@ -5,7 +5,7 @@
   'use strict';
 
   var STORAGE_KEY = 'blog-editor-engine';
-  var CDN = 'https://unpkg.com/vditor@3.11.0';
+  var CDN = 'vendor/vditor';
   var loading = null;
 
   function stored() {
@@ -60,6 +60,10 @@
       return root.Vditor;
     }).catch(function (error) {
       loading = null;
+      try {
+        var tip = document.getElementById('editorEngineStatus');
+        if (tip) { tip.hidden = false; tip.textContent = 'Vditor 加载失败：' + error.message + '（已切回原编辑器）'; }
+      } catch (ignore) { /* 忽略 */ }
       throw error;
     });
     return loading;
@@ -67,10 +71,8 @@
 
   /* 让 CSS 知道当前引擎，用于隐藏旧编辑器的遗留界面。 */
   function markEngine() {
-    try { document.documentElement.classList.toggle('editor-vditor', mode() === 'vditor'); } catch (error) { /* 忽略 */ }
+    try { document.documentElement.classList.toggle('editor-vditor', use()); } catch (error) { /* 忽略 */ }
   }
-  markEngine();
-
   /* 账号中心里的开关：勾选后刷新页面即换用 Vditor。 */
   function bindToggle() {
     var box = document.getElementById('editorEngineToggle');
@@ -84,6 +86,8 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindToggle);
   else bindToggle();
+
+  markEngine();
 
   var api = { mode: mode, set: set, use: use, load: load, CDN: CDN };
   root.EditorEngine = api;
