@@ -218,7 +218,7 @@
   function Community_RememberTarget(type,id,revisionId){
     try{sessionStorage.setItem('blog-editor-target',JSON.stringify({type:type||'article',itemId:id||null,revisionId:revisionId||null,at:Date.now()}));}catch(error){}
   }
-  function setRevisionUrl(id,type){Community_RememberTarget(type,draft&&draft.item&&draft.item.id,id);if(new URLSearchParams(location.search).get('editor'))return;var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
+  function setRevisionUrl(id,type){Community_RememberTarget(type,draft&&draft.item&&draft.item.id,id);if(new URLSearchParams(location.search).get('editor'))return;var url=new URL(location.href);url.searchParams.set('revision',id);url.searchParams.set('edit','1');type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
   async function showAsset(id,container,token,caption){
     var result=await data.signedAsset(id);if(!active(token))return;
     var block=node('div',undefined,'community-asset-preview');
@@ -229,6 +229,7 @@
   }
   async function previewRow(row,token){
     try{sessionStorage.removeItem('blog-editing');}catch(error){}
+    try{var previewUrl=new URL(location.href);if(previewUrl.searchParams.has('edit')){previewUrl.searchParams.delete('edit');history.replaceState(history.state,'',previewUrl.href);}}catch(error){}
     var item=revisionItem(row);
     /* 专注编辑页永远不进预览面板：直接打开编辑器。 */
     try{
@@ -263,7 +264,8 @@
   async function openRevision(id,token,internal,forceEdit){if(!internal&&!Community_ConfirmLeave(true))return;var session=editSession,row=await data.getRevision(id);if(!active(token)||session!==editSession)return;if(!auth.isAdmin()&&revisionItem(row).author_id!==auth.user().id)throw Error('此版本不存在或你没有访问权限。');
     /* 刷新或切回标签页时，自己的草稿文章直接回到编辑器，而不是停在预览面板。 */
     var editing=false;try{editing=sessionStorage.getItem('blog-editing')==='1';}catch(error){}
-    if((forceEdit||editing)&&revisionItem(row).content_type==='article'&&revisionItem(row).author_id===auth.user().id){openEditor(revisionItem(row),row);return;}draft=null;baseline='';Community_UpdateDirty();$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
+    var editFlag=false;try{editFlag=new URLSearchParams(location.search).get('edit')==='1';}catch(error){}
+    if((forceEdit||editing||editFlag)&&revisionItem(row).content_type==='article'&&revisionItem(row).author_id===auth.user().id){openEditor(revisionItem(row),row);return;}draft=null;baseline='';Community_UpdateDirty();$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
   async function refreshLists(token){
     if(auth.isAdmin()&&data.legacyMappings){var mappings=await data.legacyMappings();if(!active(token))return;legacyMappings=mappings;}
     var rows=await data.listItems();if(!active(token))return;renderItems(rows);
