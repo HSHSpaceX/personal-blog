@@ -571,7 +571,7 @@
     },
     {
       "id": "6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8",
-      "revision_id": "782fa00a-7a55-4dae-812c-b5db3c320320",
+      "revision_id": "fc5ac5d1-0317-4dc1-bf0f-848d4327067c",
       "content_type": "album",
       "slug": "c-cb5d9cfe-b8fc-4a37-9de5-9d5b32d7fc8f",
       "title": "朱雀三号",
@@ -590,7 +590,7 @@
             "asset_id": "99aaf40b-26a7-4650-9176-5a9bfb0c2d74"
           },
           {
-            "caption": "",
+            "caption": "成功着陆",
             "asset_id": "48c0f2f8-394a-4bd8-ad5c-8ef59bed96e0"
           },
           {
@@ -615,40 +615,41 @@
           "id": "0cdd9950-fe9b-4d87-84b2-767a605ab914",
           "mime_type": "image/jpeg",
           "name": "IMG_1813.jpeg",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/782fa00a-7a55-4dae-812c-b5db3c320320/0cdd9950-fe9b-4d87-84b2-767a605ab914.jpg"
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/fc5ac5d1-0317-4dc1-bf0f-848d4327067c/0cdd9950-fe9b-4d87-84b2-767a605ab914.jpg"
         },
         {
           "id": "14c4ceba-b769-4596-9c8e-56b582d1a153",
           "mime_type": "image/jpeg",
           "name": "IMG_1801.jpeg",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/782fa00a-7a55-4dae-812c-b5db3c320320/14c4ceba-b769-4596-9c8e-56b582d1a153.jpg"
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/fc5ac5d1-0317-4dc1-bf0f-848d4327067c/14c4ceba-b769-4596-9c8e-56b582d1a153.jpg"
         },
         {
           "id": "41799c31-46a8-4d9c-9bdb-584005ced991",
           "mime_type": "image/png",
           "name": "IMG_1800.png",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/782fa00a-7a55-4dae-812c-b5db3c320320/41799c31-46a8-4d9c-9bdb-584005ced991.png"
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/fc5ac5d1-0317-4dc1-bf0f-848d4327067c/41799c31-46a8-4d9c-9bdb-584005ced991.png"
         },
         {
           "id": "48c0f2f8-394a-4bd8-ad5c-8ef59bed96e0",
           "mime_type": "image/png",
           "name": "IMG_1807.png",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/782fa00a-7a55-4dae-812c-b5db3c320320/48c0f2f8-394a-4bd8-ad5c-8ef59bed96e0.png"
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/fc5ac5d1-0317-4dc1-bf0f-848d4327067c/48c0f2f8-394a-4bd8-ad5c-8ef59bed96e0.png"
         },
         {
           "id": "99aaf40b-26a7-4650-9176-5a9bfb0c2d74",
           "mime_type": "image/jpeg",
           "name": "IMG_1806.jpeg",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/782fa00a-7a55-4dae-812c-b5db3c320320/99aaf40b-26a7-4650-9176-5a9bfb0c2d74.jpg"
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/fc5ac5d1-0317-4dc1-bf0f-848d4327067c/99aaf40b-26a7-4650-9176-5a9bfb0c2d74.jpg"
         },
         {
           "id": "d04eaa8b-cf81-41d3-bf85-e44f4af52e81",
           "mime_type": "image/jpeg",
           "name": "IMG_1805.jpeg",
-          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/782fa00a-7a55-4dae-812c-b5db3c320320/d04eaa8b-cf81-41d3-bf85-e44f4af52e81.jpg"
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/6c3afaa0-ca85-4b3c-83e0-108fd6cb32f8/fc5ac5d1-0317-4dc1-bf0f-848d4327067c/d04eaa8b-cf81-41d3-bf85-e44f4af52e81.jpg"
         }
       ],
-      "featured": false
+      "featured": false,
+      "updated_at": "2026-11-26T00:00:00+08:00"
     },
     {
       "id": "870c7c97-6bd0-4515-b4fc-070034a34d38",
@@ -708,6 +709,58 @@
         "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
       },
       "assets": [],
+      "featured": false
+    },
+    {
+      "id": "ca71cc5b-75c3-4fb6-bec8-52bc73af9a54",
+      "revision_id": "a232209c-ca71-4dde-a319-8db608f23f3f",
+      "content_type": "article",
+      "slug": "c-65246453-5a80-451f-924b-0c0e928b3197",
+      "title": "一",
+      "body": {
+        "tags": [],
+        "text": "好想",
+        "summary": "",
+        "category": "杂谈",
+        "document": {
+          "blocks": [
+            {
+              "runs": [
+                {
+                  "text": "好想"
+                }
+              ],
+              "type": "paragraph"
+            },
+            {
+              "type": "asset",
+              "asset_id": "1e9c13c5-74e4-4ec6-8eef-f050d7c229e5"
+            },
+            {
+              "type": "asset",
+              "asset_id": "1e9c13c5-74e4-4ec6-8eef-f050d7c229e5"
+            }
+          ],
+          "version": 1
+        },
+        "asset_ids": [
+          "1e9c13c5-74e4-4ec6-8eef-f050d7c229e5"
+        ]
+      },
+      "published_at": "2026-11-26T02:03:14.340269+00:00",
+      "author": {
+        "username": "hshspacex",
+        "display_name": "HSH(站长)",
+        "avatar_url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/avatars/778ac0a8-0693-4eb1-8b6e-81f1b96f697d/avatar-1793436504217.jpg"
+      },
+      "assets": [
+        {
+          "id": "1e9c13c5-74e4-4ec6-8eef-f050d7c229e5",
+          "mime_type": "image/png",
+          "name": "屏幕截图 2026-11-25 190811.png",
+          "url": "https://hscqeswnscnvkdthhlfp.supabase.co/storage/v1/object/public/published-media/community/ca71cc5b-75c3-4fb6-bec8-52bc73af9a54/a232209c-ca71-4dde-a319-8db608f23f3f/1e9c13c5-74e4-4ec6-8eef-f050d7c229e5.png"
+        }
+      ],
       "featured": false
     },
     {
