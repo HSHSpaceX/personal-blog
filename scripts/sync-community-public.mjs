@@ -123,7 +123,7 @@ export async function reconcile({adapter,directory=root,finalize=false,verify=fa
  }catch(error){const code=error instanceof PublicationError?error.code:'EXPORT_FAILED';for(const r of rows){try{await adapter.result(r.id,r.revision_id,'failed',null,code);}catch{ /* retry next schedule */ }}throw new PublicationError(code);}
 }
 export function serviceAdapter({url,key,fetchImpl=fetch}){
- const origin=new URL(url);if(origin.protocol!=='https:'||origin.username||origin.password||origin.pathname!=='/'||origin.search||origin.hash)fail('EXPORT_FAILED');
+ const origin=new URL(url);if(origin.protocol!=='https:'||origin.username||origin.password)fail('EXPORT_FAILED');
  async function request(route,options={}){try{const response=await fetchImpl(new URL(route,origin),{...options,redirect:'error',signal:AbortSignal.timeout(route.startsWith('/storage/')?120000:30000),headers:{apikey:key,Authorization:'Bearer '+key,...options.headers}});if(!response.ok)fail(route.startsWith('/storage/')?'STORAGE_FAILED':'EXPORT_FAILED');return response;}catch(e){if(e instanceof PublicationError)throw e;fail('EXPORT_FAILED');}}
  async function rpc(name,body={}){const response=await request('/rest/v1/rpc/'+name,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return response.status===204?null:response.json();}
  const segment=p=>p.split('/').map(encodeURIComponent).join('/');
