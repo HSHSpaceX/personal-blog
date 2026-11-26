@@ -165,7 +165,7 @@
       if(auth.isAdmin()&&row&&row.status==='draft'&&data.featuredPreference){featureReady=false;var featureToken=++featureSerial,featureSession=editSession,featureGeneration=generation;$('communityFeatured').disabled=true;$('communitySave').disabled=$('communitySubmit').disabled=true;data.featuredPreference(row.id).then(function(p){if(featureToken!==featureSerial||featureSession!==editSession||!active(featureGeneration))return;featureReady=true;var savedState=JSON.parse(baseline);$('communityFeatured').checked=p?p.featured:!!item.featured;savedState.featured=$('communityFeatured').checked;baseline=JSON.stringify(savedState);}).catch(function(error){if(featureToken===featureSerial&&featureSession===editSession&&active(featureGeneration))message('精选草稿设置读取失败，请重新打开后保存：'+error.message,true);}).finally(function(){if(featureToken===featureSerial&&featureSession===editSession&&active(featureGeneration)){$('communityFeatured').disabled=false;$('communitySave').disabled=$('communitySubmit').disabled=!featureReady;Community_UpdateDirty();}});}
     }
     if(data.assetInfo){var currentSession=editSession,currentToken=generation;Promise.all((body.asset_ids||[]).map(function(id){return{asset_id:id};}).filter(function(p){return !assets.some(function(a){return a.id===p.asset_id;});}).map(function(p){return data.assetInfo(p.asset_id);})).then(function(rows){if(currentSession!==editSession||!active(currentToken))return;rows.filter(Boolean).forEach(function(a){if(!assets.some(function(v){return v.id===a.id;}))assets.push(a);});captureChoices();choices();}).catch(function(error){if(currentSession===editSession&&active(currentToken))message('附件名称读取失败：'+error.message,true);});}
-    draftScope=window.DraftStore?window.DraftStore.scope('community',(auth.user()?auth.user().id:'anon'),item.content_type,item.id||('new-'+item.content_type)):'';choices();Community_RenderCover();baseline=Community_Snapshot();bodyBaseline=Community_Snapshot(true);Community_UpdateDirty();Community_DraftRestore();Community_UpdateDirty();$('communityTitle').focus();
+    draftScope=window.DraftStore?window.DraftStore.scope('community',(auth.user()?auth.user().id:'anon'),item.content_type,item.id||('new-'+item.content_type)):'';choices();Community_RenderCover();baseline=Community_Snapshot();bodyBaseline=Community_Snapshot(true);Community_UpdateDirty();Community_DraftRestore();Community_UpdateDirty();Community_RememberTarget(item.content_type,item.id||null,(row&&row.id)||null);$('communityTitle').focus();
   }
   function editorBody(){
     var type=draft.item.content_type, selected=Array.from($('communityAssetChoices').querySelectorAll('[data-asset-choice]:checked')).map(function(el){return el.value;});
@@ -214,7 +214,10 @@
     }
     if(active(token)&&session===editSession)await refreshLists(token);
   }
-  function setRevisionUrl(id,type){if(new URLSearchParams(location.search).get('editor'))return;var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
+  function Community_RememberTarget(type,id,revisionId){
+    try{sessionStorage.setItem('blog-editor-target',JSON.stringify({type:type||'article',itemId:id||null,revisionId:revisionId||null,at:Date.now()}));}catch(error){}
+  }
+  function setRevisionUrl(id,type){Community_RememberTarget(type,draft&&draft.item&&draft.item.id,id);if(new URLSearchParams(location.search).get('editor'))return;var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
   async function showAsset(id,container,token,caption){
     var result=await data.signedAsset(id);if(!active(token))return;
     var block=node('div',undefined,'community-asset-preview');
@@ -251,9 +254,9 @@
     var target=$('communityPreviewAssets');
     for(var photo of list){try{await showAsset(photo.asset_id,target,token,photo.caption);}catch(e){if(active(token))target.appendChild(node('p','资源不可预览：'+e.message));}}
   }
-  async function openRevision(id,token,internal){if(!internal&&!Community_ConfirmLeave(true))return;var session=editSession,row=await data.getRevision(id);if(!active(token)||session!==editSession)return;if(!auth.isAdmin()&&revisionItem(row).author_id!==auth.user().id)throw Error('此版本不存在或你没有访问权限。');
+  async function openRevision(id,token,internal,forceEdit){if(!internal&&!Community_ConfirmLeave(true))return;var session=editSession,row=await data.getRevision(id);if(!active(token)||session!==editSession)return;if(!auth.isAdmin()&&revisionItem(row).author_id!==auth.user().id)throw Error('此版本不存在或你没有访问权限。');
     /* 刷新或切回标签页时，自己的草稿文章直接回到编辑器，而不是停在预览面板。 */
-    draft=null;baseline='';Community_UpdateDirty();$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
+    if(forceEdit&&row.status==='draft'&&revisionItem(row).content_type==='article'&&revisionItem(row).author_id===auth.user().id){openEditor(revisionItem(row),row);return;}draft=null;baseline='';Community_UpdateDirty();$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
   async function refreshLists(token){
     if(auth.isAdmin()&&data.legacyMappings){var mappings=await data.legacyMappings();if(!active(token))return;legacyMappings=mappings;}
     var rows=await data.listItems();if(!active(token))return;renderItems(rows);
@@ -266,7 +269,7 @@
   async function decision(token,choice){auth.requireAdmin();if(!preview||preview.status!=='pending')throw Error('请先选择待审版本。');var reason=choice!=='approved'?$('communityRejectReason').value.trim():null;if(choice!=='approved'&&!reason)throw Error('退回或拒绝必须填写原因。');var id=preview.id;await data.review(id,choice,reason);if(active(token)){await openRevision(id,token);await refreshLists(token);message('审核决策已保存。');}}
   async function loadPolicy(token){auth.requireAdmin();var target=await data.policyUser($('communityPolicyUser').value.trim());var rows=await data.policyStatus(target.id);if(!active(token)||!auth.isAdmin())return;policyTarget=target;$('communityPolicyIdentity').textContent=target.username+' · '+target.id;$('communityPolicyRows').textContent=rows.map(function(r){return names[r.content_type]+'：每 '+r.review_every+' 次审核一次，首次发表总数 '+r.first_publish_count+'，距下次人工审核 '+r.until_review+' 次'+(r.review_due?'；审核关口阻塞 '+(r.gate_item_id||'等待下一次人工审批'):'');}).join('\n');}
   function openNewDraft(type,control){operation(function(){openEditor({content_type:type,author_id:auth.requireUser().id},null);},control);}
-  window.CommunityEditorUI={openNew:function(type){openNewDraft(type,null);},openPicker:function(kind){Community_OpenPicker(kind||'all');}};
+  window.CommunityEditorUI={openNew:function(type){openNewDraft(type,null);},openPicker:function(kind){Community_OpenPicker(kind||'all');},openEdit:function(id){return openRevision(id,generation,true,true);}};
   if($('communityInsertAsset'))$('communityInsertAsset').addEventListener('click',function(){if(!draft){message('请先打开或新建一篇内容。',true);return;}Community_OpenPicker('all');});
   /* 新建内容在本页打开；需要干净页面时点「专注编辑」在新标签页打开 account.html?editor=article。 */
   document.querySelectorAll('[data-new-content]').forEach(function(b){b.addEventListener('click',function(){

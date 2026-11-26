@@ -21,7 +21,9 @@
         var tag = child.tagName;
         if (tag === 'IMG') {
           var src = child.getAttribute('src') || '';
-          var resolved = resolveAsset ? resolveAsset(src) : null;
+          var title = child.getAttribute('title') || '';
+          var byTitle = /^asset:([0-9a-f-]{36})$/i.exec(title);
+          var resolved = byTitle ? byTitle[1] : (resolveAsset ? resolveAsset(src) : null);
           /* 资源中心插入的图片：按签名地址找回资源 id，原位还原成资源块。 */
           if (resolved) { out += '<p>[[' + 'asset:' + resolved + ']]</p>'; return; }
           out += '<span></span>';
@@ -228,7 +230,8 @@
             if (!signed || !signed.url) { putToken(); return; }
             /* 编辑器里直接显示图片；保存时按这条地址还原成资源块，位置不变。 */
             assetUrls[signed.url] = id;
-            vditor.insertValue('\n\n![' + name + '](' + signed.url + ')\n\n');
+            /* 图片里带一个稳定的资源标记（title），保存时不依赖地址是否被改写。 */
+            vditor.insertValue('\n\n![' + name + '](' + signed.url + ' "asset:' + id + '")\n\n');
           }).catch(putToken);
         } else {
           putToken();

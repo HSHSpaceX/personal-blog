@@ -57,6 +57,7 @@
     var wrap = bar();
     if (wrap) wrap.remove();
     /* 去掉 URL 上的 editor 参数，避免下次回来又被直接拉进编辑页。 */
+    try { sessionStorage.removeItem('blog-editor-target'); } catch (error) { /* 忽略 */ }
     try {
       var url = new URL(location.href);
       if (url.searchParams.has('editor')) {
@@ -80,6 +81,14 @@
       /* 打开草稿必须等页面自身刷新完毕，否则 refresh() 会把编辑器重新隐藏。
          做法：多次尝试，且只在编辑器确实被隐藏时才重试，避免覆盖正在输入的内容。 */
       var attempts = 0;
+      function savedTarget() {
+        try {
+          var raw = sessionStorage.getItem('blog-editor-target');
+          if (!raw) return null;
+          var target = JSON.parse(raw);
+          return target && target.type === type && target.revisionId ? target : null;
+        } catch (error) { return null; }
+      }
       function openDraft() {
         var api = root.CommunityEditorUI;
         var editorEl = document.getElementById('communityEditor');
@@ -88,7 +97,13 @@
           if (++attempts < 60) setTimeout(openDraft, 250);
           return;
         }
-        api.openNew(type);
+        var target = savedTarget();
+        if (target && typeof api.openEdit === 'function') {
+          /* 恢复到上次编辑的同一草稿版本，而不是新建一页。 */
+          api.openEdit(target.revisionId);
+        } else {
+          api.openNew(type);
+        }
         setTimeout(function () {
           var again = document.getElementById('communityEditor');
           if (again && again.hidden && attempts < 8) { attempts++; openDraft(); }
