@@ -1,0 +1,32 @@
+name: One-off revert publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: '文章 slug（默认：建站记录纪实）'
+        required: true
+        default: 'post-austria-history'
+      apply:
+        description: 'true=执行写入；false=只检查'
+        required: true
+        default: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  revert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Revert publication
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SLUG: ${{ inputs.slug }}
+          APPLY: ${{ inputs.apply }}
+        run: node scripts/oneoff-revert-publication.mjs
