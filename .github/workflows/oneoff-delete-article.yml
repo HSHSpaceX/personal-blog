@@ -1,0 +1,31 @@
+name: One-off delete article
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: '要删除的文章标题（完全匹配）'
+        required: true
+      apply:
+        description: 'true=执行删除；false=只检查'
+        required: true
+        default: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Delete article
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TITLE: ${{ inputs.title }}
+          APPLY: ${{ inputs.apply }}
+        run: node scripts/oneoff-delete-article.mjs
