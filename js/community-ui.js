@@ -101,7 +101,7 @@
     items.forEach(function(item){
       if(item.deleted_at||item.author_id!==auth.user().id)return;
       var latest=(item.content_revisions||[])[0],card=window.ContentCards.card(item,latest);
-      if(latest)button(card.actions,'查看版本',function(token){return openRevision(latest.id,token);});
+      if(latest)button(card.actions,'查看版本',function(){/* 草稿统一在专注编辑页打开，刷新不会掉到预览页。 */location.assign('account.html?editor=article&revision='+encodeURIComponent(latest.id));});
       else button(card.actions,'继续创建草稿',function(){openEditor(item,null);});
       if(item.published_revision_id)button(card.actions,'查看当前发布版本',function(token){return openRevision(item.published_revision_id,token);});
       $('communityItems').appendChild(card.element);
