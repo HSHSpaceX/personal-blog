@@ -86,12 +86,22 @@
       var editorEl = document.getElementById('communityEditor');
       if (editorEl && !editorEl.hidden) return;
       try {
-        if (revision && typeof api.openEdit === 'function') api.openEdit(revision);
+        if (revision && typeof api.openDraft === 'function') api.openDraft(revision);
+        else if (revision && typeof api.openEdit === 'function') api.openEdit(revision);
         else if (typeof api.openNew === 'function') api.openNew(type);
       } catch (error) { /* 下一轮重试 */ }
       setTimeout(function () {
         var again = document.getElementById('communityEditor');
-        if (again && again.hidden && attempts < 10) { attempts++; openTarget(); }
+        if (again && again.hidden && attempts < 10) { attempts++; openTarget(); return; }
+        if (again && again.hidden && attempts >= 10) {
+          var wrap = document.querySelector('.editor-focus-bar');
+          if (wrap && !wrap.querySelector('.editor-focus-error')) {
+            var tip = document.createElement('span');
+            tip.className = 'editor-focus-error';
+            tip.textContent = '无法打开这份草稿，请返回账号中心重试。';
+            wrap.appendChild(tip);
+          }
+        }
       }, 1200);
     }
     openTarget();
