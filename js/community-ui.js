@@ -227,7 +227,11 @@
     timers.push(setTimeout(function(){block.replaceChildren(node('p','私有资源链接已过期，请重新预览。'));},Math.max(0,result.expiresAt-Date.now())));
   }
   async function previewRow(row,token){
-    var item=revisionItem(row);viewMode=row.id?'preview':'edit-preview';preview=row;$('communityPreview').hidden=false;$('communityReviewControls').hidden=true;$('communityItems').hidden=true;
+    var item=revisionItem(row);
+    /* 专注编辑页永远不进预览面板：直接打开编辑器。 */
+    try{
+      if(new URLSearchParams(location.search).get('editor')&&row&&row.id&&item.content_type==='article'&&item.author_id===auth.user().id){openEditor(item,row);return;}
+    }catch(error){/* 回落到常规预览 */}viewMode=row.id?'preview':'edit-preview';preview=row;$('communityPreview').hidden=false;$('communityReviewControls').hidden=true;$('communityItems').hidden=true;
     $('communityPreviewTitle').textContent=row.title;$('communityPreviewState').textContent=states[row.status]||'文本预览';
     $('communityPreviewReason').textContent=row.rejection_reason?'驳回原因：'+row.rejection_reason:'';
     $('communityPreviewBody').replaceChildren();$('communityPreviewAssets').replaceChildren();$('communityPreviewActions').replaceChildren();$('communityPreviewAuthor').replaceChildren();$('communityRejectReason').value='';
