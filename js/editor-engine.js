@@ -71,7 +71,8 @@
 
   /* 让 CSS 知道当前引擎，用于隐藏旧编辑器的遗留界面。 */
   function markEngine() {
-    try { document.documentElement.classList.toggle('editor-vditor', use()); } catch (error) { /* 忽略 */ }
+    /* 只有本机显式选中 Vditor 时才给整页打标记；专注页由适配层自行隐藏旧界面。 */
+    try { document.documentElement.classList.toggle('editor-vditor', mode() === 'vditor'); } catch (error) { /* 忽略 */ }
   }
   /* 账号中心里的开关：勾选后刷新页面即换用 Vditor。 */
   function bindToggle() {
