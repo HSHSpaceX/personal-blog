@@ -51,7 +51,7 @@ console.log('将退回成草稿: #' + stray.revision_no, stray.id, '(', stray.st
 
 if (!apply) { console.log('干跑模式：未写入。确认无误后用 apply=true 重跑。'); process.exit(0); }
 
-await rest('/rest/v1/content_revisions?id=eq.' + stray.id, { method: 'PATCH', body: JSON.stringify({ status: 'draft', submitted_at: null }) });
+await rest('/rest/v1/content_revisions?id=eq.' + stray.id, { method: 'PATCH', body: JSON.stringify({ status: 'draft', submitted_at: null, resolved_at: null }) });
 await rest('/rest/v1/content_items?id=eq.' + item.id, { method: 'PATCH', body: JSON.stringify({ published_revision_id: publicItem.revision_id }) });
 await rest('/rest/v1/community_publication_state?item_id=eq.' + item.id, { method: 'PATCH', body: JSON.stringify({ status: 'pending', last_error: null }) });
 
