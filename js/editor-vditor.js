@@ -117,10 +117,23 @@
       if (!ready || !vditor) return lastDocument;
       var html;
       try { html = vditor.getHTML(); } catch (error) { return lastDocument; }
-      /* 正文只接受资源库里的资源；外链/粘贴的图片无法保存，提示用户改用「＋ 插入资源」。 */
-      if (!warned && /<img/i.test(html)) {
-        warned = true;
-        if (options.onError) options.onError('正文不支持外链图片，请用「＋ 插入资源」从资源中心选图。');
+      /* 只有确实认不出来源的图片（真正的外链图）才提示；资源中心插入的图片有 asset 标记。 */
+      if (!warned) {
+        var stray = 0;
+        try {
+          var probe = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
+          Array.prototype.forEach.call(probe.body.querySelectorAll('img'), function (img) {
+            var title = img.getAttribute('title') || '';
+            var src = img.getAttribute('src') || '';
+            if (/^asset:[0-9a-f-]{36}$/i.test(title)) return;
+            if (assetUrls[src]) return;
+            stray += 1;
+          });
+        } catch (error) { stray = 0; }
+        if (stray > 0) {
+          warned = true;
+          if (options.onError) options.onError('正文不支持外链图片，请用「＋ 插入资源」从资源中心选图。');
+        }
       }
       try {
         host.innerHTML = sanitize(html, function (src) { return assetUrls[src] || null; });

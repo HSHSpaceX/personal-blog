@@ -98,16 +98,18 @@
           return;
         }
         var target = savedTarget();
+        var opened = false;
         if (target && typeof api.openEdit === 'function') {
-          /* 恢复到上次编辑的同一草稿版本，而不是新建一页。 */
-          api.openEdit(target.revisionId);
-        } else {
-          api.openNew(type);
+          /* 先尝试恢复上次编辑的同一草稿；失败（已提交/无权限）就新建，保证留在编辑器里。 */
+          try { api.openEdit(target.revisionId); opened = true; } catch (error) { opened = false; }
         }
+        if (!opened) api.openNew(type);
         setTimeout(function () {
           var again = document.getElementById('communityEditor');
+          /* 恢复失败时不会再触发重试逻辑，这里兜底新建一次。 */
+          if (again && again.hidden && target && typeof api.openNew === 'function' && !opened) api.openNew(type);
           if (again && again.hidden && attempts < 8) { attempts++; openDraft(); }
-        }, 800);
+        }, 1500);
       }
       openDraft();
       document.addEventListener('blog-auth-change', function () { setTimeout(openDraft, 400); });
