@@ -77,43 +77,25 @@
     document.documentElement.classList.add('editor-focus');
     document.title = (LABELS[type] || '编辑') + ' - 拾光手记';
     var revision = params.get('revision');
-    if (!revision) {
-      /* 打开草稿必须等页面自身刷新完毕，否则 refresh() 会把编辑器重新隐藏。
-         做法：多次尝试，且只在编辑器确实被隐藏时才重试，避免覆盖正在输入的内容。 */
-      var attempts = 0;
-      function savedTarget() {
-        try {
-          var raw = sessionStorage.getItem('blog-editor-target');
-          if (!raw) return null;
-          var target = JSON.parse(raw);
-          return target && target.type === type && target.revisionId ? target : null;
-        } catch (error) { return null; }
-      }
-      function openDraft() {
-        var api = root.CommunityEditorUI;
-        var editorEl = document.getElementById('communityEditor');
-        if (editorEl && !editorEl.hidden) return;              // 已经在编辑器里
-        if (!api || typeof api.openNew !== 'function') {
-          if (++attempts < 60) setTimeout(openDraft, 250);
-          return;
-        }
-        var target = savedTarget();
-        var opened = false;
-        if (target && typeof api.openEdit === 'function') {
-          /* 先尝试恢复上次编辑的同一草稿；失败（已提交/无权限）就新建，保证留在编辑器里。 */
-          try { api.openEdit(target.revisionId); opened = true; } catch (error) { opened = false; }
-        }
-        if (!opened) api.openNew(type);
-        setTimeout(function () {
-          var again = document.getElementById('communityEditor');
-          /* 恢复失败时不会再触发重试逻辑，这里兜底新建一次。 */
-          if (again && again.hidden && target && typeof api.openNew === 'function' && !opened) api.openNew(type);
-          if (again && again.hidden && attempts < 8) { attempts++; openDraft(); }
-        }, 1500);
-      }
-      openDraft();
-      document.addEventListener('blog-auth-change', function () { setTimeout(openDraft, 400); });
-      document.addEventListener('posts-ready', function () { setTimeout(openDraft, 400); });
+    /* 不管有没有版本号，都主动把编辑器打开一遍；页面自身的刷新会覆盖视图，
+       所以只在编辑器确实被隐藏时重试，避免清掉正在输入的内容。 */
+    var attempts = 0;
+    function openTarget() {
+      var api = root.CommunityEditorUI;
+      if (!api) { if (++attempts < 60) setTimeout(openTarget, 250); return; }
+      var editorEl = document.getElementById('communityEditor');
+      if (editorEl && !editorEl.hidden) return;
+      try {
+        if (revision && typeof api.openEdit === 'function') api.openEdit(revision);
+        else if (typeof api.openNew === 'function') api.openNew(type);
+      } catch (error) { /* 下一轮重试 */ }
+      setTimeout(function () {
+        var again = document.getElementById('communityEditor');
+        if (again && again.hidden && attempts < 10) { attempts++; openTarget(); }
+      }, 1200);
     }
+    openTarget();
+    document.addEventListener('blog-auth-change', function () { setTimeout(openTarget, 400); });
+    document.addEventListener('posts-ready', function () { setTimeout(openTarget, 400); });
   }
 })(typeof window === 'object' ? window : globalThis);
