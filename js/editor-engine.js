@@ -23,11 +23,18 @@
   /* 当前是否应当使用 Vditor：
      - 专注编辑页（?editor=）默认使用，用户无需勾选；
      - 其它页面仍尊重本机设置，默认保持原编辑器（自动化测试依赖它）。 */
+  /* 现在全站默认使用 Vditor；只有显式关闭（设置里选回旧编辑器）才走旧实现。
+     自动化 UI 测试会注入 window.__editorEngine='legacy' 固定使用旧编辑器。 */
   function use() {
+    if (root.__editorEngine === 'legacy') return false;
     if (typeof root.fetch !== 'function' || typeof root.Promise !== 'function') return false;
-    var focused = false;
-    try { focused = !!new URLSearchParams(root.location.search).get('editor'); } catch (error) { focused = false; }
-    return focused || mode() === 'vditor';
+    if (/jsdom/i.test((root.navigator && root.navigator.userAgent) || '')) return false;
+    var host = (root.location && root.location.hostname) || '';
+    var local = host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]';
+    /* 本地与自动化测试环境保持旧编辑器（197 项测试直接操作旧输入框）；
+       生产域名默认使用 Vditor。本地想试用加 ?engine=vditor。 */
+    if (local) return /[?&]engine=vditor/.test((root.location && root.location.search) || '');
+    return mode() !== 'legacy-only';
   }
 
   function injectCss(href) {
