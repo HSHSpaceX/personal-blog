@@ -20,9 +20,14 @@
     try { root.localStorage.setItem(STORAGE_KEY, next === 'vditor' ? 'vditor' : 'legacy'); } catch (error) { /* 忽略 */ }
   }
 
-  /* 当前是否应当使用 Vditor：需要用户已切换，且环境具备 fetch/Promise。 */
+  /* 当前是否应当使用 Vditor：
+     - 专注编辑页（?editor=）默认使用，用户无需勾选；
+     - 其它页面仍尊重本机设置，默认保持原编辑器（自动化测试依赖它）。 */
   function use() {
-    return mode() === 'vditor' && typeof root.fetch === 'function' && typeof root.Promise === 'function';
+    if (typeof root.fetch !== 'function' || typeof root.Promise !== 'function') return false;
+    var focused = false;
+    try { focused = !!new URLSearchParams(root.location.search).get('editor'); } catch (error) { focused = false; }
+    return focused || mode() === 'vditor';
   }
 
   function injectCss(href) {
