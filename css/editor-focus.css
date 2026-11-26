@@ -131,15 +131,6 @@ html.editor-focus #communityTextLabel {
   display: none !important;
 }
 
-/* 专注页里 Vditor 必须显示（它被上面按旧编辑器规则隐藏了） */
-html.editor-focus .vditor-mount,
-html.editor-focus .editor-quickbar {
-  display: block !important;
-}
 
-html.editor-focus .editor-quickbar {
-  display: flex !important;
-  justify-content: flex-end;
-  gap: 8px;
-  margin: 4px 0 10px;
-}
+
+.editor-engine-status{font-size:12px;color:#b3261e;max-width:100%;white-space:normal}
