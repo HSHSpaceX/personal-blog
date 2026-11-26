@@ -16,6 +16,21 @@
     textarea.dataset.vditorComment = '1';
 
     var vditor = null;
+    /* 外部脚本常直接给 textarea 赋值（例如清空草稿），这里转发给编辑器。 */
+    try {
+      var proto = Object.getPrototypeOf(textarea);
+      var descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+      if (descriptor && descriptor.set) {
+        Object.defineProperty(textarea, 'value', {
+          configurable: true,
+          get: function () { return descriptor.get.call(this); },
+          set: function (next) {
+            descriptor.set.call(this, next);
+            if (vditor && next !== vditor.getValue()) { try { vditor.setValue(next || '', true); } catch (error) { /* 忽略 */ } }
+          }
+        });
+      }
+    } catch (error) { /* 忽略 */ }
     root.EditorEngine.load().then(function (Vditor) {
       vditor = new Vditor(mount, {
         height: opts.height || 180,
@@ -62,7 +77,7 @@
 
   /* 页面自带的评论框：文章页 / 首页 / 关于页 */
   function autoEnhance() {
-    ['commentContent', 'accountCommentText'].forEach(function (id) {
+    ['commentContent', 'accountCommentText', 'composeText', 'momentComment', 'albumComment'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el && !el.dataset.vditorComment && el.offsetParent !== null) {
         enhance(el, { placeholder: id === 'commentContent' ? '写下评论…' : '修改后的评论内容' });
