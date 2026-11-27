@@ -1,11 +1,12 @@
-/* 专注编辑布局：打开编辑器时只留站点栏 + 返回 + 编辑器，不再另开页面。
- * 由 community-ui 在打开/关闭编辑器时调用 enter()/exit()。
+/* 专注编辑布局：在独立标签页中只留站点栏 + 返回 + 编辑器。
+ * 由 community-ui 在关闭编辑器时调用 exit()。
  * 也支持直接访问 account.html?editor=article 时自动进入。 */
 (function (root) {
   'use strict';
 
   var LABELS = { article: '新建文章', moment: '新建动态', album: '新建图册' };
   var current = null;
+  var exited = false;
 
   function bar() {
     return document.querySelector('.editor-focus-bar');
@@ -44,6 +45,7 @@
   function enter(type) {
     if (!type) return;
     current = type;
+    exited = false;
     document.documentElement.classList.add('editor-focus');
     buildBar(type);
     var label = bar() && bar().querySelector('.editor-focus-label');
@@ -53,6 +55,7 @@
 
   function exit() {
     current = null;
+    exited = true;
     document.documentElement.classList.remove('editor-focus');
     var wrap = bar();
     if (wrap) wrap.remove();
@@ -81,6 +84,7 @@
        所以只在编辑器确实被隐藏时重试，避免清掉正在输入的内容。 */
     var attempts = 0;
     function openTarget() {
+      if (exited) return;
       var api = root.CommunityEditorUI;
       if (!api) { if (++attempts < 60) setTimeout(openTarget, 250); return; }
       var editorEl = document.getElementById('communityEditor');

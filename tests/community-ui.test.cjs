@@ -20,12 +20,13 @@ function accountHarness(initialRole, deferred = false, deferredData = false) {
     ready: () => deferred ? new Promise(resolve => { resolveReady = resolve; }) : Promise.resolve(),
     resetPassword: async email => { resets.push(email); }, signOut: async () => { role = 'guest'; } };
   const dataPromise = deferredData ? new Promise(resolve => {resolveData=resolve;}) : Promise.resolve({display_name:'Test user'});
+  const ui = { clears: 0, refreshes: 0, clear() { this.clears++; }, refresh() { this.refreshes++; } };
   const context = {window:{BlogAuth:auth,BlogTheme:{setup(){}},BlogData:{getProfile:()=>dataPromise,
-    notificationCount:async()=>3,followerCount:async()=>4,dmUnreadCount:async()=>2},GitHubCredentials:{clear(){}}},
+    notificationCount:async()=>3,followerCount:async()=>4,dmUnreadCount:async()=>2},GitHubCredentials:{clear(){}},CommunityUI:ui},
     document:{getElementById:id=>elements[id],createElement:()=>element(),addEventListener:(name,fn)=>{events[name]=fn;}},
     location:{replace:href=>redirects.push(href)}};
   vm.runInNewContext(read('js/account.js'),context);
-  return {elements,redirects,resets,release:()=>resolveReady(),releaseData:()=>resolveData({display_name:'Stale user'}),
+  return {elements,redirects,resets,ui,release:()=>resolveReady(),releaseData:()=>resolveData({display_name:'Stale user'}),
     change(nextRole) { role=nextRole; events['blog-auth-change'](); }};
 }
 
@@ -82,6 +83,18 @@ test('account gives admin the same social overview plus review links and purges 
   assert.equal(h.elements.accountSections.hidden,true);
   assert.equal(h.elements.accountIdentity.textContent,'');
   assert.equal(h.redirects.at(-1),'login.html?next=account.html');
+});
+
+test('account keeps the open editor when Supabase refreshes the same session token', async () => {
+  const h = accountHarness('user'); await flush();
+  assert.equal(h.ui.clears, 1);
+  assert.equal(h.ui.refreshes, 1);
+  h.change('user'); await flush();
+  assert.equal(h.ui.clears, 1, 'same account token refresh must not clear the editor');
+  assert.equal(h.ui.refreshes, 1, 'same account token refresh must not reload the workspace');
+  h.change('admin'); await flush();
+  assert.equal(h.ui.clears, 3, 'role changes still reset privileged views');
+  assert.equal(h.ui.refreshes, 2);
 });
 
 test('account ignores in-flight profile data after logout', async () => {

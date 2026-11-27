@@ -4,7 +4,12 @@
   var data = window.BlogData;
   var initialized = false;
   var generation = 0;
+  var activeIdentity = '';
   var $ = function (id) { return document.getElementById(id); };
+  function identity() {
+    var user = auth.user();
+    return user ? user.id + ':' + (auth.isAdmin() ? 'admin' : 'user') : '';
+  }
   var workspace = window.AccountWorkspace ? window.AccountWorkspace.create({root:$('accountSections'),nav:$('accountDirectory'),toggle:$('directoryToggle'),backdrop:$('directoryBackdrop'),beforeLeave:function(){return (!window.CommunityUI||window.CommunityUI.confirmLeave())&&(!window.CommunityManagement||window.CommunityManagement.confirmLeave());}}) : null;
   if (workspace) window.AccountRoute = workspace;
   window.BlogTheme.setup();
@@ -38,6 +43,7 @@
     clear();
     var attempt = generation;
     var user = auth.user();
+    activeIdentity = identity();
     if (!user) { location.replace('login.html?next=account.html'); return; }
     $('accountSections').hidden = false;
     $('accountIdentity').textContent = auth.isAdmin() ? '管理员账号 · 保留全部用户社交能力' : '邀请制用户账号';
@@ -72,6 +78,12 @@
     }
   }
   document.addEventListener('blog-auth-change', function () {
+    // Supabase refreshes the token when a tab becomes visible again. That is
+    // the same signed-in account, so keep the open editor and its unsaved
+    // content instead of tearing the workspace down and falling back to preview.
+    var next = identity();
+    if (initialized && next === activeIdentity) return;
+    activeIdentity = next;
     clear();
     if (initialized) render();
   });

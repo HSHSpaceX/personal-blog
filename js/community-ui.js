@@ -93,6 +93,19 @@
     $('communityEditor').hidden=true;$('communityPreview').hidden=true;$('communityReviewControls').hidden=true;Community_UpdateDirty();
   }
   function revisionItem(row){return row.content_items;}
+  function editorHref(row,type){
+    var id=row&&row.id;
+    type=type||(row&&row.content_items&&row.content_items.content_type)||'article';
+    var url;
+    if(type==='moment')url=new URL('moments.html',document.baseURI);
+    else if(type==='album')url=new URL('gallery.html',document.baseURI);
+    else {url=new URL('account.html',document.baseURI);url.searchParams.set('editor','article');}
+    if(id)url.searchParams.set('revision',id);
+    return url.href;
+  }
+  function editorLink(parent,label,row,type){
+    var link=node('a',label,'btn');link.href=editorHref(row,type);link.target='_blank';link.rel='noopener noreferrer';parent.appendChild(link);return link;
+  }
   function renderItems(items){
     itemRows=items;
     if(window.AccountRoute)items=items.filter(function(item){return item.content_type===contentType;});
@@ -101,7 +114,7 @@
     items.forEach(function(item){
       if(item.deleted_at||item.author_id!==auth.user().id)return;
       var latest=(item.content_revisions||[])[0],card=window.ContentCards.card(item,latest);
-      if(latest)button(card.actions,'查看版本',function(){/* 草稿统一在专注编辑页打开，刷新不会掉到预览页。 */location.assign('account.html?editor=article&revision='+encodeURIComponent(latest.id));});
+      if(latest)editorLink(card.actions,'继续编辑',latest,item.content_type);
       else button(card.actions,'继续创建草稿',function(){openEditor(item,null);});
       if(item.published_revision_id)button(card.actions,'查看当前发布版本',function(token){return openRevision(item.published_revision_id,token);});
       $('communityItems').appendChild(card.element);
@@ -142,6 +155,8 @@
   function openEditor(item,row){
     if(item.content_type!=='article'){location.assign((item.content_type==='moment'?'moments.html':'gallery.html')+(row?'?revision='+encodeURIComponent(row.id):''));return;}
     if(item.author_id&&item.author_id!==auth.requireUser().id)throw Error('只能编辑自己的内容。');
+    /* 专注页的自动打开和账号刷新可能同时到达；同一版本已打开时不要重置输入。 */
+    if(draft&&row&&draft.source&&draft.source.id===row.id&&!$('communityEditor').hidden)return;
     if(Community_IsDirty()&&!Community_ConfirmLeave(true))return;
     editSession++;featureSerial++;featureReady=true;savedRevisionId=row?row.id:null;$('communitySave').disabled=$('communitySubmit').disabled=false;$('communityFeatured').disabled=false;
     viewMode='edit';draft={item:item,source:row,slug:item.slug||'c-'+crypto.randomUUID()};preview=null;$('communityPreview').hidden=true;$('communityReviewControls').hidden=true;
@@ -217,7 +232,7 @@
   function Community_RememberTarget(type,id,revisionId){
     try{sessionStorage.setItem('blog-editor-target',JSON.stringify({type:type||'article',itemId:id||null,revisionId:revisionId||null,at:Date.now()}));}catch(error){}
   }
-  function setRevisionUrl(id,type){Community_RememberTarget(type,draft&&draft.item&&draft.item.id,id);if(new URLSearchParams(location.search).get('editor'))return;var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
+  function setRevisionUrl(id,type){Community_RememberTarget(type,draft&&draft.item&&draft.item.id,id);var url=new URL(location.href);url.searchParams.set('revision',id);type=type||(draft&&draft.item.content_type);url.hash=window.AccountRoute?type==='moment'?'moments':type==='album'?'albums':'articles':'content';history.replaceState(history.state,'',url.pathname+url.search+url.hash);if(window.AccountRoute)window.AccountRoute.refresh();}
   async function showAsset(id,container,token,caption){
     var result=await data.signedAsset(id);if(!active(token))return;
     var block=node('div',undefined,'community-asset-preview');
@@ -248,7 +263,7 @@
     if(window.renderMathInElement)window.renderMathInElement($('communityPreviewBody'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],trust:false,throwOnError:false});
     if(body.tags)$('communityPreviewBody').appendChild(node('p','标签：'+body.tags.join('、')));
     if(row.id&&item.author_id===auth.user().id){
-      if(row.status==='draft'){button($('communityPreviewActions'),'继续编辑',function(){openEditor(item,row);});button($('communityPreviewActions'),'提交此草稿',async function(t){await Community_SubmitArticle(row.id,item.content_type);if(active(t)){if(!new URLSearchParams(location.search).get('editor'))await openRevision(row.id,t);await refreshLists(t);}});}
+      if(row.status==='draft'){editorLink($('communityPreviewActions'),'继续编辑',row,item.content_type);button($('communityPreviewActions'),'提交此草稿',async function(t){await Community_SubmitArticle(row.id,item.content_type);if(active(t)){if(!new URLSearchParams(location.search).get('editor'))await openRevision(row.id,t);await refreshLists(t);}});}
       if((row.status==='rejected'||row.status==='approved')&&!((row.content_revision_trash||[]).concat(item.content_revision_trash||[]).some(function(t){return !t.restored_at;})))button($('communityPreviewActions'),row.status==='rejected'?'重新编辑':'修改并建立草稿',async function(t){
         if(active(t)){openEditor(item,row);message('编辑原版本；保存时建立新草稿，原公开版本保持可见。');}});
     }
@@ -260,7 +275,13 @@
   }
   async function openRevision(id,token,internal,forceEdit){if(!internal&&!Community_ConfirmLeave(true))return;var session=editSession,row=await data.getRevision(id);if(!active(token)||session!==editSession)return;if(!auth.isAdmin()&&revisionItem(row).author_id!==auth.user().id)throw Error('此版本不存在或你没有访问权限。');
     /* 刷新或切回标签页时，自己的草稿文章直接回到编辑器，而不是停在预览面板。 */
-    if(forceEdit&&revisionItem(row).content_type==='article'&&revisionItem(row).author_id===auth.user().id){openEditor(revisionItem(row),row);return;}draft=null;baseline='';Community_UpdateDirty();$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
+    if(forceEdit&&revisionItem(row).content_type==='article'&&revisionItem(row).author_id===auth.user().id){openEditor(revisionItem(row),row);return;}
+    var focusedEditor=new URLSearchParams(location.search).get('editor');
+    if(focusedEditor){
+      if(window.EditorFocus&&window.EditorFocus.exit)window.EditorFocus.exit();
+      else {var focusedUrl=new URL(location.href);focusedUrl.searchParams.delete('editor');history.replaceState(history.state,'',focusedUrl.pathname+focusedUrl.search+focusedUrl.hash);}
+    }
+    draft=null;baseline='';Community_UpdateDirty();$('communityEditor').hidden=true;if(window.AccountRoute)window.AccountRoute.navigate(revisionItem(row).content_type==='moment'?'moments':revisionItem(row).content_type==='album'?'albums':'articles');setRevisionUrl(id,revisionItem(row).content_type);await previewRow(row,token);if(active(token)&&$('communityPreview').scrollIntoView)$('communityPreview').scrollIntoView({block:'start'});}
   async function refreshLists(token){
     if(auth.isAdmin()&&data.legacyMappings){var mappings=await data.legacyMappings();if(!active(token))return;legacyMappings=mappings;}
     var rows=await data.listItems();if(!active(token))return;renderItems(rows);
@@ -269,7 +290,7 @@
     if(!assets.length)$('communityAssets').appendChild(node('p','暂无私有资源。'));
     if(auth.isAdmin()){var queue=await data.listReviews();if(!active(token)||!auth.isAdmin())return;$('communityReviewQueue').replaceChildren();queue.forEach(function(row){var entry=node('div',undefined,'community-row');entry.appendChild(node('p',row.title+' · '+names[revisionItem(row).content_type]+' · 作者 '+revisionItem(row).author_id));button(entry,'预览与审核',function(t){return openRevision(row.id,t);});$('communityReviewQueue').appendChild(entry);});if(!queue.length)$('communityReviewQueue').appendChild(node('p','暂无待审内容。'));}
   }
-  async function refresh(){var token=++generation;try{auth.requireUser();await refreshLists(token);if(!active(token))return;var params=new URLSearchParams(location.search),id=params.get('revision')||(schema.uuid(params.get('edit'))?params.get('edit'):null);if(id&&!draft&&(!window.AccountRoute||!location.hash||['#content','#articles','#moments','#albums'].includes(location.hash)))await openRevision(id,token);}catch(e){if(active(token))message(e.message,true);}}
+  async function refresh(){var token=++generation;try{auth.requireUser();await refreshLists(token);if(!active(token))return;var params=new URLSearchParams(location.search),id=params.get('revision')||(schema.uuid(params.get('edit'))?params.get('edit'):null),focused=params.get('editor')==='article';if(id&&!draft&&(!window.AccountRoute||!location.hash||['#content','#articles','#moments','#albums'].includes(location.hash))){if(focused)await openRevision(id,token,true,true);else await openRevision(id,token);}}catch(e){if(active(token))message(e.message,true);}}
   async function decision(token,choice){auth.requireAdmin();if(!preview||preview.status!=='pending')throw Error('请先选择待审版本。');var reason=choice!=='approved'?$('communityRejectReason').value.trim():null;if(choice!=='approved'&&!reason)throw Error('退回或拒绝必须填写原因。');var id=preview.id;await data.review(id,choice,reason);if(active(token)){await openRevision(id,token);await refreshLists(token);message('审核决策已保存。');}}
   async function loadPolicy(token){auth.requireAdmin();var target=await data.policyUser($('communityPolicyUser').value.trim());var rows=await data.policyStatus(target.id);if(!active(token)||!auth.isAdmin())return;policyTarget=target;$('communityPolicyIdentity').textContent=target.username+' · '+target.id;$('communityPolicyRows').textContent=rows.map(function(r){return names[r.content_type]+'：每 '+r.review_every+' 次审核一次，首次发表总数 '+r.first_publish_count+'，距下次人工审核 '+r.until_review+' 次'+(r.review_due?'；审核关口阻塞 '+(r.gate_item_id||'等待下一次人工审批'):'');}).join('\n');}
   function openNewDraft(type,control){operation(function(){openEditor({content_type:type,author_id:auth.requireUser().id},null);},control);}
