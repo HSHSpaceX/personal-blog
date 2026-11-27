@@ -81,36 +81,35 @@ test('real DOM: rejected deep link shows inert reason and clones a prefilled dra
  const forbidden=row('moment','pending',other),h=await harness('user',forbidden);try{await h.w.CommunityUI.refresh();assert.match(h.$('communityStatus').textContent,/没有访问权限/);assert.equal(h.$('communityPreviewBody').textContent,'');assert.equal(h.$('communityPreview').hidden,true);}finally{h.d.window.close();}
 });
 
-test('real DOM: continue editing opens a new focused tab instead of replacing the list',options,async()=>{
- const r=row('article','draft'),h=await harness('user',r);try{
- await h.w.CommunityUI.refresh();
- const link=Array.from(h.$('communityItems').querySelectorAll('a')).find(a=>a.textContent==='继续编辑');
- assert.ok(link,'latest revision exposes a continue-editing link');
- assert.equal(link.target,'_blank');
- assert.match(link.rel,/noopener/);
- const url=new URL(link.href);
- assert.equal(url.pathname,'/account.html');
- assert.equal(url.searchParams.get('editor'),'article');
- assert.equal(url.searchParams.get('revision'),r.id);
- }finally{h.d.window.close();}
+test('real DOM: continue editing opens a new tab with the revision, not a focused layout',options,async()=>{
+  const r=row('article','draft'),h=await harness('user',r);try{
+  await h.w.CommunityUI.refresh();
+  const link=Array.from(h.$('communityItems').querySelectorAll('a')).find(a=>a.textContent==='继续编辑');
+  assert.ok(link,'latest revision exposes a continue-editing link');
+  assert.equal(link.target,'_blank');
+  assert.match(link.rel,/noopener/);
+  const url=new URL(link.href);
+  assert.equal(url.pathname,'/account.html');
+  assert.equal(url.searchParams.get('edit'),r.id,'deep link uses edit param, not editor param');
+  assert.equal(url.searchParams.get('revision'),r.id);
+  }finally{h.d.window.close();}
 });
 
-test('real DOM: focused editor deep link reopens the editor, not the preview panel',options,async()=>{
- const r=row('article','draft'),h=await harness('user',r);try{
- h.w.history.replaceState({},'','?editor=article&revision='+r.id);await h.w.CommunityUI.refresh();
- assert.equal(h.$('communityEditor').hidden,false);
- assert.equal(h.$('communityPreview').hidden,true);
- assert.equal(h.$('communityTitle').value,r.title);
- assert.equal(h.$('communityText').value,hostile);
- h.$('communityTitle').value='更新后的标题';await h.click('communitySave');
- const saved=new URL(h.w.location.href);
- assert.notEqual(saved.searchParams.get('revision'),r.id);
- assert.equal(saved.searchParams.get('editor'),'article');
- await h.click('communitySubmit');
- assert.equal(h.$('communityEditor').hidden,true,h.$('communityStatus').textContent+' '+h.w.location.href);
- assert.equal(h.$('communityPreview').hidden,false);
- assert.equal(new URL(h.w.location.href).searchParams.has('editor'),false,'preview leaves focused editing mode');
- }finally{h.d.window.close();}
+test('real DOM: revision deep link opens the editor directly, save clears the editor param',options,async()=>{
+  const r=row('article','draft'),h=await harness('user',r);try{
+  h.w.history.replaceState({},'','?edit='+r.id);await h.w.CommunityUI.refresh();
+  assert.equal(h.$('communityEditor').hidden,false);
+  assert.equal(h.$('communityPreview').hidden,true);
+  assert.equal(h.$('communityTitle').value,r.title);
+  h.$('communityTitle').value='更新后的标题';await h.click('communitySave');
+  const saved=new URL(h.w.location.href);
+  assert.notEqual(saved.searchParams.get('revision'),r.id);
+  assert.equal(saved.searchParams.get('edit'),null,'save clears the edit param');
+  await h.click('communitySubmit');
+  assert.equal(h.$('communityEditor').hidden,true);
+  assert.equal(h.$('communityPreview').hidden,false);
+  assert.equal(new URL(h.w.location.href).searchParams.has('edit'),false);
+  }finally{h.d.window.close();}
 });
 
 test('real DOM: admin queue preview, required rejection reason, approve, user/type thresholds and role clearing',options,async()=>{
