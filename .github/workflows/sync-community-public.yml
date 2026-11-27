@@ -29,7 +29,20 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node scripts/sync-community-public.mjs
+        run: |
+          # Retry mechanism, up to 3 attempts
+          for i in {1..3}; do
+            if node scripts/sync-community-public.mjs; then
+              break
+            fi
+            if [ $i -lt 3 ]; then
+              echo "Attempt $i failed, retrying in 30 seconds..."
+              sleep 30
+            else
+              echo "All 3 attempts failed"
+              exit 1
+            fi
+          done
       - name: Generate and validate public files offline
         run: |
           node scripts/generate-site.mjs
