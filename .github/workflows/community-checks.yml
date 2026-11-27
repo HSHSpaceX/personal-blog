@@ -38,4 +38,11 @@ jobs:
           COMMUNITY_DOM_MODULE: file:///tmp/blog-rls/node_modules/jsdom/lib/api.js
           BROWSER_TEST_MODULE: file:///tmp/blog-rls/node_modules/playwright-core/index.mjs
           BROWSER_TEST_EXECUTABLE: /usr/bin/google-chrome
-        run: node --test tests/*.test.cjs tests/*.test.mjs
+        run: |
+          node --test tests/*.test.cjs tests/*.test.mjs 2>&1 | tee /tmp/test-output.txt
+          if [ -s /tmp/test-output.txt ]; then
+            grep -E '^\s*✖|^\s*✘|fail [0-9]+' /tmp/test-output.txt | head -50 | while IFS= read -r line; do
+              echo "::error file=tests::${line}"
+            done
+          fi
+          exit ${PIPESTATUS[0]}
