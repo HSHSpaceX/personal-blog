@@ -39,10 +39,15 @@ jobs:
           BROWSER_TEST_MODULE: file:///tmp/blog-rls/node_modules/playwright-core/index.mjs
           BROWSER_TEST_EXECUTABLE: /usr/bin/google-chrome
         run: |
+          # Capture the test runner's exit code BEFORE any later pipeline overwrites
+          # PIPESTATUS (a later grep in the annotation block made the step always exit 0).
+          set +e
           node --test tests/*.test.cjs tests/*.test.mjs 2>&1 | tee /tmp/test-output.txt
+          test_exit=${PIPESTATUS[0]}
+          set -e
           if [ -s /tmp/test-output.txt ]; then
             grep -E '^\s*✖|^\s*✘|fail [0-9]+' /tmp/test-output.txt | head -50 | while IFS= read -r line; do
               echo "::error file=tests::${line}"
-            done
+            done || true
           fi
-          exit ${PIPESTATUS[0]}
+          exit "${test_exit}"
