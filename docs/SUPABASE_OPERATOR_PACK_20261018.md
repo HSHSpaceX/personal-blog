@@ -37,9 +37,8 @@
 25. 202610130003_review_queue.sql
 26. 202610130004_moment_deletion.sql
 27. 202610180001_article_settings_and_profile_search.sql
-28. 202611280001_content_deletion.sql
 
-第 27 项为第二轮新增，站长尚未在生产执行。2026-11-28 前向新增第 28 项（`content_deletion`：草稿直接删除 + 已发布文章/图册删除申请审核），没有重写任何已发布 migration，`community_capabilities`/`community_release_preflight` 版本保持 20261013 不变。第 27 项 LF SHA256 为 `d812f8e534f46d94693806558baa0fc4842c067930871dabc4220a7062bc1ead`；全部文件与兼容副本摘要见交付包 manifest。不同平台 CRLF 字节摘要可能不同，规范化 LF 后核对来源；不能修改 SQL 后继续使用旧摘要。
+第 27 项为第二轮新增，站长尚未在生产执行。本轮没有新增第 28 项，也没有重写任何 migration。第 27 项 LF SHA256 为 `d812f8e534f46d94693806558baa0fc4842c067930871dabc4220a7062bc1ead`；全部文件与兼容副本摘要见交付包 manifest。不同平台 CRLF 字节摘要可能不同，规范化 LF 后核对来源；不能修改 SQL 后继续使用旧摘要。
 
 ## 2. 第 27 项的依赖与权限
 
