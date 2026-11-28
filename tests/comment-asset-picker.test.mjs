@@ -94,13 +94,16 @@ test('picker lists images, signs the private bytes and returns a permanent publi
     const item = dialog.querySelector('[data-asset-id="asset-1"]');
     assert.ok(item, 'asset row rendered');
 
-    item.querySelector('button').click();
-    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 10));
+    /* 类型下拉与资源中心一致，默认「图片」。 */
+    assert.equal(dialog.querySelector('[data-kind]').value, 'image', 'kind dropdown defaults to image');
 
-    console.log('fetch calls:', w.__fetchCalls);
-    console.log('rpc calls:', w.__rpcCalls);
-    console.log('uploads:', uploads.map(u => u.path));
-    console.log('received:', received);
+    /* 卡片与资源中心一致：「预览」+「选择并返回」两个按钮。 */
+    assert.ok(item.querySelector('.rm-actions button.btn'), 'action buttons rendered');
+    assert.equal(item.querySelectorAll('.rm-actions button').length, 2, 'preview + choose buttons');
+    const chooseBtn = [...item.querySelectorAll('.rm-actions button')].find(b => b.textContent === '选择并返回');
+    assert.ok(chooseBtn, 'choose-and-return button present');
+    chooseBtn.click();
+    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 10));
 
     assert.equal(uploads.length, 1, 'uploaded exactly once');
     assert.match(uploads[0].path, new RegExp('^' + user.id + '/comments/.+\\.jpg$'));

@@ -13,7 +13,8 @@
     var n=node('article',undefined,'public-content-card'),h=node('h3',card.title||({moment:'动态',album:'图册',article:'文章',comment:'评论'}[card.kind]));n.appendChild(author(card));n.appendChild(h);
     n.appendChild(node('p',String(card.published_at||'').slice(0,16)+(card.liked_at?' · 点赞于 '+String(card.liked_at).slice(0,16):''),'muted'));
     var textEl=node('div',undefined,'public-text comment-body');
-    if(window.CommentMarkdown){textEl.innerHTML=window.CommentMarkdown.buildHtml(card.text||'',document.baseURI);}else{textEl.textContent=String(card.text||'').slice(0,detail?100000:2000);}
+    /* 长一些：摘要默认展示 600 字，详情/编辑视图展示完整正文。 */
+    if(window.CommentMarkdown){textEl.innerHTML=window.CommentMarkdown.buildHtml(card.text||'',document.baseURI);}else{textEl.textContent=String(card.text||'').slice(0,detail?100000:600);}
     n.appendChild(textEl);
     if(card.context)n.appendChild(node('p','来自：'+card.context.title));
     if(card.parent_text){
@@ -22,9 +23,12 @@
       n.appendChild(replyEl);
     }
     if(card.kind==='album'&&card.body&&Array.isArray(card.body.photos))n.appendChild(node('p',card.body.photos.length+' 张私有附件 · 公开文本预览'));
-    var href=card.target_path&&safeLink(card.target_path);if(href){var a=node('a','查看内容','btn');a.href=href;n.appendChild(a);}
+    /* 操作行：「点赞」靠左，「查看内容」靠右，与资源中心卡片一致。 */
+    var actions=node('div',undefined,'public-card-actions');
     var auth=window.BlogAuth;
-    if(auth&&auth.user()&&card.target_type&&card.target_id){var b=node('button','点赞 / 取消点赞','btn');b.type='button';b.addEventListener('click',async function(){b.disabled=true;try{var now=await window.BlogData.toggleLike(card.target_type,card.target_id);b.textContent=now?'已点赞 · 取消点赞':'点赞';}catch(e){b.textContent=e.message;}finally{b.disabled=false;}});n.appendChild(b);}
+    if(auth&&auth.user()&&card.target_type&&card.target_id){var b=node('button','点赞 / 取消点赞','btn');b.type='button';b.addEventListener('click',async function(){b.disabled=true;try{var now=await window.BlogData.toggleLike(card.target_type,card.target_id);b.textContent=now?'已点赞 · 取消点赞':'点赞';}catch(e){b.textContent=e.message;}finally{b.disabled=false;}});actions.appendChild(b);}
+    var href=card.target_path&&safeLink(card.target_path);if(href){var a=node('a','查看内容','btn');a.href=href;a.setAttribute('rel','nofollow');actions.appendChild(a);}
+    if(actions.childNodes.length)n.appendChild(actions);
     return n;
   }
   window.PublicCards={node:node,author:author,content:content,avatar:avatar};

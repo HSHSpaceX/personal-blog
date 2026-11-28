@@ -2,13 +2,18 @@
  *
  * 资源中心的 community-assets 是私有桶，签名地址只有 60 秒；评论需要对所有访客
  * 长期可见，所以这里把选中的图片复制到公开的 avatars 桶（按用户目录存放）。
- * 如果以后新增专用的 comment-images 公开桶，只需修改 PUBLIC_BUCKET。 */
+ * 如果以后新增专用的 comment-images 公开桶，只需修改 PUBLIC_BUCKET。
+ *
+ * 对话框结构与资源中心保持一致：搜索框 + 类型下拉 + 预览区 + 分页；
+ * 卡片布局与 Resource_CreateCard 相同（缩略图 + 文件名/大小 + 「选择并返回」按钮）。 */
 (function (root) {
   'use strict';
 
   var PUBLIC_BUCKET = 'avatars';
   var MAX_BYTES = 2 * 1024 * 1024 - 64 * 1024;
-  var dialog = null, listEl = null, statusEl = null, searchEl = null, pageEl = null, prevEl = null, nextEl = null;
+  var KIND_VALUES = { all: '全部类型', image: '图片', video: '视频', document: '文档 / 附件' };
+  var dialog = null, listEl = null, statusEl = null, searchEl = null, kindEl = null, viewerEl = null;
+  var prevEl = null, nextEl = null, pageEl = null;
   var offset = 0, token = 0, onSelect = null, returnFocus = null;
 
   function node(tag, text, cls) {
@@ -48,45 +53,54 @@
     statusEl.className = 'status-line' + (kind ? ' ' + kind : '');
   }
 
-  function build() {
-    if (dialog) return;
-    dialog = document.createElement('dialog');
-    dialog.className = 'resource-picker rm-modal comment-asset-picker';
-    dialog.setAttribute('aria-labelledby', 'commentAssetPickerTitle');
-    dialog.innerHTML =
-      '<div class="rm-head">' +
-        '<h2 id="commentAssetPickerTitle">选择评论图片</h2>' +
-        '<button class="rm-close" type="button" data-close aria-label="关闭">×</button>' +
-      '</div>' +
-      '<div class="rm-upload-bar">' +
-        '<label>搜索资源<input type="search" maxlength="120" placeholder="按文件名搜索" data-search-input></label>' +
-        '<button class="btn" type="button" data-search>搜索</button>' +
-      '</div>' +
-      '<p class="status-line" role="status" aria-live="polite" data-status></p>' +
-      '<div class="rm-body" data-list></div>' +
-      '<div class="rm-foot">' +
-        '<button class="btn" type="button" data-prev>上一页</button>' +
-        '<span data-page aria-live="polite"></span>' +
-        '<button class="btn" type="button" data-next>下一页</button>' +
-      '</div>';
-    document.body.appendChild(dialog);
-
-    listEl = dialog.querySelector('[data-list]');
-    statusEl = dialog.querySelector('[data-status]');
-    searchEl = dialog.querySelector('[data-search-input]');
-    pageEl = dialog.querySelector('[data-page]');
-    prevEl = dialog.querySelector('[data-prev]');
-    nextEl = dialog.querySelector('[data-next]');
-
-    dialog.querySelector('[data-close]').addEventListener('click', close);
-    dialog.querySelector('[data-search]').addEventListener('click', function () { offset = 0; load(); });
-    dialog.addEventListener('cancel', function (event) { event.preventDefault(); close(); });
-    dialog.addEventListener('close', cleanup);
-    prevEl.addEventListener('click', function () { offset = Math.max(0, offset - 20); load(); });
-    nextEl.addEventListener('click', function () { offset += 20; load(); });
-    searchEl.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter') { event.preventDefault(); offset = 0; load(); }
+  /* 与资源中心一致的卡片：缩略图 + 文件名 + 大小/引用数 + 「选择并返回」按钮。 */
+  function createCard(client, asset, current) {
+    var card = node('article', undefined, 'rm-item');
+    card.dataset.assetId = asset.id;
+    var thumb = node('div', undefined, 'rm-thumb');
+    thumb.appendChild(node('span', '📄', 'rm-icon'));
+    var info = node('div', undefined, 'rm-info');
+    info.appendChild(node('strong', asset.original_name || '图片'));
+    info.appendChild(node('span', (asset.mime_type || 'image') + ' · ' + Math.ceil((asset.size_bytes || 0) / 1024) + ' KiB'));
+    var actions = node('div', undefined, 'rm-actions');
+    var preview = node('button', '预览', 'btn');
+    preview.type = 'button';
+    var choose = node('button', '选择并返回', 'btn');
+    choose.type = 'button';
+    choose.addEventListener('click', function () { select(client, asset, choose, current); });
+    preview.addEventListener('click', function () {
+      if (!viewerEl) return;
+      viewerEl.replaceChildren(node('span', '正在读取预览…'));
+      signedPreview(client, asset, viewerEl, current);
     });
+    actions.append(preview, choose);
+    card.append(thumb, info, actions);
+    return card;
+  }
+
+  async function signedPreview(client, asset, viewer, current) {
+    try {
+      var row = await client.from('user_assets').select('object_path').eq('id', asset.id).maybeSingle();
+      if (current !== token || !viewer.isConnected) return;
+      if (row.error) throw row.error;
+      if (!row.data || !row.data.object_path) throw new Error('资源不可访问。');
+      var signed = await client.storage.from('community-assets').createSignedUrl(row.data.object_path, 60);
+      if (current !== token || !viewer.isConnected) return;
+      if (signed.error) throw signed.error;
+      viewer.replaceChildren();
+      var media = /^image\//.test(asset.mime_type || '') ? node('img') : node('video');
+      if (media.tagName === 'IMG') {
+        media.alt = asset.original_name || '图片';
+      } else {
+        media.controls = true;
+        media.preload = 'metadata';
+      }
+      media.src = signed.data.signedUrl;
+      viewer.appendChild(media);
+      viewer.appendChild(node('span', (asset.original_name || '资源') + '（预览 60 秒后过期）'));
+    } catch (error) {
+      if (current === token && viewer.isConnected) viewer.replaceChildren(node('span', '预览不可用：' + message(error)));
+    }
   }
 
   async function thumbnail(client, asset, thumb, current) {
@@ -111,22 +125,15 @@
   function render(client, rows, current) {
     listEl.replaceChildren();
     rows.forEach(function (asset) {
-      var card = node('article', undefined, 'rm-item');
-      card.dataset.assetId = asset.id;
-      var thumb = node('div', undefined, 'rm-thumb');
-      thumb.appendChild(node('span', '🖼️', 'rm-icon'));
-      var info = node('div', undefined, 'rm-info');
-      info.appendChild(node('strong', asset.original_name || '图片'));
-      info.appendChild(node('span', Math.ceil((asset.size_bytes || 0) / 1024) + ' KiB · ' + (asset.mime_type || 'image')));
-      var actions = node('div', undefined, 'rm-actions');
-      var choose = node('button', '选择', 'btn primary');
-      choose.type = 'button';
-      choose.addEventListener('click', function () { select(client, asset, choose, current); });
-      actions.appendChild(choose);
-      card.append(thumb, info, actions);
+      var card = createCard(client, asset, current);
       listEl.appendChild(card);
-      thumbnail(client, asset, thumb, current);
+      thumbnail(client, asset, card.querySelector('.rm-thumb'), current);
     });
+  }
+
+  function kindToRpc(kind) {
+    /* 评论对话框的类型下拉与资源中心一致；video/document 仅展示不可选。 */
+    return kind === 'image' ? 'image' : kind === 'video' ? 'video' : kind === 'document' ? 'document' : 'all';
   }
 
   async function load() {
@@ -137,19 +144,22 @@
     var current = ++token;
     setStatus('正在读取资源…');
     listEl.replaceChildren();
+    if (viewerEl) viewerEl.replaceChildren();
     prevEl.disabled = true;
     nextEl.disabled = true;
     pageEl.textContent = '';
     try {
+      var kind = kindToRpc(kindEl.value);
       var result = await client.rpc('community_assets_page', {
         p_search: searchEl.value.trim(),
-        p_kind: 'image',
+        p_kind: kind,
         p_limit: 20,
         p_offset: offset
       });
       if (current !== token) return;
       if (result.error) throw result.error;
       var all = Array.isArray(result.data) ? result.data : [];
+      /* 评论只能插入图片；视频/文档在列表里展示但禁用「选择并返回」。 */
       var rows = all.filter(function (asset) { return /^image\/(jpeg|png|webp)$/.test(asset.mime_type || ''); });
       render(client, rows, current);
       prevEl.disabled = offset === 0;
@@ -239,6 +249,7 @@
   function cleanup() {
     token++;
     if (listEl) listEl.replaceChildren();
+    if (viewerEl) viewerEl.replaceChildren();
     setStatus('');
     onSelect = null;
     if (returnFocus && returnFocus.isConnected && typeof returnFocus.focus === 'function') {
@@ -249,6 +260,60 @@
 
   function close() {
     if (dialog && dialog.open) dialog.close();
+  }
+
+  function build() {
+    if (dialog) return;
+    dialog = document.createElement('dialog');
+    dialog.className = 'resource-picker rm-modal comment-asset-picker';
+    dialog.setAttribute('aria-labelledby', 'commentAssetPickerTitle');
+    /* 与资源中心完全一致的布局：rm-head / rm-upload-bar / status / rm-body / resource-preview / rm-foot。 */
+    dialog.innerHTML =
+      '<div class="rm-head">' +
+        '<h2 id="commentAssetPickerTitle">资源中心</h2>' +
+        '<button class="btn" type="button" data-close>返回编辑器</button>' +
+      '</div>' +
+      '<div class="rm-upload-bar">' +
+        '<label>搜索文件<input type="search" maxlength="120" data-search-input></label>' +
+        '<label>类型<select data-kind>' +
+          '<option value="all">全部类型</option>' +
+          '<option value="image">图片</option>' +
+          '<option value="video">视频</option>' +
+          '<option value="document">文档 / 附件</option>' +
+        '</select></label>' +
+        '<button class="btn" type="button" data-search>搜索</button>' +
+      '</div>' +
+      '<p class="status-line" role="status" aria-live="polite" data-status></p>' +
+      '<div class="rm-body" data-list></div>' +
+      '<div class="resource-preview" aria-live="polite" data-viewer></div>' +
+      '<div class="rm-foot">' +
+        '<button class="btn" type="button" data-prev>上一页</button>' +
+        '<span data-page aria-live="polite"></span>' +
+        '<button class="btn" type="button" data-next>下一页</button>' +
+      '</div>';
+    document.body.appendChild(dialog);
+
+    listEl = dialog.querySelector('[data-list]');
+    statusEl = dialog.querySelector('[data-status]');
+    searchEl = dialog.querySelector('[data-search-input]');
+    kindEl = dialog.querySelector('[data-kind]');
+    viewerEl = dialog.querySelector('[data-viewer]');
+    prevEl = dialog.querySelector('[data-prev]');
+    nextEl = dialog.querySelector('[data-next]');
+    pageEl = dialog.querySelector('[data-page]');
+
+    dialog.querySelector('[data-close]').addEventListener('click', close);
+    dialog.querySelector('[data-search]').addEventListener('click', function () { offset = 0; load(); });
+    dialog.addEventListener('cancel', function (event) { event.preventDefault(); close(); });
+    dialog.addEventListener('close', cleanup);
+    prevEl.addEventListener('click', function () { offset = Math.max(0, offset - 20); load(); });
+    nextEl.addEventListener('click', function () { offset += 20; load(); });
+    kindEl.addEventListener('change', function () { offset = 0; load(); });
+    searchEl.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') { event.preventDefault(); offset = 0; load(); }
+    });
+    /* 默认只看图片，与资源中心的 defaultKind 对齐。 */
+    kindEl.value = 'image';
   }
 
   function open(options) {
@@ -267,7 +332,9 @@
       }
       offset = 0;
       searchEl.value = '';
+      kindEl.value = 'image';
       setStatus('');
+      if (viewerEl) viewerEl.replaceChildren();
       if (!dialog.open) dialog.showModal();
       load();
     }).catch(function (error) {
