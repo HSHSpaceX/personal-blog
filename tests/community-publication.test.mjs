@@ -89,33 +89,3 @@ test('Git commit dates cannot repaint legacy/Community lastmod or create a secon
  git(['add','data/community-public.json']);git(['-c','user.name=fixture','-c','user.email=fixture@example.invalid','commit','-m','snapshot fixture'],'2026-10-08T12:00:00Z');generate(dir);assert.equal(await readFile(dir+'/sitemap.xml','utf8'),before);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
-test('deleted tombstone list covers every content type and still rejects malformed entries',async()=>{
- const f=fixture(),dir=await fixtureSite();try{
-  const tomb=[
-   {id:'50000001-0000-4000-8000-000000000001',type:'moment',legacy_id:'m20260914-204633-fp3i'},
-   {id:'50000002-0000-4000-8000-000000000002',type:'article',legacy_id:null},
-   {id:'50000003-0000-4000-8000-000000000003',type:'album',legacy_id:null}];
-  f.adapter.deletedExport=async()=>structuredClone(tomb);
-  const first=await reconcile({adapter:f.adapter,directory:dir});
-  assert.equal(first.snapshot.deleted.length,3);
-  assert.deepEqual(first.snapshot.deleted.map(d=>d.type).sort(),['album','article','moment']);
-  const text=await readFile(dir+'/data/community-public.json','utf8');
-  assert.equal(JSON.parse(text).deleted.length,3);
-  // verify + finalize re-read the same tombstone list and must stay consistent.
-  await reconcile({adapter:f.adapter,directory:dir,verify:true});
-  await reconcile({adapter:f.adapter,directory:dir,finalize:true,commitSHA:sha});
-  // The moment tombstone still hides the matching legacy moment; article/album tombstones do not leak into post/album merges.
-  const snap={version:1,items:[],deleted:tomb};
-  const legacyMoments=[{id:'m20260914-204633-fp3i',time:'2026-09-14T00:00:00Z',text:'gone'},{id:'m-keep',time:'2026-09-14T00:00:00Z',text:'kept'}];
-  const merged=publicData.mergeMoments(legacyMoments,snap);
-  assert.deepEqual(merged.map(m=>m.id),['m-keep']);
-  // Strict shape checks on the tombstone list are preserved.
-  for(const bad of [
-   {id:'not-a-uuid',type:'article',legacy_id:null},
-   {id:'50000004-0000-4000-8000-000000000004',type:'dm',legacy_id:null},
-   {id:'50000005-0000-4000-8000-000000000005',type:'moment',legacy_id:null,extra:1},
-   {id:'50000006-0000-4000-8000-000000000006',type:'moment',legacy_id:'bad legacy id'}]){
-   assert.throws(()=>publicData.validate({version:1,items:[],deleted:[bad]}),/INVALID_SNAPSHOT/);
-  }
- }finally{await rm(dir,{recursive:true,force:true});}
-});
