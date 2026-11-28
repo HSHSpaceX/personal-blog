@@ -1139,9 +1139,14 @@ a.tag-chip:hover {
 }
 
 .prose {
-  max-width: 720px;
+  /* 文章正文（post.html 的 .post-main 内）撑满主列，阅读更舒展；
+     其他 .prose 表面（about、动态/图册发布器预览）保留 max-width 不变。 */
   font-size: 17px;
   line-height: 1.75;
+}
+
+.post-main .prose {
+  max-width: none;
 }
 
 .prose p {
