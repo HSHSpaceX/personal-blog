@@ -78,7 +78,7 @@ test('login/profile/admin use identical sun/moon SVG and common local theme setu
   const icon = file => read(file).replace(/\r\n?/g, '\n').match(/<button class="icon-btn" id="themeToggle"[\s\S]*?<\/button>/)[0];
   assert.equal(icon('login.html'),icon('profile.html'));assert.equal(icon('login.html'),icon('admin.html'));assert.equal(icon('login.html'),icon('index.html'));
   for (const file of ['login.html','profile.html','admin.html','index.html']) {
-    assert.match(read(file),/<script src="js\/theme\.js\?v=\w+"><\/script>/,'local theme setup script');
+    assert.match(read(file),/<script src="js\/theme\.js\?v=\d+"><\/script>/);
     assert.match(icon(file),/class="icon-sun"/);assert.match(icon(file),/class="icon-moon"/);assert.doesNotMatch(icon(file),/◐/);
   }
   for (const file of ['js/login.js','js/profile.js','js/admin.js','js/site.js']) assert.match(read(file),/window\.BlogTheme\.setup\(\)/);
