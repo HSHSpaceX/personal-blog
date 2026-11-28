@@ -13,12 +13,9 @@
   async function rpc(name, args) { var actor=Community_CaptureActor(),db=await client();Community_CheckActor(actor);if(!['community_assets_page','community_asset_references','community_orphan_assets','community_review_cycle_status','community_review_queue'].includes(name)){await window.BackendCapabilities.requireUpgrade();Community_CheckActor(actor);}var result=await db.rpc(name,args);Community_CheckActor(actor);return value(result); }
   async function listItems() {
     var actor=Community_CaptureActor(),db = await client();Community_CheckActor(actor);
-    var revisionsSelect=',content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no,created_at,summary:body->>summary)';
-    var baseSelect=itemFields+',created_at,community_publication_state(status,last_error,published_revision_id)';
-    var query=function(select){return db.from('content_items').select(select).eq('author_id',actor.id).order('created_at',{ascending:false}).limit(50).order('revision_no',{referencedTable:'content_revisions',ascending:false}).limit(1,{referencedTable:'content_revisions'});};
-    var result=await query(baseSelect+',content_deletion_requests(status,decision_reason,created_at)'+revisionsSelect);
-    // 删除申请表来自新增迁移；Supabase 尚未部署时回退到旧查询，避免整个列表不可用。
-    if(result.error&&/content_deletion_requests/.test(String(result.error.message)))result=await query(baseSelect+revisionsSelect);
+    var result=await db.from('content_items').select(itemFields+',created_at,community_publication_state(status,last_error,published_revision_id),content_revisions!content_revisions_item_id_fkey(id,title,status,rejection_reason,revision_no,created_at,summary:body->>summary)')
+      .eq('author_id',actor.id).order('created_at',{ascending:false}).limit(50)
+      .order('revision_no',{referencedTable:'content_revisions',ascending:false}).limit(1,{referencedTable:'content_revisions'});
     Community_CheckActor(actor);return value(result);
   }
   async function getRevision(id) {
@@ -85,10 +82,7 @@
     if(typeof path!=='string'||path.split('/')[0]!==actor.id||path.split('/').some(function(p){return p==='.'||p==='..';}))throw Error('无效资源路径。');
     value(await db.storage.from('community-assets').remove([path]));Community_CheckActor(actor);value(await db.rpc('private_object_finish_deletes'));
   }
-  window.CommunityData = {createAlbum:function(slug,title){return rpc('community_create_album',{p_slug:slug,p_title:title});},createItem:function(type,slug){return rpc('community_create_item',{p_content_type:type,p_slug:slug});},deleteMoment:function(id){return rpc('community_delete_moment',{p_item_id:id});},deleteDraft:function(id){return rpc('community_delete_draft',{p_item_id:id});},requestDeletion:function(id,reason){return rpc('community_request_deletion',{p_item_id:id,p_reason:reason==null?'':String(reason)});},
-    deletionRequests:async function(status,offset){var db=await client();auth.requireAdmin();return value(await db.rpc('community_deletion_requests',{p_status:status||'pending',p_limit:20,p_offset:offset||0}));},
-    reviewDeletion:function(id,decision,reason){auth.requireAdmin();return rpc('community_review_deletion',{p_request_id:id,p_decision:decision,p_rejection_reason:reason||null});},
-    errorMessage:Community_FormatError,listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,
+  window.CommunityData = {createAlbum:function(slug,title){return rpc('community_create_album',{p_slug:slug,p_title:title});},createItem:function(type,slug){return rpc('community_create_item',{p_content_type:type,p_slug:slug});},deleteMoment:function(id){return rpc('community_delete_moment',{p_item_id:id});},errorMessage:Community_FormatError,listItems:listItems,getRevision:getRevision,save:save,create:create,listAssets:listAssets,upload:upload,signedAsset:signedAsset,
     assetsPage:function(search,kind,offset){return rpc('community_assets_page',{p_search:search,p_kind:kind,p_limit:20,p_offset:offset});},
     renameAsset:function(id,name){return rpc('community_rename_asset',{p_asset_id:id,p_name:name});},
     assetReferences:function(id,offset){return rpc('community_asset_references',{p_asset_id:id,p_limit:20,p_offset:offset});},
