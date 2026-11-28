@@ -29,11 +29,9 @@
     if (root.__editorEngine === 'legacy') return false;
     if (typeof root.fetch !== 'function' || typeof root.Promise !== 'function') return false;
     if (/jsdom/i.test((root.navigator && root.navigator.userAgent) || '')) return false;
-    var host = (root.location && root.location.hostname) || '';
-    var local = host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]';
-    /* 本地与自动化测试环境保持旧编辑器（197 项测试直接操作旧输入框）；
-       生产域名默认使用 Vditor。本地想试用加 ?engine=vditor。 */
-    if (local) return /[?&]engine=vditor/.test((root.location && root.location.search) || '');
+    /* 生产与本地测试环境默认使用 Vditor（评论需要富文本排版）；
+       只有显式选回旧编辑器（legacy-only）才走旧实现。自动化测试可注入
+       window.__editorEngine='legacy' 固定使用旧编辑器。 */
     return mode() !== 'legacy-only';
   }
 

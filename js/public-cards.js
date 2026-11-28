@@ -12,9 +12,15 @@
   function content(card,detail){
     var n=node('article',undefined,'public-content-card'),h=node('h3',card.title||({moment:'动态',album:'图册',article:'文章',comment:'评论'}[card.kind]));n.appendChild(author(card));n.appendChild(h);
     n.appendChild(node('p',String(card.published_at||'').slice(0,16)+(card.liked_at?' · 点赞于 '+String(card.liked_at).slice(0,16):''),'muted'));
-    n.appendChild(node('p',String(card.text||'').slice(0,detail?100000:2000),'public-text'));
+    var textEl=node('div',undefined,'public-text comment-body');
+    if(window.CommentMarkdown){textEl.innerHTML=window.CommentMarkdown.buildHtml(card.text||'',document.baseURI);}else{textEl.textContent=String(card.text||'').slice(0,detail?100000:2000);}
+    n.appendChild(textEl);
     if(card.context)n.appendChild(node('p','来自：'+card.context.title));
-    if(card.parent_text)n.appendChild(node('blockquote','回复：'+card.parent_text,'public-text'));
+    if(card.parent_text){
+      var replyEl=node('blockquote',undefined,'public-text comment-body');
+      if(window.CommentMarkdown){replyEl.innerHTML=window.CommentMarkdown.buildHtml('回复：'+card.parent_text,document.baseURI);}else{replyEl.textContent='回复：'+card.parent_text;}
+      n.appendChild(replyEl);
+    }
     if(card.kind==='album'&&card.body&&Array.isArray(card.body.photos))n.appendChild(node('p',card.body.photos.length+' 张私有附件 · 公开文本预览'));
     var href=card.target_path&&safeLink(card.target_path);if(href){var a=node('a','查看内容','btn');a.href=href;n.appendChild(a);}
     var auth=window.BlogAuth;

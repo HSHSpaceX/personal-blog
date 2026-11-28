@@ -139,7 +139,7 @@
       (item.status === 'pending' ? '<span>待审核</span>' : '') +
       '</div>' +
       (item.parentNick ? '<p class="comment-parent-hint">回复 @' + escapeHtml(item.parentNick) + '</p>' : '') +
-      '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
+      '<div class="comment-content">' + (window.CommentMarkdown ? window.CommentMarkdown.buildHtml(item.content, document.baseURI) : '<p>' + escapeHtml(item.content) + '</p>') + '</div>' +
       '<div class="comment-foot">' + (window.CommentLikes && item.status === 'approved' && !item.legacy ? window.CommentLikes.button(String(item.id)) : '') +
         (item.own&&!item.legacy?'<a class="btn" rel="nofollow" href="account.html?comment='+encodeURIComponent(item.id)+'#my-comments">编辑我的评论</a>':'') +
         '<button type="button" class="comment-reply-btn" data-mcreply="' + escapeHtml(item.id) + '" data-mcnick="' + escapeHtml(item.nick) + '">回复</button>' +
@@ -162,6 +162,9 @@
       '</div><form class="moment-comment-form" data-moment-form="' + escapeHtml(id) + '">' +
       '<textarea name="content" rows="2" maxlength="2000" placeholder="登录后写下评论…"></textarea>' +
       '<div class="moment-comment-foot"><span class="status-line"></span><button class="comment-submit" type="submit">评论</button></div></form>';
+    var box = panel.querySelector('textarea[name="content"]');
+    if (box && window.CommentEditor) window.CommentEditor.enhance(box, { placeholder: '写下评论，支持 Markdown 与图片…' });
+    if (window.SiteLightbox) window.SiteLightbox.watch(panel);
     if (window.CommentLikes) window.CommentLikes.decorate(panel);
     if (window.SiteLevels) window.SiteLevels.decorateComments(panel);
     updateCommentCount(id);
@@ -191,6 +194,7 @@
     var status = form.querySelector('.status-line');
     var button = form.querySelector('button[type="submit"]');
     if (!content) { setStatus(status, '请输入评论内容。', 'err'); return; }
+    if (Array.from(content).length > 2000) { setStatus(status, '评论不能超过 2000 字。', 'err'); return; }
     if (!window.BlogAuth.user()) { location.href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash); return; }
     button.disabled = true;
     try {

@@ -7,16 +7,22 @@
   function message(text){$('accountCommentsStatus').textContent=text;}
   function button(row,text,fn){var b=node('button',text,'btn');b.type='button';b.addEventListener('click',async function(){var t=generation;b.disabled=true;try{auth.requireUser();await fn(t);}catch(e){if(active(t))message(e.message);}finally{b.disabled=false;}});row.appendChild(b);}
   function clear(){generation++;selected=null;offset=0;queueOffset=0;['accountCommentsList','accountCommentQueue','accountCommentsStatus','accountCommentIdentity'].forEach(function(id){$(id).replaceChildren();});$('accountCommentEditor').hidden=true;$('accountCommentText').value='';}
-  function editor(c){selected=c;$('accountCommentEditor').hidden=false;$('accountCommentText').value=c.latest_edit?c.latest_edit.proposed_content:c.content;if(window.DraftStore){var draftKey=window.DraftStore.scope('comment-edit',(auth.user()?auth.user().id:'anon'),c.id);var draftRecord=window.DraftStore.load(draftKey);if(draftRecord&&draftRecord.payload&&draftRecord.payload.text)$('accountCommentText').value=draftRecord.payload.text;}$('accountCommentIdentity').textContent='评论 / '+c.post_slug+' · '+c.status;}
+  function editor(c){selected=c;$('accountCommentEditor').hidden=false;$('accountCommentText').value=c.latest_edit?c.latest_edit.proposed_content:c.content;if(window.DraftStore){var draftKey=window.DraftStore.scope('comment-edit',(auth.user()?auth.user().id:'anon'),c.id);var draftRecord=window.DraftStore.load(draftKey);if(draftRecord&&draftRecord.payload&&draftRecord.payload.text)$('accountCommentText').value=draftRecord.payload.text;}if(window.CommentEditor)window.CommentEditor.enhanceById('accountCommentText',{placeholder:'修改后的评论内容'});$('accountCommentIdentity').textContent='评论 / '+c.post_slug+' · '+c.status;}
   async function mine(t){var rows=await data.mine(offset);if(!active(t))return;$('accountCommentsList').replaceChildren();
-    rows.forEach(function(c){var row=node('article',undefined,'public-content-card');row.appendChild(node('p',c.post_slug+' · '+c.created_at.slice(0,10)+' · '+c.status));row.appendChild(node('p',c.content,'public-text'));
+    rows.forEach(function(c){var row=node('article',undefined,'public-content-card');row.appendChild(node('p',c.post_slug+' · '+c.created_at.slice(0,10)+' · '+c.status));
+      var contentEl=node('div',undefined,'public-text comment-body');
+      if(window.CommentMarkdown){contentEl.innerHTML=window.CommentMarkdown.buildHtml(c.content,document.baseURI);}else{contentEl.textContent=c.content;}
+      row.appendChild(contentEl);
       if(c.rejection_reason&&c.status==='rejected')row.appendChild(node('p','初次审核驳回原因：'+c.rejection_reason,'public-text'));
       if(c.latest_edit){row.appendChild(node('p','最新编辑：'+c.latest_edit.status));if(c.latest_edit.rejection_reason)row.appendChild(node('p','驳回原因：'+c.latest_edit.rejection_reason,'public-text'));}
       if(!(c.status==='approved'&&c.latest_edit&&c.latest_edit.status==='pending'&&!auth.isAdmin()))button(row,'编辑我的评论',function(){editor(c);});
       $('accountCommentsList').appendChild(row);});if(!rows.length)$('accountCommentsList').appendChild(node('p','暂无自己的评论。'));
     $('accountCommentsPrev').disabled=offset===0;$('accountCommentsNext').disabled=rows.length<20;
   }
-  function reviewCard(e){var row=node('article',undefined,'public-content-card');row.appendChild(node('p','评论编辑 · '+e.created_at.slice(0,10)));row.appendChild(node('p','原正文：'+e.previous_content,'public-text'));row.appendChild(node('p','新正文：'+e.proposed_content,'public-text'));
+  function reviewCard(e){var row=node('article',undefined,'public-content-card');row.appendChild(node('p','评论编辑 · '+e.created_at.slice(0,10)));
+    var prevEl=node('div',undefined,'public-text comment-body');if(window.CommentMarkdown){prevEl.innerHTML=window.CommentMarkdown.buildHtml(e.previous_content,document.baseURI);}else{prevEl.textContent=e.previous_content;}
+    var propEl=node('div',undefined,'public-text comment-body');if(window.CommentMarkdown){propEl.innerHTML=window.CommentMarkdown.buildHtml(e.proposed_content,document.baseURI);}else{propEl.textContent=e.proposed_content;}
+    row.appendChild(node('p','原正文：'));row.appendChild(prevEl);row.appendChild(node('p','新正文：'));row.appendChild(propEl);
     var reason=node('textarea');reason.maxLength=2000;reason.rows=2;reason.setAttribute('aria-label','拒绝此评论编辑的原因');row.appendChild(reason);
     button(row,'通过评论编辑',async function(t){auth.requireAdmin();await data.review(e.id,'approved',null);if(active(t))await refresh();});
     button(row,'拒绝评论编辑',async function(t){auth.requireAdmin();if(!reason.value.trim())throw Error('拒绝必须填写原因。');await data.review(e.id,'rejected',reason.value.trim());if(active(t))await refresh();});return row;

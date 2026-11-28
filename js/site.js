@@ -927,7 +927,9 @@
           '<span>' + escapeHtml(item.time || '') + '</span>' +
           (item.status === 'pending' ? '<span>待审核</span>' : '') +
         '</div>' +
-        '<p class="comment-content">' + escapeHtml(item.content) + '</p>' +
+        '<div class="comment-content">' +
+          (window.CommentMarkdown ? window.CommentMarkdown.buildHtml(item.content) : '<p>' + escapeHtml(item.content) + '</p>') +
+        '</div>' +
         '<div class="comment-foot">' +
           (item.status === 'approved' && !item.legacy ? CommentLikes.button(String(item.id)) : '') +
           (item.own&&!item.legacy?'<a class="btn" rel="nofollow" href="account.html?comment='+encodeURIComponent(item.id)+'#my-comments">编辑我的评论</a>':'') +
@@ -978,6 +980,7 @@
         }).join('') : '<p class="empty-state">还没有评论，写下第一条吧。</p>';
         CommentLikes.decorate(listEl);
         if (window.SiteLevels) window.SiteLevels.decorateComments(listEl);
+        if (window.SiteLightbox) window.SiteLightbox.watch(listEl);
       } catch (error) { if(attempt===commentGeneration)listEl.textContent = '评论加载失败：' + error.message; }
     }
     listEl.addEventListener('click', function (event) {
@@ -1000,6 +1003,7 @@
       var status = document.getElementById('commentStatus');
       var content = document.getElementById('commentContent').value.trim();
       if (!content) { setStatus(status, '请输入评论内容。', 'err'); return; }
+      if (Array.from(content).length > 2000) { setStatus(status, '评论不能超过 2000 字。', 'err'); return; }
       if (!loginForAction()) return;
       try {
         setStatus(status, '正在提交…');
@@ -1010,9 +1014,14 @@
         setStatus(status, '评论已提交，审核通过后公开可见。', 'ok');
       } catch (error) { setStatus(status, '提交失败：' + error.message, 'err'); }
     });
+    /* 评论输入框增强：Vditor 富文本 + 图片上传 */
+    var commentBox = document.getElementById('commentContent');
+    if (commentBox && window.CommentEditor) {
+      window.CommentEditor.enhance(commentBox, { placeholder: '写下评论，支持 **加粗**、*斜体*、[链接](url)、`代码`、图片…' });
+    }
+
     /* 评论草稿：离开页面后回来还在 */
     if (window.DraftStore) {
-      var commentBox = document.getElementById('commentContent');
       var commentWho = (window.BlogAuth && window.BlogAuth.user() && window.BlogAuth.user().id) || 'anon';
       var commentKey = window.DraftStore.scope('comment', slug, commentWho);
       if (commentBox) {
