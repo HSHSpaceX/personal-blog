@@ -770,6 +770,11 @@
   ],
   "deleted": [
     {
+      "id": "ca71cc5b-75c3-4fb6-bec8-52bc73af9a54",
+      "type": "article",
+      "legacy_id": null
+    },
+    {
       "id": "d5c63eb4-3d29-4b92-9df5-16953a141fe5",
       "type": "moment",
       "legacy_id": null
