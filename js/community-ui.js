@@ -106,6 +106,34 @@
   function editorLink(parent,label,row,type){
     var link=node('a',label,'btn');link.href=editorHref(row,type);link.target='_blank';link.rel='noopener noreferrer';parent.appendChild(link);return link;
   }
+  function Community_AddDeleteActions(card,item,latest){
+    var requests=item.content_deletion_requests||[];
+    if(requests.some(function(d){return d.status==='pending';})){card.element.appendChild(node('p','删除申请审核中：批准后公开内容将在服务器同步和部署后移除。','content-card-note'));return;}
+    var rejected=requests.filter(function(d){return d.status==='rejected';}).sort(function(a,b){return String(b.created_at).localeCompare(String(a.created_at));})[0];
+    if(rejected)card.element.appendChild(node('p','删除申请被退回：'+(rejected.decision_reason||''),'content-card-note'));
+    if(!item.published_revision_id){
+      button(card.actions,'删除草稿',function(t){
+        if(!window.confirm('删除这个未公开的草稿？其全部版本都会移除；已上传的资源仍保留在资源中心。此操作不可恢复。'))return;
+        return data.deleteDraft(item.id).then(function(){if(!active(t))return;message('草稿已删除。');return refreshLists(t);});
+      });
+      return;
+    }
+    if(item.content_type==='moment'){
+      button(card.actions,'删除',function(t){
+        if(!window.confirm('删除这条动态？已公开版本将在服务器同步和部署后移除，历史数据保留用于恢复。'))return;
+        return data.deleteMoment(item.id).then(function(){if(!active(t))return;message('已标记删除，等待服务器同步和部署。');return refreshLists(t);});
+      });
+      return;
+    }
+    button(card.actions,'申请删除',async function(t){
+      if(!window.confirm('申请删除这个'+names[item.content_type]+'？申请将由站长审核，批准前公开内容保持可见。'))return;
+      var reason=null;
+      try{reason=window.prompt('删除原因（可选，最多 1000 字符）：','');}catch(error){return;}
+      if(reason===null)return;
+      await data.requestDeletion(item.id,reason);
+      if(active(t)){message('删除申请已提交，等待站长审核。');await refreshLists(t);}
+    });
+  }
   function renderItems(items){
     itemRows=items;
     if(window.AccountRoute)items=items.filter(function(item){return item.content_type===contentType;});
@@ -117,6 +145,7 @@
       if(latest)editorLink(card.actions,'继续编辑',latest,item.content_type);
       else button(card.actions,'继续创建草稿',function(){openEditor(item,null);});
       if(item.published_revision_id)button(card.actions,'查看当前发布版本',function(token){return openRevision(item.published_revision_id,token);});
+      Community_AddDeleteActions(card,item,latest);
       $('communityItems').appendChild(card.element);
     });
     if(auth.isAdmin()&&window.BLOG_POSTS){
