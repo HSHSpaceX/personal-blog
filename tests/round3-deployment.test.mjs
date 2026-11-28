@@ -12,12 +12,17 @@ import {Operator_Build} from '../scripts/build-final-operator-pack.mjs';
 const migrations=new URL('../supabase/migrations/',import.meta.url);
 const names=(await readdir(migrations)).filter(n=>n.endsWith('.sql')).sort();
 const sql=await readFile(new URL('../supabase/postflight.sql',import.meta.url),'utf8');
-test('Round 3 operator pack binds actual SHA, preserves all 27 migrations and has explicit untested production states',async()=>{
+test('Round 3 operator pack binds actual SHA, preserves all 28 migrations and has explicit untested production states',async()=>{
  const directory=await mkdtemp(path.join(tmpdir(),'round3-operator-'));try{
-  const manifest=await Operator_Build(directory);assert.match(manifest.main_sha,/^[a-f0-9]{40}$/);assert.equal(manifest.migration_count,27);assert.equal(manifest.receipt.status,'not_checked');
+  const manifest=await Operator_Build(directory);assert.match(manifest.main_sha,/^[a-f0-9]{40}$/);assert.equal(manifest.migration_count,28);assert.equal(manifest.receipt.status,'not_checked');
   for(const key of ['production_database_migrated','production_legacy_imported','production_auth_storage_accepted'])assert.equal(manifest[key],false);
   await assert.rejects(Operator_Build(directory,{main_sha:'0'.repeat(40)}),/receipt.*match/);
-  for(const name of names){const current=await readFile(new URL(name,migrations),'utf8'),original=execFileSync('git',['show','f38df26334b0cf1c43d0c2b2a63a42d780b45a5e:supabase/migrations/'+name],{encoding:'utf8'});assert.equal(current.replace(/\r\n/g,'\n'),original.replace(/\r\n/g,'\n'),name+' immutable history');}
+  // Shipped history (the frozen 27-file baseline) is immutable; forward migrations added
+  // after that baseline are additions, not rewrites, so they are not pinned to it.
+  const frozenBaseline='f38df26334b0cf1c43d0c2b2a63a42d780b45a5e';
+  const frozen=new Set(execFileSync('git',['ls-tree','-r','--name-only',frozenBaseline,'supabase/migrations/'],{encoding:'utf8'}).split('\n').map(p=>p.split('/').pop()).filter(Boolean));
+  assert.equal(frozen.size,27,'frozen baseline holds the 27 shipped migrations');
+  for(const name of frozen){assert.ok(names.includes(name),name+' still present');const current=await readFile(new URL(name,migrations),'utf8'),original=execFileSync('git',['show','f38df26334b0cf1c43d0c2b2a63a42d780b45a5e:supabase/migrations/'+name],{encoding:'utf8'});assert.equal(current.replace(/\r\n/g,'\n'),original.replace(/\r\n/g,'\n'),name+' immutable history');}
   const guide=await readFile(new URL('../docs/SUPABASE_OPERATOR_PACK_20261018.md',import.meta.url),'utf8');assert.deepEqual([...guide.matchAll(/^\d+\. (\d+_[a-z0-9_]+\.sql)$/gm)].map(m=>m[1]),names);
   for(const file of manifest.files){const bytes=await readFile(path.join(directory,file.path));assert.equal(createHash('sha256').update(bytes).digest('hex'),file.sha256);if(file.path.startsWith('docs/'))assert.ok(bytes.toString().includes(manifest.main_sha));}
   assert.equal(manifest.migrations[26].source_lf_sha256,'d812f8e534f46d94693806558baa0fc4842c067930871dabc4220a7062bc1ead');
@@ -34,7 +39,7 @@ async function Deployment_Status(db){
  assert.ok(status,'read-only report remains available even when objects are absent');return status;
 }
 for(const [engine,create,configured] of [['PGlite',createDatabase,!!modulePath],['native PostgreSQL',createNativeDatabase,nativeConfigured]]){
- test('Round 3 '+engine+': read-only diagnostics distinguish empty, partial 23–27 and complete upgrade boundaries',{skip:!configured},async()=>{
+ test('Round 3 '+engine+': read-only diagnostics distinguish empty, partial 23–28 and complete upgrade boundaries',{skip:!configured},async()=>{
   const db=await create({through:'000'});try{
    const before=(await db.query("select count(*)::int n from pg_class where relnamespace='public'::regnamespace")).rows[0].n;
    let report=await Deployment_Status(db);assert.equal(report.base_state,'not_installed');assert.equal(report.round2_state,'missing');
@@ -44,7 +49,7 @@ for(const [engine,create,configured] of [['PGlite',createDatabase,!!modulePath],
     if(i<21)continue;
     report=await Deployment_Status(db);
     assert.equal(report.base_state,i>=25?'ready':'incomplete','boundary '+(i+1));
-    assert.equal(report.round2_state,i===26?'ready':'missing','round 2 boundary '+(i+1));
+    assert.equal(report.round2_state,i>=26?'ready':'missing','round 2 boundary '+(i+1));
    }
    assert.deepEqual((await db.query("select oid::regprocedure::text as signature from pg_proc where pronamespace='public'::regnamespace and prosecdef and not coalesce('search_path=\"\"'=any(proconfig),false)")).rows,[],'all business SECURITY DEFINER functions pin an empty search_path');
    await db.exec('alter table public.community_article_preferences disable row level security');
@@ -55,7 +60,7 @@ for(const [engine,create,configured] of [['PGlite',createDatabase,!!modulePath],
    report=await Deployment_Status(db);assert.equal(report.round2_state,'incomplete');assert.ok(report.round2_issues.some(s=>s.includes('profile_search')));
   }finally{await db.close();}
  });
- test('Round 3 '+engine+': original and trimmed Storage installations both upgrade through migration 27',{skip:!configured},async()=>{
+ test('Round 3 '+engine+': original and trimmed Storage installations both upgrade through migration 28',{skip:!configured},async()=>{
   for(const trimmed of [false,true]){
    const db=await create({through:names[21]});try{
     if(trimmed)await db.exec('drop index storage.dm_media_object_path;drop trigger dm_media_immutable on storage.objects;drop trigger dm_media_orphan_guard on storage.objects;drop trigger dm_media_delete_cleanup on storage.objects');
